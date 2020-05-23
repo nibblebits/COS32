@@ -108,7 +108,7 @@ int fopen(char *filename, char mode)
 
     disk->filesystem->open(disk, start_of_relative_path, mode);
 
-    return 1;
+    return 0;
 }
 
 struct filesystem *fs_resolve(struct disk *disk)

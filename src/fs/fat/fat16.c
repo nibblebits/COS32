@@ -170,6 +170,49 @@ static int fat16_check_relative_path(const char *relative_path)
 }
 
 
+void abc()
+{
+    panic("testing");
+        panic("testing");
+    panic("testing");
+    panic("testing");
+    panic("testing");
+    panic("testing");
+    panic("testing");
+    panic("testing");
+    panic("testing");
+    panic("testing");
+    panic("testing");
+    panic("testing");
+    panic("testing");
+    panic("testing");
+    panic("testing");
+    panic("testing");
+    panic("testing");
+    panic("testing");
+    panic("testing");
+    panic("testing");
+    panic("testing");
+    panic("testing");
+    panic("testing");
+    panic("testing");
+    panic("testing");
+    panic("testing");
+    panic("testing");
+    panic("testing");
+    panic("testing");
+    panic("testing");
+    panic("testing");
+    panic("testing");
+    panic("testing");
+    panic("testing");
+    panic("testing");
+    panic("testing");
+    panic("testing");
+    panic("testing");
+    panic("testing");
+
+}
 
 
 void *fat16_open(struct disk *disk, char *filename, char mode)
@@ -181,6 +224,7 @@ void *fat16_open(struct disk *disk, char *filename, char mode)
     }
 
   //  fat16_search_for_file(disk, filename);
+  
     return 0;
 }
 
