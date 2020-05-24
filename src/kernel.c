@@ -47,23 +47,15 @@ static inline uint16_t vga_entry(unsigned char uc, uint8_t color)
 {
 	return (uint16_t)uc | (uint16_t)color << 8;
 }
+void terminal_initialize();
 
-void terminal_initialize(void);
-void terminal_putchar(char);
 void kernel_main(void)
 {
-
 	/* Initialize terminal interface */
 	terminal_initialize();
 
-	for (int i = 0; i < 2000000; i++)
-	{
-	}
-
-	char buf[512];
-	disk_read_sector(0, 1, buf);
-
-	print(buf);
+	terminal_putchar('A');
+	print("testing");
 
 	while (1)
 	{
@@ -214,3 +206,4 @@ void panic(char *message)
 	{
 	}
 }
+

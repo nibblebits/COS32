@@ -76,16 +76,6 @@ gdt_descriptor:
 CODE_SEG equ gdt_code - gdt_start
 DATA_SEG equ gdt_data - gdt_start
 
-DAPACK:
-	db	0x10
-	db	0
-blkcnt:	dw	50		; int 13 resets this to # of blocks actually read/written
-db_add:	dw	0x7e00		 ;memory buffer destination address (0:3ff)
-	dw	0x00		; in memory page zero
-d_lba:	dd	1		; put the lba to read in this spot
-	dd	0		; more storage bytes only for big lba's ( > 4 bytes )
-
-
 print:
     pusha
     mov ah, 14
@@ -102,29 +92,90 @@ print:
 
 kernel_start:
 
-    mov bp, 0x9000          ; Set  the  stack.
-    mov sp, bp
-    mov si, DAPACK
-;    mov bx, 0x7e00
-    ;mov word [db_add], bx
-
-    mov ah, 0x42
-    int 0x13
-    jc .problem
-    jmp .load_protected
-.problem:
-    mov si, problem_loading_kernel
-    call print
-    jmp $
-
 .load_protected:    
     cli
     lgdt[gdt_descriptor]
     mov eax, cr0
     or eax, 0x1
     mov cr0, eax
-    jmp CODE_SEG:0x7e00
+    jmp CODE_SEG:load32
 
+[BITS 32]
+
+
+load32:
+    mov eax, 1
+    mov ecx, 50
+    mov edi, 0x0100000
+    call ata_lba_read
+    jmp CODE_SEG:0x0100000
+; ECX - total sectors
+; EDI - Destination
+; EAX - LBA
+ata_lba_read:
+    mov ebx, eax ; Backup LBA
+    ; SEND HIGHEST 8 BITS OF LBA TO HARD DISK CONTROLLER
+    shr eax, 24
+    or eax, 0xE0 ; OR It with 0xE0 to select master drive
+    mov dx, 0x1F6
+    out dx, al
+    ; FINISHED SENDING 8 BITS OF LBA TO HARD DISK CONTROLLER
+    
+    ; SEND TOTAL SECTORS TO HARD DISK CONTROLLER
+    mov eax, ecx
+    mov dx, 0x1F2
+    out dx, al
+    ; FINISHED SENDING TOTAL SECTORS
+
+   ; SEND SOME MORE BITS OF LBA TO HARD DISK CONTROLLER
+    mov dx, 0x1F3
+    mov eax, ebx ; RESTORE ORIGINAL LBA
+    out dx, al
+    ; FINISHED SENDING USEND SOME MORE BITS OF LBA TO HARD DISK CONTROLLER
+
+    ; SEND FINAL UPPER 8 BITS OF LBA TO HARD DISK CONTROLLER
+    mov dx, 0x1F4
+    mov eax, ebx ; RESTORE ORIGINAL LBA
+    shr eax, 8
+    out dx, al
+    ; FINISHED SENDING UPPER 8 BITS OF LBA
+
+
+    ; SEND FINAL UPPER 16 BITS OF LBA TO HARD DISK CONTROLLER
+    mov dx, 0x1F5
+    mov eax, ebx ; RESTORE ORIGINAL LBA
+    shr eax, 16
+    out dx, al
+    ; FINISHED SENDING UPPER 16 BITS OF LBA
+
+    mov dx, 0x1f7
+    mov al, 0x20
+    out dx, al
+
+
+
+    ; READ ALL SECTORS INTO MEMORY
+.next_sector:
+    push ecx
+
+; Check if we are ready to read
+.try_again:
+    mov dx, 0x1f7
+    in al, dx
+    test al, 8
+    jz .try_again
+
+    ; We will read 256 words at a time
+    mov ecx, 256
+    mov dx, 0x1F0
+    rep insw
+    pop ecx
+    loop .next_sector
+    ; END OF READING SECTORS INTO MEMORY
+
+    ret
+
+    
 
 problem_loading_kernel: db 'Problem loading kernel', 0
 TIMES 510-($-$$) db 0

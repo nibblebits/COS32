@@ -6,7 +6,7 @@ OUTPUT_FORMAT(binary)
    kernel image. */
 SECTIONS
 {
-	. = 0x7e00;
+	. = 1M;
 
 	/* Begin putting sections at 1 MiB, a conventional place for kernels to be
 	   loaded at by the bootloader. */
