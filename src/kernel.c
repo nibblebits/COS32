@@ -6,6 +6,7 @@
 #include "disk/disk.h"
 #include "fs/fat/fat16.h"
 #include "io/io.h"
+#include "kernel.h"
 
 /* Check if the compiler thinks you are targeting the wrong operating system. */
 #if defined(__linux__)
@@ -54,12 +55,20 @@ void kernel_main(void)
 	/* Initialize terminal interface */
 	terminal_initialize();
 
-	terminal_putchar('A');
-	print("testing");
+	// Initialize the heap
+	kheap_init();
 
-	while (1)
-	{
-	}
+	// Initialize filesystems
+	fs_load();
+
+	// Find the disks
+	disk_search_and_init();
+
+	fopen("0:/test.txt",'r');
+
+	print("Kernel initialized");
+
+
 }
 
 size_t strlen(const char *str)

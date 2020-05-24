@@ -1,5 +1,6 @@
 #include "string.h"
-char * strncpy(char *dest, char *src, int n)
+#include "kernel.h"
+char * strncpy(char *dest, const char *src, int n)
 {
     int i;
 
@@ -11,7 +12,7 @@ char * strncpy(char *dest, char *src, int n)
     return dest;
 }
 
-int strnlen(char* str, int max)
+int strnlen(const char* str, int max)
 {
     int i = 0;
     for (i = 0; i < max; i++)
@@ -34,4 +35,29 @@ int isdigit(char c)
 int tonumericdigit(char c)
 {
     return c - 48;
+}
+
+char* sp = 0;
+char* strtok(char* input, char delm)
+{
+    int i = 0;
+    if (input == 0)
+        input = sp;
+
+    if (input == 0)
+        return 0;
+        
+    while(input[i] != 0 && input[i] != delm) 
+    {
+        i++;
+    }
+
+    sp = 0;
+    if (input[i] != 0)
+    {
+        sp = &input[i+1];
+    }
+
+    input[i] = 0x00;
+    return input;
 }

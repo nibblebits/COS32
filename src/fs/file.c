@@ -87,11 +87,10 @@ static int fs_get_drive_by_path(char *filename)
 int fopen(char *filename, char mode)
 {
     int drive_no = fs_get_drive_by_path(filename);
-    if (drive_no < 0)
+    if (!drive_no)
     {
         return drive_no;
     }
-
 
     char *start_of_relative_path = &filename[2];
 

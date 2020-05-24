@@ -6,7 +6,12 @@ all: ./bin/kernel.bin ./bin/boot.bin ${FILES}
 	dd if=./bin/boot.bin >> ./bin/os.bin
 	dd if=./bin/kernel.bin >> ./bin/os.bin
 	dd if=/dev/zero bs=1048576 count=16 >> ./bin/os.bin
-	
+	sudo mount -t vfat ./bin/os.bin /mnt/d
+	sudo cp ./src/status.h /mnt/d
+	sudo cp ./src/types.h /mnt/d
+	sudo umount /mnt/d
+	sudo chmod 777 ./bin/os.bin
+
 ./bin/boot.bin: ./src/boot/boot.asm
 	nasm -f bin ./src/boot/boot.asm -o ./bin/boot.bin
 

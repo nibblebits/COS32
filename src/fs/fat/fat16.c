@@ -170,18 +170,28 @@ static int fat16_check_relative_path(const char *relative_path)
 }
 
 
-int fat16_get_next_path_part(const char* filename, char* out)
+int fat16_get_next_path_part(const char* filename, char* out, char* ext, int ext_size)
 {
-
+    
+    return 0;
 }
+
 struct fat_directory_item* fat16_search_for_file(struct disk* disk, const char* filename)
 {
-    // Invalid path
     char next_part[COS32_MAX_PATH];
-    memset(&next_part[0], 0, COS32_MAX_PATH);
-    print_number(next_part);
-    while(1) {}
+    memset(next_part, 0, COS32_MAX_PATH);
     
+    char ext[3];
+    memset(next_part, 0, 3);
+    
+    fat16_get_next_path_part(filename, next_part, ext, 3);
+  /*  struct fat_private* f_private = disk->fs_private;
+    struct fat_directory* root_dir = &f_private->root_directory;
+    for (int i = 0; i < root_dir->total; i++)
+    {
+        print(root_dir->item[i].filename);
+        print("\n");
+    }*/
     return 0;
 }
 
@@ -194,7 +204,6 @@ void *fat16_open(struct disk *disk, char *filename, char mode)
     }
 
     fat16_search_for_file(disk, filename);
-  
     return 0;
 }
 
