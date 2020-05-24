@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include "disk/disk.h"
 #include "memory/kheap.h"
+#include "string/string.h"
 #include "disk/disk.h"
 #include "fs/fat/fat16.h"
 #include "io/io.h"
@@ -54,6 +55,8 @@ void kernel_main(void)
 {
 	/* Initialize terminal interface */
 	terminal_initialize();
+
+	print_number(istrncmp("Hello worldS", "Hello worlds", sizeof("Hello worlds")));
 
 	// Initialize the heap
 	kheap_init();

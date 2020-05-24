@@ -6,5 +6,8 @@ int strnlen(const char* str, int max);
 int isdigit(char c);
 int tonumericdigit(char c);
 char* strtok(char* input, char delm);
+int strncmp(const char *s1, const char *s2, int n);
+int istrncmp(const char *s1, const char *s2, int n);
+char tolower(char s1);
 
 #endif

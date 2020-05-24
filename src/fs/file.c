@@ -71,7 +71,7 @@ void fs_load()
 static int fs_valid_path_format(char *filename)
 {
     int len = strnlen(filename, COS32_MAX_PATH);
-    return len >= 3 && isdigit(filename[0]) && memcmp(&filename[1], ":/", 2) == 0;
+    return (len >= 3 && isdigit(filename[0])) && memcmp(&filename[1], ":/", 2) == 0;
 }
 
 static int fs_get_drive_by_path(char *filename)
@@ -87,11 +87,12 @@ static int fs_get_drive_by_path(char *filename)
 int fopen(char *filename, char mode)
 {
     int drive_no = fs_get_drive_by_path(filename);
-    if (!drive_no)
+    if (drive_no < 0)
     {
         return drive_no;
     }
 
+    
     char *start_of_relative_path = &filename[2];
 
     struct disk *disk = disk_get(drive_no);

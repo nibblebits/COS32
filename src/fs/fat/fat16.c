@@ -9,6 +9,10 @@
 #include "kernel.h"
 #include "config.h"
 
+typedef unsigned int FAT_ITEM_TYPE;
+#define FAT_ITEM_TYPE_DIRECTORY 0
+#define FAT_ITEM_TYPE_FILE 1
+
 struct fat_header_extended
 {
     uint8_t drive_number;
@@ -45,8 +49,6 @@ struct fat_h
     } shared;
 };
 
-
-
 struct fat_directory_item
 {
     uint8_t filename[8];
@@ -64,13 +66,21 @@ struct fat_directory_item
     uint32_t filesize;
 } __attribute__((packed));
 
-
 struct fat_directory
 {
     struct fat_directory_item *item;
     int total;
 };
 
+struct fat_item
+{
+    union {
+        struct fat_directory_item *item;
+        struct fat_directory *directory;
+    };
+
+    FAT_ITEM_TYPE type;
+};
 
 struct fat_private
 {
@@ -85,7 +95,6 @@ int fat16_get_root_directory(struct disk *disk, struct fat_private *fat_private,
 int fat16_resolve(struct disk *disk)
 {
 
-
     int res = 0;
     struct fat_private *fat_private = kmalloc(sizeof(struct fat_private));
     memset(fat_private, 0, sizeof(struct fat_private));
@@ -95,20 +104,17 @@ int fat16_resolve(struct disk *disk)
         goto out;
     }
 
-
     if (fat_private->header.shared.extended_header.signature != 0x29)
     {
         res = -EFSNOTUS;
         goto out;
     }
 
-
     if (fat16_get_root_directory(disk, fat_private, &fat_private->root_directory) != COS32_ALL_OK)
     {
         res = -EIO;
         goto out;
     }
-
 
     disk->fs_private = fat_private;
     disk->filesystem = &fat16_fs;
@@ -169,30 +175,45 @@ static int fat16_check_relative_path(const char *relative_path)
     return 0;
 }
 
-
-int fat16_get_next_path_part(const char* filename, char* out, char* ext, int ext_size)
+int fat16_search_for_file_in_directory_next(struct disk *disk, struct fat_directory *directory, const char *filename)
 {
-    
-    return 0;
+
 }
 
-struct fat_directory_item* fat16_search_for_file(struct disk* disk, const char* filename)
+int fat16_search_for_file_in_directory(struct disk *disk, struct fat_directory *directory, const char *filename)
 {
-    char next_part[COS32_MAX_PATH];
-    memset(next_part, 0, COS32_MAX_PATH);
-    
-    char ext[3];
-    memset(next_part, 0, 3);
-    
-    fat16_get_next_path_part(filename, next_part, ext, 3);
-  /*  struct fat_private* f_private = disk->fs_private;
-    struct fat_directory* root_dir = &f_private->root_directory;
-    for (int i = 0; i < root_dir->total; i++)
+    // We can't handle path roots
+    if (filename[0] == '/')
     {
-        print(root_dir->item[i].filename);
-        print("\n");
-    }*/
-    return 0;
+        return -EINVARG;
+    }
+
+    // We need to keep looking its more than just root
+    char *ptr = strtok(filename, '/');
+    
+}
+
+int fat16_search_for_file(struct disk *disk, const char *filename, struct fat_item *item)
+{
+    int res = 0;
+    struct fat_private *fat_private = disk->fs_private;
+    char filename_copy[COS32_MAX_PATH];
+    memset(filename_copy, 0, COS32_MAX_PATH);
+    strncpy(filename_copy, filename, COS32_MAX_PATH);
+
+    int filename_len = strnlen(filename_copy, COS32_MAX_PATH);
+    if (filename_len == 1 && filename[0] == '/')
+    {
+        // User is only requesting root so just return the root directory
+        item->directory = &fat_private->root_directory;
+        item->type = FAT_ITEM_TYPE_DIRECTORY;
+        goto out;
+    }
+
+    // We need to keep looking its more than just root. Index 1 to ignore "/" that was for root directory
+    res = fat16_search_for_file_in_directory(disk, &filename[1], &fat_private->root_directory);
+out:
+    return res;
 }
 
 void *fat16_open(struct disk *disk, char *filename, char mode)
@@ -203,10 +224,11 @@ void *fat16_open(struct disk *disk, char *filename, char mode)
         return (void *)-ERDONLY;
     }
 
-    fat16_search_for_file(disk, filename);
+    struct fat_item item;
+    fat16_search_for_file(disk, filename, &item);
+    print("can do");
     return 0;
 }
-
 
 struct filesystem *fat16_init()
 {
