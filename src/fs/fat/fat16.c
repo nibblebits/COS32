@@ -96,8 +96,7 @@ int fat16_resolve(struct disk *disk)
 {
 
     int res = 0;
-    struct fat_private *fat_private = kmalloc(sizeof(struct fat_private));
-    memset(fat_private, 0, sizeof(struct fat_private));
+    struct fat_private *fat_private = kzalloc(sizeof(struct fat_private));
     if (disk_read_block(disk, 0, 1, &fat_private->header) != COS32_ALL_OK)
     {
         res = -EFSNOTUS;
@@ -143,7 +142,7 @@ int fat16_get_root_directory(struct disk *disk, struct fat_private *fat_private,
     }
 
     // We should load the entire root directory into memory, this is only FAT it's not going to kill us
-    struct fat_directory_item *dir = kmalloc(root_dir_size);
+    struct fat_directory_item *dir = kzalloc(root_dir_size);
     if (!dir)
     {
         ret = -EMEM;
@@ -175,43 +174,86 @@ static int fat16_check_relative_path(const char *relative_path)
     return 0;
 }
 
-int fat16_search_for_file_in_directory_next(struct disk *disk, struct fat_directory *directory, const char *filename)
-{
 
+/**
+ * Converts the filename and extension of the provided item into a full string. Outputted in the "out" variable
+ * \warning This function expects a maximum length of 13. We make you provide it to us to keep things clean and understandable
+ */
+void fat16_get_full_relative_filename(struct fat_directory_item *item, char *out, int max_len)
+{
+    memset(out, 0, max_len);
+    strncpy(out, (char *)item->filename, sizeof(item->filename));
+    int filename_len = strnlen_terminator(out, max_len, 0x20);
+    // Add a decimal point to represent that file extension is coming next
+    out[filename_len] = '.';
+    strncpy(&out[filename_len + 1], (char *)item->ext, strnlen_terminator((char*)item->ext, sizeof(item->ext), 0x20));
+    // Add the null terminator
+    int full_filename_len = strnlen(out, max_len);
+    out[full_filename_len - 1] = 0x00;
 }
 
-int fat16_search_for_file_in_directory(struct disk *disk, struct fat_directory *directory, const char *filename)
+struct fat_item* fat16_search_for_file_in_directory(struct disk *disk, struct fat_directory *directory, const char *filename)
 {
+    ASSERT(disk);
+    ASSERT(filename);
+    ASSERT(directory);
+    ASSERT(*filename != 0);
+
+    struct fat_item* res = ERROR(-EIO);
+
     // We can't handle path roots
     if (filename[0] == '/')
     {
-        return -EINVARG;
+        res = ERROR(-EINVARG);
+        goto out;
     }
 
+
     // We need to keep looking its more than just root
-    char *ptr = strtok(filename, '/');
-    
+    for (int i = 0; i < directory->total; i++)
+    {
+        // +2 for decimal point and null terminator
+        int max_len = sizeof(directory->item->filename) + sizeof(directory->item->ext) + 2;
+
+        char combined_filename[max_len];
+        fat16_get_full_relative_filename(&directory->item[i], combined_filename, max_len);
+
+        if (istrncmp(combined_filename, filename, max_len) == 0)
+        {   
+            // Check for attribute for directory in the future rather than just return a file
+            res = kzalloc(sizeof(struct fat_item));
+            res->type = FAT_ITEM_TYPE_FILE;
+            res->item = &directory->item[i];
+            goto out;
+            
+        }
+
+    }
+out:
+    return res;
 }
 
-int fat16_search_for_file(struct disk *disk, const char *filename, struct fat_item *item)
+struct fat_item* fat16_search_for_file(struct disk *disk, const char *filename)
 {
-    int res = 0;
+    struct fat_item* res = 0;
     struct fat_private *fat_private = disk->fs_private;
     char filename_copy[COS32_MAX_PATH];
-    memset(filename_copy, 0, COS32_MAX_PATH);
-    strncpy(filename_copy, filename, COS32_MAX_PATH);
+    memset(filename_copy, 0, sizeof(filename_copy));
+    strncpy(filename_copy, filename, sizeof(filename_copy));
 
-    int filename_len = strnlen(filename_copy, COS32_MAX_PATH);
+    int filename_len = strnlen(filename_copy, sizeof(filename_copy));
     if (filename_len == 1 && filename[0] == '/')
     {
         // User is only requesting root so just return the root directory
+        struct fat_item* item = kzalloc(sizeof(struct fat_item));
         item->directory = &fat_private->root_directory;
         item->type = FAT_ITEM_TYPE_DIRECTORY;
+        res = item;
         goto out;
     }
 
     // We need to keep looking its more than just root. Index 1 to ignore "/" that was for root directory
-    res = fat16_search_for_file_in_directory(disk, &filename[1], &fat_private->root_directory);
+    res = fat16_search_for_file_in_directory(disk, &fat_private->root_directory, &filename[1]);
 out:
     return res;
 }
@@ -221,13 +263,10 @@ void *fat16_open(struct disk *disk, char *filename, char mode)
     // Read only filesystem
     if (mode != 'r')
     {
-        return (void *)-ERDONLY;
+        return ERROR(-ERDONLY);
     }
 
-    struct fat_item item;
-    fat16_search_for_file(disk, filename, &item);
-    print("can do");
-    return 0;
+    return fat16_search_for_file(disk, filename);
 }
 
 struct filesystem *fat16_init()

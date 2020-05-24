@@ -54,6 +54,20 @@ int istrncmp(const char *s1, const char *s2, int n)
 }
 
 
+/**
+ * Gets the length of the string, stops when the terminator provided is reached or a null terminator
+ */
+int strnlen_terminator(const char *str, int max, char terminator)
+{
+    int i = 0;
+    for (i = 0; i < max; i++)
+    {
+        if (str[i] == '\0' || str[i] == terminator)
+            break;
+    }
+
+    return i;
+}
 
 int strnlen(const char *str, int max)
 {

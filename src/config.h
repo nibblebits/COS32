@@ -4,7 +4,7 @@
 #define COS32_MAX_HEAP_ALLOCATIONS 55
 #define COS32_MEMORY_BLOCK_SIZE 512
 // 13 Megabyte maximum at this region for kernel heap
-#define COS32_KERNEL_HEAP_ADDRESS 0x08
+#define COS32_KERNEL_HEAP_ADDRESS 0x0300000
 #define COS32_KERNEL_LOAD_ADDRESS 0x7e00
 
 #define COS32_MAX_DISKS 4

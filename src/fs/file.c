@@ -92,8 +92,10 @@ int fopen(char *filename, char mode)
         return drive_no;
     }
 
-    
-    char *start_of_relative_path = &filename[2];
+    char path[COS32_MAX_PATH];
+    memset(path, 0, sizeof(path));
+    strncpy(path, filename, sizeof(path));
+    char *start_of_relative_path = &path[2];
 
     struct disk *disk = disk_get(drive_no);
     if (!disk)
@@ -106,9 +108,22 @@ int fopen(char *filename, char mode)
         return -EINVARG;
     }
 
-    disk->filesystem->open(disk, start_of_relative_path, mode);
+    void* private_data = disk->filesystem->open(disk, start_of_relative_path, mode);
 
-    return 0;
+    // Null returned? Seriously.
+    if (private_data == 0)
+    {
+        private_data = ERROR(-EIO);
+    }
+
+    if (ISERR(private_data))
+    {
+        return ERROR_I(private_data);
+    }
+
+
+
+    return 1;
 }
 
 struct filesystem *fs_resolve(struct disk *disk)

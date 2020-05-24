@@ -1,5 +1,8 @@
 #include "kheap.h"
 #include "heap.h"
+#include "memory/memory.h"
+#include "kernel.h"
+
 static struct heap* kheap;
 
 void kheap_init()
@@ -10,7 +13,17 @@ void kheap_init()
 
 void* kmalloc(int size)
 {
-    return heap_malloc(kheap, size);
+    void* ptr = heap_malloc(kheap, size);
+    // While assertions are enabled if we fail to allocate we should panic the kernel
+    ASSERT(ptr);
+    return ptr;
+}
+
+void* kzalloc(int size)
+{
+    void* ptr = kmalloc(size);
+    memset(ptr, 0, size);
+    return ptr;
 }
 
 void kfree(void* ptr)

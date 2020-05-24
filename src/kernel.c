@@ -56,8 +56,6 @@ void kernel_main(void)
 	/* Initialize terminal interface */
 	terminal_initialize();
 
-	print_number(istrncmp("Hello worldS", "Hello worlds", sizeof("Hello worlds")));
-
 	// Initialize the heap
 	kheap_init();
 
@@ -67,7 +65,15 @@ void kernel_main(void)
 	// Find the disks
 	disk_search_and_init();
 
-	fopen("0:/test.txt",'r');
+	if(fopen("0:/typs.H",'r') > 0)
+	{
+		print("File opened\n");
+	}
+	else
+	{
+		print("Failed to open file\n");
+	}
+	
 
 	print("Kernel initialized");
 

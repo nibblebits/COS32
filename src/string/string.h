@@ -3,6 +3,7 @@
 
 char *strncpy(char *dest, const char *src, int n);
 int strnlen(const char* str, int max);
+int strnlen_terminator(const char *str, int max, char terminator);
 int isdigit(char c);
 int tonumericdigit(char c);
 char* strtok(char* input, char delm);
