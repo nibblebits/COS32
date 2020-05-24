@@ -5,6 +5,7 @@
 #include "memory/kheap.h"
 #include "disk/disk.h"
 #include "fs/fat/fat16.h"
+#include "io/io.h"
 
 /* Check if the compiler thinks you are targeting the wrong operating system. */
 #if defined(__linux__)
@@ -46,6 +47,29 @@ static inline uint16_t vga_entry(unsigned char uc, uint8_t color)
 {
 	return (uint16_t)uc | (uint16_t)color << 8;
 }
+
+void terminal_initialize(void);
+void terminal_putchar(char);
+void kernel_main(void)
+{
+
+	/* Initialize terminal interface */
+	terminal_initialize();
+
+	for (int i = 0; i < 2000000; i++)
+	{
+	}
+
+	char buf[512];
+	disk_read_sector(0, 1, buf);
+
+	print(buf);
+
+	while (1)
+	{
+	}
+}
+
 size_t strlen(const char *str)
 {
 	size_t len = 0;
@@ -94,7 +118,7 @@ void terminal_putchar(char c)
 	if (c == '\n')
 	{
 		terminal_column = 0;
-		terminal_row +=1;
+		terminal_row += 1;
 		return;
 	}
 
@@ -105,8 +129,6 @@ void terminal_putchar(char c)
 		if (++terminal_row == VGA_HEIGHT)
 			terminal_row = 0;
 	}
-
-
 }
 
 void terminal_write(const char *data, size_t size)
@@ -119,7 +141,6 @@ void terminal_writestring(const char *data)
 {
 	terminal_write(data, strlen(data));
 }
-
 
 static void print_digit(int digit)
 {
@@ -181,7 +202,6 @@ void print_number(int number)
 	}
 }
 
-
 void print(const char *message)
 {
 	terminal_writestring(message);
@@ -190,42 +210,6 @@ void print(const char *message)
 void panic(char *message)
 {
 	print(message);
-	while (1)
-	{
-	}
-}
-
-
-
-void kernel_main(void)
-{
-	/* Initialize terminal interface */
-	terminal_initialize();
-
-	// Initialize the heap
-	kheap_init();
-
-
-	fs_load();
-
-	// Search for disks and initialize them
-	disk_search_and_init();
-
-		print("Valid\n");
-				print("Valid\n");
-
-    struct fat_private *fat_private = kmalloc(512);
-	
-	int rc = fopen("0:/test.txt", 'r');
-	if(rc > 0)
-	{
-		print("Opened");
-	}
-	else
-	{
-		print("Failed to open\n");
-	}
-	
 	while (1)
 	{
 	}

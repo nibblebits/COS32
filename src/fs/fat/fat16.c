@@ -170,50 +170,20 @@ static int fat16_check_relative_path(const char *relative_path)
 }
 
 
-void abc()
+int fat16_get_next_path_part(const char* filename, char* out)
 {
-    panic("testing");
-        panic("testing");
-    panic("testing");
-    panic("testing");
-    panic("testing");
-    panic("testing");
-    panic("testing");
-    panic("testing");
-    panic("testing");
-    panic("testing");
-    panic("testing");
-    panic("testing");
-    panic("testing");
-    panic("testing");
-    panic("testing");
-    panic("testing");
-    panic("testing");
-    panic("testing");
-    panic("testing");
-    panic("testing");
-    panic("testing");
-    panic("testing");
-    panic("testing");
-    panic("testing");
-    panic("testing");
-    panic("testing");
-    panic("testing");
-    panic("testing");
-    panic("testing");
-    panic("testing");
-    panic("testing");
-    panic("testing");
-    panic("testing");
-    panic("testing");
-    panic("testing");
-    panic("testing");
-    panic("testing");
-    panic("testing");
-    panic("testing");
 
 }
-
+struct fat_directory_item* fat16_search_for_file(struct disk* disk, const char* filename)
+{
+    // Invalid path
+    char next_part[COS32_MAX_PATH];
+    memset(&next_part[0], 0, COS32_MAX_PATH);
+    print_number(next_part);
+    while(1) {}
+    
+    return 0;
+}
 
 void *fat16_open(struct disk *disk, char *filename, char mode)
 {
@@ -223,7 +193,7 @@ void *fat16_open(struct disk *disk, char *filename, char mode)
         return (void *)-ERDONLY;
     }
 
-  //  fat16_search_for_file(disk, filename);
+    fat16_search_for_file(disk, filename);
   
     return 0;
 }

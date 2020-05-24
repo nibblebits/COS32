@@ -1,4 +1,4 @@
-FILES = ./build/kernel.asm.o ./build/kernel.o ./build/disk/disk.asm.o ./build/disk/disk.o ./build/fs/file.o ./build/fs/fat/fat16.o ./build/memory/heap.o ./build/memory/kheap.o ./build/memory/memory.o ./build/string/string.o
+FILES = ./build/kernel.asm.o ./build/kernel.o ./build/io/io.o  ./build/disk/disk.o ./build/fs/file.o ./build/fs/fat/fat16.o ./build/memory/heap.o ./build/memory/kheap.o ./build/memory/memory.o ./build/string/string.o
 FLAGS = -g
 INCLUDES = -I./src
 all: ./bin/kernel.bin ./bin/boot.bin ${FILES}
@@ -15,11 +15,10 @@ all: ./bin/kernel.bin ./bin/boot.bin ${FILES}
 	i686-elf-gcc -T ./src/linker.ld -o ./bin/kernel.bin -ffreestanding -O2 -nostdlib -g ./build/kernelfull.o
 
 ./build/kernel.asm.o: ./src/kernel.asm
-	nasm -f elf ./src/kernel.asm -o ./build/kernel.asm.o
+	nasm -f elf -g ./src/kernel.asm -o ./build/kernel.asm.o
 
-
-./build/disk/disk.asm.o: ./src/disk/disk.asm
-	nasm -f elf ./src/disk/disk.asm -o ./build/disk/disk.asm.o
+./build/io/io.o: ./src/io/io.c ./src/io/io.h
+	i686-elf-gcc $(INCLUDES) -I./src/io ${FLAGS} -c ./src/io/io.c -o ./build/io/io.o -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g
 
 ./build/disk/disk.o: ./src/disk/disk.c ./src/disk/disk.h
 	i686-elf-gcc $(INCLUDES) -I./src/disk ${FLAGS} -c ./src/disk/disk.c -o ./build/disk/disk.o -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g

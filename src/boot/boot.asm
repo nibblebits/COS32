@@ -80,8 +80,8 @@ DAPACK:
 	db	0x10
 	db	0
 blkcnt:	dw	50		; int 13 resets this to # of blocks actually read/written
-db_add:	dw	0x00		; memory buffer destination address (0:7c00)
-	dw	0		; in memory page zero
+db_add:	dw	0x7e00		 ;memory buffer destination address (0:3ff)
+	dw	0x00		; in memory page zero
 d_lba:	dd	1		; put the lba to read in this spot
 	dd	0		; more storage bytes only for big lba's ( > 4 bytes )
 
@@ -105,8 +105,8 @@ kernel_start:
     mov bp, 0x9000          ; Set  the  stack.
     mov sp, bp
     mov si, DAPACK
-    mov bx, 0x7e00
-    mov word [db_add], bx
+;    mov bx, 0x7e00
+    ;mov word [db_add], bx
 
     mov ah, 0x42
     int 0x13
