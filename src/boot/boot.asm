@@ -105,7 +105,7 @@ kernel_start:
 
 load32:
     mov eax, 1
-    mov ecx, 50
+    mov ecx, 120
     mov edi, 0x0100000
     call ata_lba_read
     jmp CODE_SEG:0x0100000
