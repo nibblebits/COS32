@@ -2,6 +2,7 @@
 #include "memory.h"
 #include "kernel.h"
 
+
 static void heap_mark_blocks_taken(HEAP_BLOCK_TABLE_ENTRY *ptr, int total)
 {
     int i = 0;
@@ -141,6 +142,8 @@ struct heap *heap_create(void *ptr)
         panic("heap_create(): Expecting pointer to be able to divide into COS32_MAX_HEAP_ALLOCATIONS");
     }
     #endif
+
+    ASSERT(COS32_MAX_HEAP_SIZE >= sizeof(struct heap));
     memset(heap, 0, sizeof(struct heap));
     return heap;
 }
