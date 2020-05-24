@@ -7,6 +7,7 @@
 #include "disk/disk.h"
 #include "fs/fat/fat16.h"
 #include "io/io.h"
+#include "memory/idt/idt.h"
 #include "kernel.h"
 
 /* Check if the compiler thinks you are targeting the wrong operating system. */
@@ -48,36 +49,6 @@ static inline uint8_t vga_entry_color(enum vga_color fg, enum vga_color bg)
 static inline uint16_t vga_entry(unsigned char uc, uint8_t color)
 {
 	return (uint16_t)uc | (uint16_t)color << 8;
-}
-void terminal_initialize();
-
-void kernel_main(void)
-{
-	/* Initialize terminal interface */
-	terminal_initialize();
-
-	// Initialize the heap
-	kheap_init();
-
-	// Initialize filesystems
-	fs_load();
-
-	// Find the disks
-	disk_search_and_init();
-
-	if(fopen("0:/typs.H",'r') > 0)
-	{
-		print("File opened\n");
-	}
-	else
-	{
-		print("Failed to open file\n");
-	}
-	
-
-	print("Kernel initialized");
-
-
 }
 
 size_t strlen(const char *str)
@@ -225,3 +196,33 @@ void panic(char *message)
 	}
 }
 
+void kernel_main(void)
+{
+	/* Initialize terminal interface */
+	terminal_initialize();
+	// Initialize interrupts
+	idt_init();
+
+	// Enable interrupts
+	enable_interrupts();
+
+	// Initialize the heap
+	kheap_init();
+
+	// Initialize filesystems
+	fs_load();
+
+	// Find the disks
+	disk_search_and_init();
+
+	if (fopen("0:/typs.H", 'r') > 0)
+	{
+		print("File opened\n");
+	}
+	else
+	{
+		print("Failed to open file\n");
+	}
+
+	print("Kernel initialized");
+}

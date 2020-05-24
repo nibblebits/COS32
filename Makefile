@@ -1,4 +1,4 @@
-FILES = ./build/kernel.asm.o ./build/kernel.o ./build/io/io.o  ./build/disk/disk.o ./build/fs/file.o ./build/fs/fat/fat16.o ./build/memory/heap.o ./build/memory/kheap.o ./build/memory/memory.o ./build/string/string.o
+FILES = ./build/kernel.asm.o ./build/kernel.o ./build/memory/idt/idt.asm.o ./build/memory/idt/idt.o ./build/io/io.o  ./build/disk/disk.o ./build/fs/file.o ./build/fs/fat/fat16.o ./build/memory/heap.o ./build/memory/kheap.o ./build/memory/memory.o ./build/string/string.o
 FLAGS = -g
 INCLUDES = -I./src
 all: ./bin/kernel.bin ./bin/boot.bin ${FILES}
@@ -19,8 +19,17 @@ all: ./bin/kernel.bin ./bin/boot.bin ${FILES}
 	i686-elf-ld  -relocatable ${FILES} -o ./build/kernelfull.o
 	i686-elf-gcc -T ./src/linker.ld -o ./bin/kernel.bin -ffreestanding -O2 -nostdlib -g ./build/kernelfull.o
 
+./build/memory/idt/idt.asm.o: ./src/memory/idt/idt.asm ./src/memory/idt/idt.h
+	nasm -f elf -g ./src/memory/idt/idt.asm -o ./build/memory/idt/idt.asm.o
+
+
+./build/memory/idt/idt.o: ./src/memory/idt/idt.c ./src/memory/idt/idt.h
+	i686-elf-gcc $(INCLUDES) ${FLAGS} -c ./src/memory/idt/idt.c -o ./build/memory/idt/idt.o -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g
+
+
 ./build/kernel.asm.o: ./src/kernel.asm
 	nasm -f elf -g ./src/kernel.asm -o ./build/kernel.asm.o
+
 
 ./build/io/io.o: ./src/io/io.c ./src/io/io.h
 	i686-elf-gcc $(INCLUDES) -I./src/io ${FLAGS} -c ./src/io/io.c -o ./build/io/io.o -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g
@@ -45,7 +54,6 @@ all: ./bin/kernel.bin ./bin/boot.bin ${FILES}
 
 ./build/fs/fat/fat16.o: ./src/fs/fat/fat16.c ./src/fs/fat/fat16.h
 	i686-elf-gcc $(INCLUDES) -I./src/fs/fat ${FLAGS} -c ./src/fs/fat/fat16.c -o ./build/fs/fat/fat16.o -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g
-
 
 ./build/kernel.o: ./src/kernel.c ./src/kernel.h
 	i686-elf-gcc $(INCLUDES) ${FLAGS} -c ./src/kernel.c -o ./build/kernel.o -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g
