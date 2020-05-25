@@ -14,7 +14,12 @@ void idt_no_interrupt()
 
 void idt_alu_error()
 {
-    panic("ALU Error, possibly division by zero\n");
+    panic("ALU Error, division by zero\n");
+}
+
+void idt_page_fault()
+{
+    panic("Page Fault: Unable to handle because no interrupt handler for page faults exists\n");
 }
 
 void idt_set(int i, void *address)
@@ -41,6 +46,7 @@ void idt_init()
     }
 
     idt_set(0, idt_alu_error);
+    idt_set(0, idt_page_fault);
 
     idt_load(&idtr_desc);
 }

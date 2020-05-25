@@ -9,6 +9,7 @@
 #include "io/io.h"
 #include "memory/idt/idt.h"
 #include "kernel.h"
+#include "memory/paging/paging.h"
 
 /* Check if the compiler thinks you are targeting the wrong operating system. */
 #if defined(__linux__)
@@ -198,14 +199,28 @@ void panic(char *message)
 
 void kernel_main(void)
 {
+	char* ptr = (0x00);
+	strncpy(ptr, "Hello world", sizeof("Hello world"));
 	/* Initialize terminal interface */
 	terminal_initialize();
+	
 	// Initialize interrupts
 	idt_init();
 
 	// Enable interrupts
 	enable_interrupts();
 
+	// Initialize paging
+	paging_init();
+
+	// Enable paging
+	enable_paging();
+
+	print("Are we still here?");
+	while(1)
+	{
+		
+	}
 	// Initialize the heap
 	kheap_init();
 
