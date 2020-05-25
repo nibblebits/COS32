@@ -137,7 +137,7 @@ struct heap *heap_create(void *ptr)
 {
     struct heap *heap = ptr;
     #if COS32_FORCE_MEMORY_ALIGNMENT == 1
-    if (((unsigned int)ptr % COS32_MEMORY_BLOCK_SIZE) != 0)
+    if (((unsigned int)ptr % COS32_PAGE_SIZE) != 0)
     {
         panic("heap_create(): Expecting pointer to be able to divide into COS32_MAX_HEAP_ALLOCATIONS");
     }

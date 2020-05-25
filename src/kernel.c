@@ -199,31 +199,40 @@ void panic(char *message)
 
 void kernel_main(void)
 {
-	char* ptr = (0x00);
-	strncpy(ptr, "Hello world", sizeof("Hello world"));
 	/* Initialize terminal interface */
 	terminal_initialize();
-	
+
 	// Initialize interrupts
 	idt_init();
 
 	// Enable interrupts
 	enable_interrupts();
 
-	// Initialize paging
-	paging_init();
-
-	// Enable paging
-	enable_paging();
-
-	print("Are we still here?");
-	while(1)
-	{
-		
-	}
 	// Initialize the heap
 	kheap_init();
 
+	print("Hello\n");
+
+	char *ptr = (0x11112000);
+	*ptr = 'A';
+
+	print_number(*ptr);
+
+	// Initialize paging
+	struct paging_4gb_chunk *kernel_chunk = paging_new_4gb();
+
+	// PAGE_DIRECTORY_ENTRY* directory_entry = kernel_chunk->directory_entry[0];
+	//paging_map(kernel_chunk->directory_entry, 0xAAAAFFFF, 0x7c00);
+	uint32_t entry = kernel_chunk->directory_entry[2];
+	uint32_t* table = (uint32_t*)(entry & 0xfffff000);
+	table[5] = (uint32_t)0x11112000 | 3;
+
+	paging_switch(kernel_chunk->directory_entry);
+	enable_paging();
+	ptr = (0x805000);
+	print_number(*ptr);
+
+	while(1) {}
 	// Initialize filesystems
 	fs_load();
 

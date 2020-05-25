@@ -5,29 +5,18 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/**
- * bits 0-11
- * Avail, GS0ADWURP
- * 
- * Bits 11-31
- * Page table 4-Kb aligned address
- * 
- * More information: https://wiki.osdev.org/Paging#Page_Directory
- */
-typedef uint32_t PAGE_DIRECTORY_ENTRY;
+#define PAGING_TOTAL_PER_TABLE 1024
+struct paging_4gb_chunk
+{
+    uint32_t* directory_entry;
+};
 
-/**
- * bits 0-11
- * Avail, G0DACWURP
- * 
- * Bits 11-31
- * Physical Page Address
- * 
- * More information: https://wiki.osdev.org/Paging#Page_Directory
- */
-typedef uint32_t PAGE_TABLE_ENTRY;
+struct paging_4gb_chunk* paging_new_4gb();
+int paging_map(uint32_t *directory, void *virt, void *phys);
+void paging_free_4gb(struct paging_4gb_chunk* chunk);
+void paging_switch(uint32_t* directory);
 
-extern void paging_load_directory(PAGE_DIRECTORY_ENTRY*);
+extern void paging_load_directory(uint32_t*);
 extern void enable_paging();
 
 #endif

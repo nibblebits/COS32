@@ -33,7 +33,7 @@ struct heap
     struct heap_entry entries[COS32_MAX_HEAP_ALLOCATIONS];
 
     // Actual data for our heap
-    char data[COS32_MAX_HEAP_ALLOCATIONS * COS32_MEMORY_BLOCK_SIZE];
+    char data[COS32_MAX_HEAP_ALLOCATIONS * COS32_MEMORY_BLOCK_SIZE] __attribute__((aligned(COS32_MEMORY_BLOCK_SIZE)));
 };
 
 /**
