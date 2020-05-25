@@ -10,6 +10,7 @@
 #include "memory/idt/idt.h"
 #include "kernel.h"
 #include "memory/paging/paging.h"
+#include "memory/memory.h"
 
 /* Check if the compiler thinks you are targeting the wrong operating system. */
 #if defined(__linux__)
@@ -211,27 +212,19 @@ void kernel_main(void)
 	// Initialize the heap
 	kheap_init();
 
-	print("Hello\n");
-
-	char *ptr = (0x805000);
-	*ptr = 'A';
-
-	print_number(*ptr);
+	print("testing555");
 
 	// Initialize paging
 	struct paging_4gb_chunk *kernel_chunk = paging_new_4gb();
-
-	// PAGE_DIRECTORY_ENTRY* directory_entry = kernel_chunk->directory_entry[0];
-	//paging_map(kernel_chunk->directory_entry, 0xAAAAFFFF, 0x7c00);
-//	uint32_t entry = kernel_chunk->directory_entry[2];
-//	uint32_t* table = (uint32_t*)(entry & 0xfffff000);
-//	table[5] = (uint32_t)0x0805000 | 3;
+	char* ptr = kmalloc(4096);
+	//memcpy(ptr, 0xB8000, 4096);
 
 	paging_switch(kernel_chunk->directory_entry);
 	enable_paging();
-	ptr = (0x805000);
-	print_number(*ptr);
 
+	paging_map(kernel_chunk->directory_entry, 0xB8000, ptr);
+	ptr = 0xB8000;
+	*ptr = 'N';
 	while(1) {}
 	// Initialize filesystems
 	fs_load();

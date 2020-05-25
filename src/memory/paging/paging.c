@@ -22,7 +22,7 @@ struct paging_4gb_chunk *paging_new_4gb()
         {
             entry[b] = (offset + (b * COS32_PAGE_SIZE)) | 3;
         }
-        offset += (1024*COS32_PAGE_SIZE);
+        offset += (1024 * COS32_PAGE_SIZE);
         directory[i] = (uint32_t)entry | 3;
     }
 
@@ -33,15 +33,19 @@ struct paging_4gb_chunk *paging_new_4gb()
 
 int paging_map(uint32_t *directory, void *virt, void *phys)
 {
-    // Virtual address must be page aligned
-    if (((unsigned int)virt % COS32_PAGE_SIZE))
+    // Virtual address and physical must be page aligned
+    if (((unsigned int)virt % COS32_PAGE_SIZE) || ((unsigned int)phys % COS32_PAGE_SIZE))
     {
         return -EINVARG;
     }
+
     uint32_t directory_index = ((uint32_t)virt / (1024 * COS32_PAGE_SIZE));
-    uint32_t table_index = ((uint32_t)virt % (1024* COS32_PAGE_SIZE) / COS32_PAGE_SIZE);
-    uint32_t* entry = directory[directory_index] | 3;
-    entry[table_index] = (uint32_t) phys | 3;
+    uint32_t table_index = ((uint32_t)virt % (1024 * COS32_PAGE_SIZE) / COS32_PAGE_SIZE);
+
+    uint32_t entry = directory[directory_index];
+    uint32_t *table = (uint32_t *)(entry & 0xfffff000);
+    table[table_index] = (uint32_t)phys | 3;
+
 
     return 0;
 }
