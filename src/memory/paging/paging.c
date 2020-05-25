@@ -22,6 +22,7 @@ struct paging_4gb_chunk *paging_new_4gb()
         {
             entry[b] = (offset + (b * COS32_PAGE_SIZE)) | 3;
         }
+        offset += (1024*COS32_PAGE_SIZE);
         directory[i] = (uint32_t)entry | 3;
     }
 

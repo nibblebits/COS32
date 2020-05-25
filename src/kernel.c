@@ -213,7 +213,7 @@ void kernel_main(void)
 
 	print("Hello\n");
 
-	char *ptr = (0x11112000);
+	char *ptr = (0x805000);
 	*ptr = 'A';
 
 	print_number(*ptr);
@@ -223,9 +223,9 @@ void kernel_main(void)
 
 	// PAGE_DIRECTORY_ENTRY* directory_entry = kernel_chunk->directory_entry[0];
 	//paging_map(kernel_chunk->directory_entry, 0xAAAAFFFF, 0x7c00);
-	uint32_t entry = kernel_chunk->directory_entry[2];
-	uint32_t* table = (uint32_t*)(entry & 0xfffff000);
-	table[5] = (uint32_t)0x11112000 | 3;
+//	uint32_t entry = kernel_chunk->directory_entry[2];
+//	uint32_t* table = (uint32_t*)(entry & 0xfffff000);
+//	table[5] = (uint32_t)0x0805000 | 3;
 
 	paging_switch(kernel_chunk->directory_entry);
 	enable_paging();
