@@ -15,7 +15,6 @@ struct tss
     uint32_t eax;
     uint32_t ecx;
     uint32_t edx;
-    uint32_t edx;
     uint32_t ebx;
     uint32_t esp;
     uint32_t ebp;
@@ -29,7 +28,7 @@ struct tss
     uint32_t gs;
     uint32_t ldtr;
     uint32_t iopb;
-};
+} __attribute__((packed));
 
 void tss_load(int tss_segment);
 #endif

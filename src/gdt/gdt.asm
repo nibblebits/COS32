@@ -7,16 +7,9 @@ gdt_descriptor:
     dd 0x00  ; GDT start address
 
 gdt_load:
-    push ebp
-    mov ebp, esp
-    mov word ax, [ebp+12]
-    dec ax
-    mov word [gdt_descriptor+0], ax
-    mov dword eax, [ebp+8]
-    mov dword [gdt_descriptor+4], eax
-    cli
-    lgdt[gdt_descriptor]
-
-.continue:
-    pop ebp
-    ret
+   MOV   EAX, [esp + 4]
+   MOV   [gdt_descriptor + 2], EAX
+   MOV   AX, [ESP + 8]
+   MOV   [gdt_descriptor], AX
+   LGDT  [gdt_descriptor]
+   RET

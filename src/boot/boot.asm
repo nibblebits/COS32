@@ -94,29 +94,29 @@ gdt_data:				; ds, ss, es, fs, and gs should point to this descriptor
 	db 0			; base 24-31 bits
 
 
-; offset 0x18
-;gdt_user_code:				; cs should point to this descriptor
-;	dw 0xffff		; segment limit first 0-15 bits
-;	dw 0			; base first 0-15 bits
-;	db 0			; base 16-23 bits
-;	db 0xfa			; access byte
-;	db 11001111b	; high 4 bits (flags) low 4 bits (limit 4 last bits)(limit is 20 bit wide)
-;	db 0			; base 24-31 bits
+ ;offset 0x18
+gdt_user_code:				; cs should point to this descriptor
+	dw 0xffff		; segment limit first 0-15 bits
+	dw 0			; base first 0-15 bits
+	db 0			; base 16-23 bits
+	db 0xfa			; access byte
+	db 11001111b	; high 4 bits (flags) low 4 bits (limit 4 last bits)(limit is 20 bit wide)
+	db 0			; base 24-31 bits
 
 ; offset 0x20
-;gdt_user_data:				; ds, ss, es, fs, and gs should point to this descriptor
-;	dw 0xffff		; segment limit first 0-15 bits
-;	dw 0			; base first 0-15 bits
-;	db 0			; base 16-23 bits
-;	db 0xf2			; access byte
-;	db 11001111b	; high 4 bits (flags) low 4 bits (limit 4 last bits)(limit is 20 bit wide)
-;	db 0			; base 24-31 bits
+gdt_user_data:				; ds, ss, es, fs, and gs should point to this descriptor
+	dw 0xffff		; segment limit first 0-15 bits;
+    dw 0			; base first 0-15 bits
+	db 0			; base 16-23 bits
+	db 0xf2			; access byte;
+    db 11001111b	; high 4 bits (flags) low 4 bits (limit 4 last bits)(limit is 20 bit wide)
+	db 0			; base 24-31 bits
 
-; offset 0x24
-;gdt_tss:			; ds, ss, es, fs, and gs should point to this descriptor
- ; dw 0ffffh
-  ;dw tss_struct
-  ;dd 0000e900h
+; offset 0x28
+gdt_tss:			; ds, ss, es, fs, and gs should point to this descriptor
+    dw 0ffffh
+    dw tss_struct
+    dd 0000e900h
 
 
 gdt_end:
@@ -157,8 +157,8 @@ kernel_start:
 
 load32:
     ; Load TSS
-  ;  mov ax, 0x28  ;The descriptor of the TSS in the GDT (e.g. 0x28 if the sixths entry in your GDT describes your TSS)
-   ; ltr ax        ;The actual load
+    mov ax, 0x28  ;The descriptor of the TSS in the GDT (e.g. 0x28 if the sixths entry in your GDT describes your TSS)
+    ltr ax        ;The actual load
 
     mov eax, 1
     mov ecx, 120

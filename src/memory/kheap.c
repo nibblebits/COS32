@@ -15,7 +15,7 @@ void* kmalloc(int size)
 {
     void* ptr = heap_malloc(kheap, size);
     // While assertions are enabled if we fail to allocate we should panic the kernel
-    ASSERT(ptr);
+    ASSERT(ptr >= kheap);
     return ptr;
 }
 

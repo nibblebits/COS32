@@ -12,7 +12,9 @@
 #include "memory/paging/paging.h"
 #include "memory/memory.h"
 #include "task/task.h"
+#include "task/tss.h"
 #include "gdt/gdt.h"
+#include "config.h"
 
 /* Check if the compiler thinks you are targeting the wrong operating system. */
 #if defined(__linux__)
@@ -202,31 +204,53 @@ void panic(char *message)
 
 void testing()
 {
+	print("what the\n");
 	while (1)
 	{
 	}
 }
 
-struct gdt sys_gdt[3];
+struct tss tss;
 
-struct gdt_structured gdt_structured[3] = {
-	{.base = 0x00, .limit = 0x00, .type = 0x00},	   // null segment
-	{.base = 0x00, .limit = 0xffffffff, .type = 0x9a}, // kernel code segment
-	{.base = 0x00, .limit = 0xffffffff, .type = 0x92}  // kernel data segment
+struct gdt gdt_real;
+
+struct gdt_structured gdt_structured[COS32_TOTAL_GDT_SEGMENTS] = {
+	{.base = 0x00, .limit = 0x00, .type = 0x00},				 // null segment
+	{.base = 0x00, .limit = 0xffffffff, .type = 0x9a},			 // kernel code segment
+	{.base = 0x00, .limit = 0xffffffff, .type = 0x92},			 // kernel data segment
+	{.base = 0x00, .limit = 0xffffffff, .type = 0xfa},			 // user code segment
+	{.base = 0x00, .limit = 0xffffffff, .type = 0xf2},			 // user data segment
+	{.base = (uint32_t)&tss, .limit = sizeof(tss), .type = 0x89} // TSS segment
+
 };
 
 void kernel_main(void)
 {
-
-	gdt_structured_to_gdt(sys_gdt, gdt_structured, 3);
-	
-	// Load our new GDT
-	gdt_load(sys_gdt, sizeof(sys_gdt));
-
 	/* Initialize terminal interface */
 	terminal_initialize();
 
+	memset(&gdt_real, 0, sizeof(gdt_real));
+	gdt_structured_to_gdt(&gdt_real, gdt_structured, COS32_TOTAL_GDT_SEGMENTS);
 
+	
+
+
+	// Setup TSS
+	memset(&tss, 0, sizeof(tss));
+	tss.ss0 = 0x08;
+	tss.esp0 = 0x200000;
+
+	// Load our new GDT
+	gdt_load(&gdt_real, sizeof(struct gdt) * COS32_TOTAL_GDT_SEGMENTS);
+
+	tss_load(0x28);
+
+	print("testing");
+	user_mode_enter(testing);
+	
+	while (1)
+	{
+	}
 
 	// Initialize interrupts
 	idt_init();

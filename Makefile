@@ -1,4 +1,4 @@
-FILES = ./build/kernel.asm.o ./build/kernel.o ./build/gdt/gdt.asm.o ./build/gdt/gdt.o ./build/task/task.asm.o ./build/memory/paging/paging.o ./build/memory/paging/paging.asm.o ./build/memory/idt/idt.asm.o ./build/memory/idt/idt.o ./build/io/io.o  ./build/disk/disk.o ./build/fs/file.o ./build/fs/fat/fat16.o ./build/memory/heap.o ./build/memory/kheap.o ./build/memory/memory.o ./build/string/string.o
+FILES = ./build/kernel.asm.o ./build/kernel.o ./build/task/tss.asm.o ./build/gdt/gdt.asm.o ./build/gdt/gdt.o ./build/task/task.asm.o ./build/memory/paging/paging.o ./build/memory/paging/paging.asm.o ./build/memory/idt/idt.asm.o ./build/memory/idt/idt.o ./build/io/io.o  ./build/disk/disk.o ./build/fs/file.o ./build/fs/fat/fat16.o ./build/memory/heap.o ./build/memory/kheap.o ./build/memory/memory.o ./build/string/string.o
 FLAGS = -g
 INCLUDES = -I./src
 all: ./bin/kernel.bin ./bin/boot.bin ${FILES}
@@ -16,7 +16,7 @@ all: ./bin/kernel.bin ./bin/boot.bin ${FILES}
 	nasm -f bin ./src/boot/boot.asm -o ./bin/boot.bin
 
 ./bin/kernel.bin: ${FILES}
-	i686-elf-ld  -relocatable ${FILES} -o ./build/kernelfull.o
+	i686-elf-ld  -g -relocatable ${FILES} -o ./build/kernelfull.o
 	i686-elf-gcc -T ./src/linker.ld -o ./bin/kernel.bin -ffreestanding -O2 -nostdlib -g ./build/kernelfull.o
 
 ./build/gdt/gdt.o: ./src/gdt/gdt.c ./src/gdt/gdt.h
@@ -24,6 +24,9 @@ all: ./bin/kernel.bin ./bin/boot.bin ${FILES}
 
 ./build/gdt/gdt.asm.o: ./src/gdt/gdt.asm ./src/gdt/gdt.h
 	nasm -f elf -g ./src/gdt/gdt.asm -o ./build/gdt/gdt.asm.o
+
+./build/task/tss.asm.o: ./src/task/tss.asm ./src/task/task.h
+	nasm -f elf -g ./src/task/tss.asm -o ./build/task/tss.asm.o
 
 ./build/task/task.asm.o: ./src/task/task.asm ./src/task/task.h
 	nasm -f elf -g ./src/task/task.asm -o ./build/task/task.asm.o
