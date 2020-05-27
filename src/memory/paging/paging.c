@@ -20,10 +20,10 @@ struct paging_4gb_chunk *paging_new_4gb()
         uint32_t *entry = kzalloc(sizeof(uint32_t) * 1024);
         for (int b = 0; b < 1024; b++)
         {
-            entry[b] = (offset + (b * COS32_PAGE_SIZE)) | 3;
+            entry[b] = (offset + (b * COS32_PAGE_SIZE)) | 7;
         }
         offset += (1024 * COS32_PAGE_SIZE);
-        directory[i] = (uint32_t)entry | 3;
+        directory[i] = (uint32_t)entry | 7;
     }
 
     struct paging_4gb_chunk *chunk_4gb = kzalloc(sizeof(struct paging_4gb_chunk));

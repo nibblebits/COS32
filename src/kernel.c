@@ -11,6 +11,8 @@
 #include "kernel.h"
 #include "memory/paging/paging.h"
 #include "memory/memory.h"
+#include "task/task.h"
+#include "gdt/gdt.h"
 
 /* Check if the compiler thinks you are targeting the wrong operating system. */
 #if defined(__linux__)
@@ -198,34 +200,59 @@ void panic(char *message)
 	}
 }
 
+void testing()
+{
+	while (1)
+	{
+	}
+}
+
+struct gdt sys_gdt[3];
+
+struct gdt_structured gdt_structured[3] = {
+	{.base = 0x00, .limit = 0x00, .type = 0x00},	   // null segment
+	{.base = 0x00, .limit = 0xffffffff, .type = 0x9a}, // kernel code segment
+	{.base = 0x00, .limit = 0xffffffff, .type = 0x92}  // kernel data segment
+};
+
 void kernel_main(void)
 {
+
+	gdt_structured_to_gdt(sys_gdt, gdt_structured, 3);
+	
+	// Load our new GDT
+	gdt_load(sys_gdt, sizeof(sys_gdt));
+
 	/* Initialize terminal interface */
 	terminal_initialize();
+
+
 
 	// Initialize interrupts
 	idt_init();
 
-	// Enable interrupts
-	enable_interrupts();
-
 	// Initialize the heap
 	kheap_init();
 
-	print("testing555");
-
 	// Initialize paging
 	struct paging_4gb_chunk *kernel_chunk = paging_new_4gb();
-	char* ptr = kmalloc(4096);
+	char *ptr = kmalloc(4096);
 	//memcpy(ptr, 0xB8000, 4096);
 
-	paging_switch(kernel_chunk->directory_entry);
-	enable_paging();
+	//paging_map(kernel_chunk->directory_entry, 0x00, 0x00);
 
+	//paging_switch(kernel_chunk->directory_entry);
+	//enable_paging();
+	print("testing");
+	//user_mode_enter(testing);
+
+	while (1)
+	{
+	}
 	paging_map(kernel_chunk->directory_entry, 0xB8000, ptr);
 	ptr = 0xB8000;
 	*ptr = 'N';
-	while(1) {}
+
 	// Initialize filesystems
 	fs_load();
 

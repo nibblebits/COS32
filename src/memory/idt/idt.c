@@ -6,15 +6,32 @@
 struct idt_desc idt_desc[COS32_MAX_INTERRUPTS];
 struct idtr_desc idtr_desc;
 
-void idt_no_interrupt()
+void isr0_wrapper();
+void isr_no_interrupt_wrapper();
+
+struct interrupt_frame
+{
+    uint32_t edi;
+    uint32_t esi;
+    uint32_t ebp;
+    uint32_t esp;
+    uint32_t ebx;
+    uint32_t edx;
+    uint32_t ecx;
+    uint32_t eax;
+    uint32_t eip;
+};
+
+void isr_no_interrupt(struct interrupt_frame *frame)
 {
     // Let the bus know we have finished the interrupt
+
     outb(0x20, 0x20);
 }
 
-void idt_alu_error()
+void isr0_handler(struct interrupt_frame frame)
 {
-    panic("ALU Error, division by zero\n");
+    outb(0x20, 0x20);
 }
 
 void idt_page_fault()
@@ -42,11 +59,10 @@ void idt_init()
     // Set all the interrupts to a default interrupt that does nothing, these are ones we don't bother handling
     for (int i = 0; i < COS32_MAX_INTERRUPTS; i++)
     {
-        idt_set(i, idt_no_interrupt);
+        idt_set(i, isr_no_interrupt_wrapper);
     }
 
-    idt_set(0, idt_alu_error);
-    idt_set(0, idt_page_fault);
+    idt_set(0, isr0_handler);
 
     idt_load(&idtr_desc);
 }

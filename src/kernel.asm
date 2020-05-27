@@ -1,8 +1,6 @@
 [BITS 32]
 global _start
-global do_something
 extern kernel_main
-
 
 CODE_SEG equ 0x08
 DATA_SEG equ 0x10
@@ -21,5 +19,4 @@ _start:
 	cli
 	hlt
 	jmp $
-
 

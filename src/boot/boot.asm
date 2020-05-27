@@ -42,6 +42,33 @@ endstruc
 _start:
 jmp 0:kernel_start
 
+
+tss_struct:
+    dd 0x00 ; LINK
+    dd 0x00200000 ; ESP0 - Kernel stack pointer
+    dd 0x08 ; SS0 Kernel stack segment used on ring transitions
+    dd 0x00 ; ESP1
+    dd 0x00 ; ESP2
+    dd 0x00 ; SS2
+    dd 0x00 ; SR3
+    dd 0x00 ; EIP
+    dd 0x00 ; EFLAGS
+    dd 0x00 ; EAX
+    dd 0x00 ; ECX
+    dd 0x00 ; EDX
+    dd 0x00 ; EBX
+    dd 0x00 ; ESP
+    dd 0x00 ; EBP
+    dd 0x00 ; ESI
+    dd 0x00 ; EDI
+    dd 0x00 ; ES
+    dd 0x00 ; CS
+    dd 0x00 ; SS
+    dd 0x00 ; DS
+    dd 0x00 ; FS
+    dd 0x00 ; GS
+    dd 0x00 ; LDTR
+    dd 0x00 ; IOPB offset
 gdt_start:
 
 gdt_null:
@@ -68,22 +95,28 @@ gdt_data:				; ds, ss, es, fs, and gs should point to this descriptor
 
 
 ; offset 0x18
-gdt_user_code:				; cs should point to this descriptor
-	dw 0xffff		; segment limit first 0-15 bits
-	dw 0			; base first 0-15 bits
-	db 0			; base 16-23 bits
-	db 0x1a			; access byte
-	db 11001111b	; high 4 bits (flags) low 4 bits (limit 4 last bits)(limit is 20 bit wide)
-	db 0			; base 24-31 bits
+;gdt_user_code:				; cs should point to this descriptor
+;	dw 0xffff		; segment limit first 0-15 bits
+;	dw 0			; base first 0-15 bits
+;	db 0			; base 16-23 bits
+;	db 0xfa			; access byte
+;	db 11001111b	; high 4 bits (flags) low 4 bits (limit 4 last bits)(limit is 20 bit wide)
+;	db 0			; base 24-31 bits
 
 ; offset 0x20
-gdt_user_data:				; ds, ss, es, fs, and gs should point to this descriptor
-	dw 0xffff		; segment limit first 0-15 bits
-	dw 0			; base first 0-15 bits
-	db 0			; base 16-23 bits
-	db 0x12			; access byte
-	db 11001111b	; high 4 bits (flags) low 4 bits (limit 4 last bits)(limit is 20 bit wide)
-	db 0			; base 24-31 bits
+;gdt_user_data:				; ds, ss, es, fs, and gs should point to this descriptor
+;	dw 0xffff		; segment limit first 0-15 bits
+;	dw 0			; base first 0-15 bits
+;	db 0			; base 16-23 bits
+;	db 0xf2			; access byte
+;	db 11001111b	; high 4 bits (flags) low 4 bits (limit 4 last bits)(limit is 20 bit wide)
+;	db 0			; base 24-31 bits
+
+; offset 0x24
+;gdt_tss:			; ds, ss, es, fs, and gs should point to this descriptor
+ ; dw 0ffffh
+  ;dw tss_struct
+  ;dd 0000e900h
 
 
 gdt_end:
@@ -123,6 +156,10 @@ kernel_start:
 
 
 load32:
+    ; Load TSS
+  ;  mov ax, 0x28  ;The descriptor of the TSS in the GDT (e.g. 0x28 if the sixths entry in your GDT describes your TSS)
+   ; ltr ax        ;The actual load
+
     mov eax, 1
     mov ecx, 120
     mov edi, 0x0100000
