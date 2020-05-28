@@ -174,7 +174,7 @@ void print_number(int number)
 		print_digit(tens);
 		print_digit(units);
 	}
-	else
+	else if (number <= 99999)
 	{
 		ten_thousands = number / 10000;
 		thousands = (number % 10000) / 1000;
@@ -187,6 +187,29 @@ void print_number(int number)
 		print_digit(tens);
 		print_digit(units);
 	}
+}
+
+char* itoa(int i)
+{
+      static char text[12];
+      int loc = 11;
+      text[11] = 0;
+      char neg = 1;
+      if (i >= 0)
+      {
+         neg = 0;
+         i = -i;
+      }
+      while (i)
+      {
+          text[--loc] = '0' - (i%10);
+          i/=10;
+      }
+      if (loc==11)
+          text[--loc] = '0';
+      if (neg)
+         text[--loc] = '-';      
+      return &text[loc];
 }
 
 void print(const char *message)
@@ -202,9 +225,12 @@ void panic(char *message)
 	}
 }
 
+void int_zero();
 void testing()
 {
 	print("what the\n");
+	int_zero();
+//int x = 0 / 0;
 	while (1)
 	{
 	}
@@ -220,14 +246,19 @@ struct gdt_structured gdt_structured[COS32_TOTAL_GDT_SEGMENTS] = {
 	{.base = 0x00, .limit = 0xffffffff, .type = 0x92},			 // kernel data segment
 	{.base = 0x00, .limit = 0xffffffff, .type = 0xfa},			 // user code segment
 	{.base = 0x00, .limit = 0xffffffff, .type = 0xf2},			 // user data segment
-	{.base = (uint32_t)&tss, .limit = sizeof(tss), .type = 0x89} // TSS segment
+	{.base = (uint32_t)&tss, .limit = sizeof(tss), .type = 0xE9} // TSS segment
 
 };
+
 
 void kernel_main(void)
 {
 	/* Initialize terminal interface */
 	terminal_initialize();
+
+	// Initialize interrupts
+	idt_init();
+
 
 	memset(&gdt_real, 0, sizeof(gdt_real));
 	gdt_structured_to_gdt(&gdt_real, gdt_structured, COS32_TOTAL_GDT_SEGMENTS);
@@ -238,22 +269,25 @@ void kernel_main(void)
 	// Setup TSS
 	memset(&tss, 0, sizeof(tss));
 	tss.ss0 = 0x08;
-	tss.esp0 = 0x200000;
+	tss.esp0 = 0x400000;
+
 
 	// Load our new GDT
 	gdt_load(&gdt_real, sizeof(struct gdt) * COS32_TOTAL_GDT_SEGMENTS);
 
 	tss_load(0x28);
 
-	print("testing");
-	user_mode_enter(testing);
+	// Let's re-enable interrupts
+	enable_interrupts();
+
+	//user_mode_enter(testing);
 	
+
 	while (1)
 	{
+		print("Hello world\n");
 	}
 
-	// Initialize interrupts
-	idt_init();
 
 	// Initialize the heap
 	kheap_init();

@@ -45,7 +45,7 @@ jmp 0:kernel_start
 
 tss_struct:
     dd 0x00 ; LINK
-    dd 0x00200000 ; ESP0 - Kernel stack pointer
+    dd 0x00400000 ; ESP0 - Kernel stack pointer
     dd 0x08 ; SS0 Kernel stack segment used on ring transitions
     dd 0x00 ; ESP1
     dd 0x00 ; ESP2

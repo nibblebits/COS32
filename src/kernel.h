@@ -4,6 +4,7 @@
 void print(const char* message);
 void panic(char* message);
 void print_number(int number);
+char* itoa(int i);
 
 #define ASSERT(value) \
     if (!(value)) \

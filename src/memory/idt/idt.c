@@ -3,34 +3,35 @@
 #include "memory/memory.h"
 #include "io/io.h"
 #include "kernel.h"
+#include "task/tss.h"
 struct idt_desc idt_desc[COS32_MAX_INTERRUPTS];
 struct idtr_desc idtr_desc;
-
+extern struct tss tss;
 void isr0_wrapper();
 void isr_no_interrupt_wrapper();
 
 struct interrupt_frame
 {
-    uint32_t edi;
-    uint32_t esi;
-    uint32_t ebp;
-    uint32_t esp;
-    uint32_t ebx;
-    uint32_t edx;
-    uint32_t ecx;
-    uint32_t eax;
     uint32_t eip;
+    uint32_t cs;
+    uint32_t eflags;
+    uint32_t ss;
 };
 
-void isr_no_interrupt(struct interrupt_frame *frame)
+void isr_no_interrupt(struct interrupt_frame frame)
 {
     // Let the bus know we have finished the interrupt
+    print(itoa(frame.cs));
+        outb(0x20, 0x20);
 
-    outb(0x20, 0x20);
+    print("NO INTERRUPT\n");
+    while(1) {}
 }
 
 void isr0_handler(struct interrupt_frame frame)
 {
+    print("INT 0");
+    while(1) {}
     outb(0x20, 0x20);
 }
 
@@ -62,7 +63,7 @@ void idt_init()
         idt_set(i, isr_no_interrupt_wrapper);
     }
 
-    idt_set(0, isr0_handler);
+    idt_set(0, isr0_wrapper);
 
     idt_load(&idtr_desc);
 }

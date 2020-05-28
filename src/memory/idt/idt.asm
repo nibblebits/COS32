@@ -24,16 +24,12 @@ disable_interrupts:
     ret
 
 isr0_wrapper:
-    pushad
     cld
     call isr0_handler
-    popad
     iret
 
 
 isr_no_interrupt_wrapper:
-    pushad
     cld
     call isr_no_interrupt
-    popad
     iret
