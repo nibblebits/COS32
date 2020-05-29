@@ -3,9 +3,11 @@ global idt_load
 global enable_interrupts
 global disable_interrupts
 global isr0_wrapper
+global isr80h_wrapper
 global isr_no_interrupt_wrapper
 extern isr0_handler
 extern isr_no_interrupt
+extern isr80h_handler
 
 idt_load:
     push ebp
@@ -27,6 +29,12 @@ isr0_wrapper:
     cld
     call isr0_handler
     iret
+
+isr80h_wrapper:
+    cld
+    call isr80h_handler
+    iret
+
 
 
 isr_no_interrupt_wrapper:

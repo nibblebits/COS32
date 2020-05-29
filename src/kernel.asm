@@ -1,8 +1,8 @@
 [BITS 32]
 global _start
-global int_zero
-extern kernel_main
+global int80h
 
+extern kernel_main
 CODE_SEG equ 0x08
 DATA_SEG equ 0x10
 _start:	
@@ -15,10 +15,7 @@ _start:
     mov    ebp, 0x00200000
     mov    esp, ebp
 
-    ; Disable PIC we dont care for it
-    mov al, 0xff
-    out 0xa1, al
-    out 0x21, al
+
 	call kernel_main
 
 	cli
@@ -26,6 +23,6 @@ _start:
 	jmp $
 
 
-int_zero:
-    int 55
+int80h:
+    int 0x80
     ret

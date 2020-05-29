@@ -8,6 +8,8 @@ struct idt_desc idt_desc[COS32_MAX_INTERRUPTS];
 struct idtr_desc idtr_desc;
 extern struct tss tss;
 void isr0_wrapper();
+void isr80h_wrapper();
+
 void isr_no_interrupt_wrapper();
 
 struct interrupt_frame
@@ -18,14 +20,17 @@ struct interrupt_frame
     uint32_t ss;
 };
 
+void isr80h_handler(struct interrupt_frame frame)
+{
+    print("Interrupted 80h\n");
+}
+
 void isr_no_interrupt(struct interrupt_frame frame)
 {
     // Let the bus know we have finished the interrupt
-    print(itoa(frame.cs));
-        outb(0x20, 0x20);
 
-    print("NO INTERRUPT\n");
-    while(1) {}
+       // outb(0x20, 0x20);
+
 }
 
 void isr0_handler(struct interrupt_frame frame)
@@ -64,6 +69,7 @@ void idt_init()
     }
 
     idt_set(0, isr0_wrapper);
+    idt_set(0x80, isr80h_wrapper);
 
     idt_load(&idtr_desc);
 }

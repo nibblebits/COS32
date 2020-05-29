@@ -189,27 +189,27 @@ void print_number(int number)
 	}
 }
 
-char* itoa(int i)
+char *itoa(int i)
 {
-      static char text[12];
-      int loc = 11;
-      text[11] = 0;
-      char neg = 1;
-      if (i >= 0)
-      {
-         neg = 0;
-         i = -i;
-      }
-      while (i)
-      {
-          text[--loc] = '0' - (i%10);
-          i/=10;
-      }
-      if (loc==11)
-          text[--loc] = '0';
-      if (neg)
-         text[--loc] = '-';      
-      return &text[loc];
+	static char text[12];
+	int loc = 11;
+	text[11] = 0;
+	char neg = 1;
+	if (i >= 0)
+	{
+		neg = 0;
+		i = -i;
+	}
+	while (i)
+	{
+		text[--loc] = '0' - (i % 10);
+		i /= 10;
+	}
+	if (loc == 11)
+		text[--loc] = '0';
+	if (neg)
+		text[--loc] = '-';
+	return &text[loc];
 }
 
 void print(const char *message)
@@ -229,8 +229,7 @@ void int_zero();
 void testing()
 {
 	print("what the\n");
-	int_zero();
-//int x = 0 / 0;
+	//int x = 0 / 0;
 	while (1)
 	{
 	}
@@ -250,44 +249,45 @@ struct gdt_structured gdt_structured[COS32_TOTAL_GDT_SEGMENTS] = {
 
 };
 
-
+void int80h();
 void kernel_main(void)
 {
 	/* Initialize terminal interface */
 	terminal_initialize();
 
-	// Initialize interrupts
-	idt_init();
-
-
 	memset(&gdt_real, 0, sizeof(gdt_real));
 	gdt_structured_to_gdt(&gdt_real, gdt_structured, COS32_TOTAL_GDT_SEGMENTS);
 
-	
+	print("hello?");
+	// Load our new GDT
+	gdt_load(&gdt_real, sizeof(struct gdt) * COS32_TOTAL_GDT_SEGMENTS);
 
+
+	// Initialize interrupts
+	idt_init();
+
+	// Let's re-enable interrupts
+	enable_interrupts();
 
 	// Setup TSS
 	memset(&tss, 0, sizeof(tss));
 	tss.ss0 = 0x08;
 	tss.esp0 = 0x400000;
 
-
-	// Load our new GDT
-	gdt_load(&gdt_real, sizeof(struct gdt) * COS32_TOTAL_GDT_SEGMENTS);
-
-	tss_load(0x28);
-
-	// Let's re-enable interrupts
-	enable_interrupts();
-
-	//user_mode_enter(testing);
 	
 
+	//tss_load(0x28);
+
+	//user_mode_enter(testing);
+
+		print("Hello worldssss\n");
+
+	int80h();
+
+	print("returned 1234\n");
 	while (1)
 	{
-		print("Hello world\n");
 	}
-
 
 	// Initialize the heap
 	kheap_init();

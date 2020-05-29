@@ -157,8 +157,8 @@ kernel_start:
 
 load32:
     ; Load TSS
-    mov ax, 0x28  ;The descriptor of the TSS in the GDT (e.g. 0x28 if the sixths entry in your GDT describes your TSS)
-    ltr ax        ;The actual load
+  ;  mov ax, 0x28  ;The descriptor of the TSS in the GDT (e.g. 0x28 if the sixths entry in your GDT describes your TSS)
+   ; ltr ax        ;The actual load
 
     mov eax, 1
     mov ecx, 120
