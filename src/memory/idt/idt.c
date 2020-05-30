@@ -68,7 +68,7 @@ void idt_set(int i, void *address)
     ptr->offset_1 = (uint32_t)address & 0x0000ffff;
     ptr->selector = COS32_CODE_SELECTOR;
     ptr->zero = 0x00;
-    ptr->type_attr = IDT_INTERRUPT_GATE;
+    ptr->type_attr = 0xEE;
     ptr->offset_2 = (uint32_t)address >> 16;
 }
 

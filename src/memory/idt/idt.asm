@@ -38,6 +38,7 @@ isr0_wrapper:
 
 isr80h_wrapper:
     cli
+    call isr80h_handler
     sti
     iretd
 isr_invalid_tss_wrapper:

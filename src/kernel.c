@@ -244,7 +244,7 @@ struct gdt_structured gdt_structured[COS32_TOTAL_GDT_SEGMENTS] = {
 	{.base = 0x00, .limit = 0x00, .type = 0x00},				 // null segment
 	{.base = 0x00, .limit = 0xffffffff, .type = 0x9a},			 // kernel code segment
 	{.base = 0x00, .limit = 0xffffffff, .type = 0x92},			 // kernel data segment
-	{.base = 0x00, .limit = 0xffffffff, .type = 0xfa},			 // user code segment
+	{.base = 0x00, .limit = 0xffffffff, .type = 0xf8},			 // user code segment
 	{.base = 0x00, .limit = 0xffffffff, .type = 0xf2},			 // user data segment
 	{.base = (uint32_t)&tss, .limit = sizeof(tss), .type = 0xE9} // TSS segment
 
@@ -273,16 +273,15 @@ void kernel_main(void)
 	tss.ss0 = COS32_DATA_SELECTOR;
 	tss.esp0 = 0x600000;
 
-	
+
+
 
 	tss_load(0x28);
 
 	// Let's re-enable interrupts
-	enable_interrupts();
+	//enable_interrupts();
 
-	int80h();
-	while(1) {}
-
+//	testing();
 	
 	user_mode_enter(testing);
 
