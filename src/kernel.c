@@ -228,7 +228,9 @@ void panic(char *message)
 void int_zero();
 void testing()
 {
-	print("what the\n");
+	
+		int80h();
+
 	//int x = 0 / 0;
 	while (1)
 	{
@@ -237,8 +239,7 @@ void testing()
 
 struct tss tss;
 
-struct gdt gdt_real;
-
+struct gdt gdt_real[COS32_TOTAL_GDT_SEGMENTS];
 struct gdt_structured gdt_structured[COS32_TOTAL_GDT_SEGMENTS] = {
 	{.base = 0x00, .limit = 0x00, .type = 0x00},				 // null segment
 	{.base = 0x00, .limit = 0xffffffff, .type = 0x9a},			 // kernel code segment
@@ -266,23 +267,27 @@ void kernel_main(void)
 	// Initialize interrupts
 	idt_init();
 
-	// Let's re-enable interrupts
-	enable_interrupts();
 
 	// Setup TSS
 	memset(&tss, 0, sizeof(tss));
-	tss.ss0 = 0x08;
-	tss.esp0 = 0x400000;
+	tss.ss0 = COS32_DATA_SELECTOR;
+	tss.esp0 = 0x600000;
 
 	
 
-	//tss_load(0x28);
+	tss_load(0x28);
 
-	//user_mode_enter(testing);
+	// Let's re-enable interrupts
+	enable_interrupts();
+
+	int80h();
+	while(1) {}
+
+	
+	user_mode_enter(testing);
 
 		print("Hello worldssss\n");
 
-	int80h();
 
 	print("returned 1234\n");
 	while (1)

@@ -9,17 +9,19 @@ struct idtr_desc idtr_desc;
 extern struct tss tss;
 void isr0_wrapper();
 void isr80h_wrapper();
-
+void isr_invalid_tss_wrapper();
 void isr_no_interrupt_wrapper();
+void isr_segment_not_present_wrapper();
+void isr_page_fault_wrapper();
 
 struct interrupt_frame
 {
-    uint32_t eip;
+    uint32_t ip;
     uint32_t cs;
-    uint32_t eflags;
+    uint32_t flags;
+    uint32_t sp;
     uint32_t ss;
 };
-
 void isr80h_handler(struct interrupt_frame frame)
 {
     print("Interrupted 80h\n");
@@ -38,6 +40,20 @@ void isr0_handler(struct interrupt_frame frame)
     print("INT 0");
     while(1) {}
     outb(0x20, 0x20);
+}
+
+void isr_page_fault_handler(struct interrupt_frame frame)
+{
+    panic("Unhandled Page Fault\n");
+}
+
+void isr_segment_not_present_handler(struct interrupt_frame frame)
+{
+    panic("Invalid Segment, Segment not present.\n");
+}
+void isr_invalid_tss_handler(struct interrupt_frame frame)
+{
+    panic("Bad TSS\n");
 }
 
 void idt_page_fault()
@@ -70,6 +86,8 @@ void idt_init()
 
     idt_set(0, isr0_wrapper);
     idt_set(0x80, isr80h_wrapper);
-
+    idt_set(0x0A, isr_invalid_tss_wrapper);
+    idt_set(0x0B, isr_segment_not_present_wrapper);
+    idt_set(0x0E, isr_page_fault_wrapper);
     idt_load(&idtr_desc);
 }
