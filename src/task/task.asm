@@ -14,11 +14,10 @@ user_mode_enter:
     mov eax, 0x400000
     push dword 0x23
     push dword eax
-    ;pushf
-    ;pop eax
-    ;or eax, 0x200
-    push dword 0x3000
- ;   push eax
+    pushf
+    pop eax
+    or eax, 0x200
+    push eax
     push 0x1b
     push ebx ; FUNCTION TO RUN IN USER LAND
     iret

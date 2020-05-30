@@ -231,6 +231,7 @@ void testing()
 	
 		int80h();
 
+	print("fuck yes!!");
 	//int x = 0 / 0;
 	while (1)
 	{
@@ -273,47 +274,24 @@ void kernel_main(void)
 	tss.ss0 = COS32_DATA_SELECTOR;
 	tss.esp0 = 0x600000;
 
-
-
-
+	// Load the TSS
 	tss_load(0x28);
-
-	// Let's re-enable interrupts
-	//enable_interrupts();
-
-//	testing();
 	
-	user_mode_enter(testing);
-
-		print("Hello worldssss\n");
-
-
-	print("returned 1234\n");
-	while (1)
-	{
-	}
-
 	// Initialize the heap
 	kheap_init();
 
 	// Initialize paging
-	struct paging_4gb_chunk *kernel_chunk = paging_new_4gb();
-	char *ptr = kmalloc(4096);
-	//memcpy(ptr, 0xB8000, 4096);
+	struct paging_4gb_chunk *kernel_chunk = paging_new_4gb(PAGING_ACCESS_FROM_ALL | PAGING_PAGE_PRESENT);
 
-	//paging_map(kernel_chunk->directory_entry, 0x00, 0x00);
+	paging_map_range(kernel_chunk->directory_entry, 0xA0000, 0x800000, 1024, PAGING_PAGE_PRESENT);
+	paging_switch(kernel_chunk->directory_entry);
+	enable_paging();
 
-	//paging_switch(kernel_chunk->directory_entry);
-	//enable_paging();
-	print("testing");
-	//user_mode_enter(testing);
+	print("eieie");
 
 	while (1)
 	{
 	}
-	paging_map(kernel_chunk->directory_entry, 0xB8000, ptr);
-	ptr = 0xB8000;
-	*ptr = 'N';
 
 	// Initialize filesystems
 	fs_load();

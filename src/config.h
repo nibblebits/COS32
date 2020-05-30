@@ -1,7 +1,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 #define COS32_MAX_FILESYSTEMS 10
-#define COS32_MAX_HEAP_ALLOCATIONS 2816
+#define COS32_MAX_HEAP_ALLOCATIONS 2716
 #define COS32_MAX_HEAP_SIZE 11534336
 #define COS32_MEMORY_BLOCK_SIZE 4096
 // 13 Megabyte maximum at this region for kernel heap

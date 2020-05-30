@@ -5,14 +5,9 @@
 //PAGE_DIRECTORY_ENTRY page_directory[1024] __attribute__((aligned(4096)));
 //PAGE_TABLE_ENTRY first_page_table[1024] __attribute__((aligned(4096)));
 
-struct paging_4gb_chunk *paging_new_4gb()
+struct paging_4gb_chunk *paging_new_4gb(uint8_t flags)
 {
     uint32_t *directory = kzalloc(sizeof(uint32_t) * 1024);
-    for (int i = 0; i < 1024; i++)
-    {
-        directory[i] = 0x00000002;
-    }
-
     // Now we need 1024 page tables
     int offset = 0;
     for (int i = 0; i < 1024; i++)
@@ -20,18 +15,48 @@ struct paging_4gb_chunk *paging_new_4gb()
         uint32_t *entry = kzalloc(sizeof(uint32_t) * 1024);
         for (int b = 0; b < 1024; b++)
         {
-            entry[b] = (offset + (b * COS32_PAGE_SIZE)) | 7;
+            entry[b] = (offset + (b * COS32_PAGE_SIZE)) | flags;
         }
         offset += (1024 * COS32_PAGE_SIZE);
-        directory[i] = (uint32_t)entry | 7;
+        directory[i] = (uint32_t)entry | flags;
     }
 
+    directory[90] = 0;
     struct paging_4gb_chunk *chunk_4gb = kzalloc(sizeof(struct paging_4gb_chunk));
     chunk_4gb->directory_entry = directory;
     return chunk_4gb;
 }
 
-int paging_map(uint32_t *directory, void *virt, void *phys)
+void paging_unmap_all(struct paging_4gb_chunk *chunk)
+{
+    for (int i = 0; i < 1024; i++)
+    {
+        uint32_t entry = chunk->directory_entry[i];
+        uint32_t* table = (uint32_t*)(entry & 0xfffff000);
+        for (int b = 0; b < 1024; b++)
+        {
+            table[b] = 0x00;
+        }
+    }
+}
+
+
+int paging_map_range(uint32_t* directory, void* virt, void* phys, int count, int flags)
+{
+    int res = 0;
+    for (int i = 0; i < count; i++)
+    {
+        res = paging_map(directory, virt, phys, flags);
+        if (res < 0)
+            break;
+        virt += COS32_PAGE_SIZE;
+        phys += COS32_PAGE_SIZE;
+    }
+
+    return res;
+}
+
+int paging_map(uint32_t *directory, void *virt, void *phys, int flags)
 {
     // Virtual address and physical must be page aligned
     if (((unsigned int)virt % COS32_PAGE_SIZE) || ((unsigned int)phys % COS32_PAGE_SIZE))
@@ -44,8 +69,7 @@ int paging_map(uint32_t *directory, void *virt, void *phys)
 
     uint32_t entry = directory[directory_index];
     uint32_t *table = (uint32_t *)(entry & 0xfffff000);
-    table[table_index] = (uint32_t)phys | 3;
-
+    table[table_index] = (uint32_t)phys | flags;
 
     return 0;
 }
