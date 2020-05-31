@@ -9,4 +9,5 @@
 #define EBADPATH 5
 #define EINVARG 6
 #define EMEM 7
+#define EUNIMP 8
 #endif

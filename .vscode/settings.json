@@ -10,6 +10,16 @@
         "utility": "cpp",
         "istream": "cpp",
         "ostream": "cpp",
-        "cctype": "c"
+        "cctype": "c",
+        "climits": "c",
+        "cmath": "c",
+        "cstdarg": "c",
+        "cstdio": "c",
+        "cstdlib": "c",
+        "limits": "c",
+        "*.tcc": "c",
+        "cstdbool": "c",
+        "cstdint": "c",
+        "typeinfo": "c"
     }
 }

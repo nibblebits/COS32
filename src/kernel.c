@@ -283,30 +283,37 @@ void kernel_main(void)
 	// Initialize paging
 	struct paging_4gb_chunk *kernel_chunk = paging_new_4gb(PAGING_ACCESS_FROM_ALL | PAGING_PAGE_PRESENT);
 
-	paging_map_range(kernel_chunk->directory_entry, 0xA0000, 0x800000, 1024, PAGING_PAGE_PRESENT);
+	paging_map_range(kernel_chunk->directory_entry, 0x800000, 0xA0000, 1024, PAGING_PAGE_PRESENT);
 	paging_switch(kernel_chunk->directory_entry);
 	enable_paging();
 
 	print("eieie");
 
-	while (1)
-	{
-	}
-
 	// Initialize filesystems
-	fs_load();
+	fs_init();
 
 	// Find the disks
 	disk_search_and_init();
 
-	if (fopen("0:/typs.H", 'r') > 0)
+	int fd = fopen("0:/img.jpg", "r");
+	if (!fd)
 	{
-		print("File opened\n");
+		panic("Failed to open file");
 	}
-	else
+
+	char buf[64];
+
+	if(fread(buf, 32, 2, fd) != 2)
 	{
-		print("Failed to open file\n");
+		panic("Failed to fread");
 	}
+
+
+	print(buf);
+
+	//print("File opened\n");
+	fclose(fd);
+
 
 	print("Kernel initialized");
 }

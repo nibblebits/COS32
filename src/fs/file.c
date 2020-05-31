@@ -6,8 +6,10 @@
 #include "disk/disk.h"
 #include "string/string.h"
 #include "status.h"
+#include "memory/kheap.h"
 
 struct filesystem *filesystems[COS32_MAX_FILESYSTEMS];
+struct file_descriptor *file_descriptors[COS32_MAX_FILE_DESCRIPTORS];
 
 static struct filesystem **fs_get_free_filesystem()
 {
@@ -38,7 +40,7 @@ void fs_insert_filesystem(struct filesystem *filesystem)
         panic("No more filesystem slots available, failed to register filesystem");
     }
 
-    filesystems[0] = filesystem;
+    *fs = filesystem;
 }
 
 /**
@@ -53,6 +55,12 @@ void fs_load()
 {
     memset(filesystems, 0, sizeof(filesystems));
     fs_static_load();
+}
+
+void fs_init()
+{
+    memset(file_descriptors, 0, sizeof(file_descriptors));
+    fs_load();
 }
 
 /**
@@ -84,13 +92,85 @@ static int fs_get_drive_by_path(char *filename)
     return tonumericdigit(filename[0]);
 }
 
-int fopen(char *filename, char mode)
+static int file_new_descriptor(struct file_descriptor **desc_out)
 {
-    int drive_no = fs_get_drive_by_path(filename);
-    if (drive_no < 0)
+    int res = -EMEM;
+    for (int i = 0; i < COS32_MAX_FILE_DESCRIPTORS; i++)
     {
-        return drive_no;
+        if (file_descriptors[i] == 0)
+        {
+            struct file_descriptor *desc = kzalloc(sizeof(struct file_descriptor));
+            // Descriptors start at index 1
+            desc->index = i + 1;
+            file_descriptors[i] = desc;
+            *desc_out = desc;
+            res = 0;
+            break;
+        }
     }
+
+    return res;
+}
+
+static struct file_descriptor *file_get_descriptor(int fd)
+{
+    if (fd <= 0 || fd > COS32_MAX_FILE_DESCRIPTORS)
+    {
+        return 0;
+    }
+
+    // Descriptors start at index 1, so we must subtract one to get real array index
+    int index = fd - 1;
+    return file_descriptors[index];
+}
+
+int fread(void *ptr, uint32_t size, uint32_t nmemb, int fd)
+{
+    int res = 0;
+
+    if (size == 0 || nmemb == 0 || fd < 1)
+    {
+        res = -EINVARG;
+        goto out;
+    }
+
+    struct file_descriptor *desc = file_get_descriptor(fd);
+    if (!desc)
+    {
+        res = -EINVARG;
+        goto out;
+    }
+
+    res = desc->filesystem->read(desc->disk, desc->private, size, nmemb, (char *)ptr);
+
+out:
+    return res;
+}
+
+FILE_MODE file_get_mode_by_string(const char *str)
+{
+    FILE_MODE mode = FILE_MODE_INVALID;
+    if (strncmp(str, "r", 1) == 0)
+    {
+        mode = FILE_MODE_READ;
+    }
+    else if (strncmp(str, "w", 1) == 0)
+    {
+        mode = FILE_MODE_WRITE;
+    }
+    else if (strncmp(str, "a", 1) == 0)
+    {
+        mode = FILE_MODE_APPEND;
+    }
+
+    return mode;
+}
+
+
+int fopen(char *filename, const char *mode_str)
+{
+    int res = 5;
+    int drive_no = fs_get_drive_by_path(filename);
 
     char path[COS32_MAX_PATH];
     memset(path, 0, sizeof(path));
@@ -100,30 +180,85 @@ int fopen(char *filename, char mode)
     struct disk *disk = disk_get(drive_no);
     if (!disk)
     {
-        return -EINVARG;
+        res = -EINVARG;
+        goto out;
     }
 
     if (!disk->filesystem)
     {
-        return -EINVARG;
+        res = -EINVARG;
+        goto out;
     }
 
-    void* private_data = disk->filesystem->open(disk, start_of_relative_path, mode);
+    FILE_MODE mode = file_get_mode_by_string(mode_str);
+    if (mode == FILE_MODE_INVALID)
+    {
+        res = -EINVARG;
+        goto out;
+    }
+
+    void *private_data = disk->filesystem->open(disk, start_of_relative_path, mode);
 
     // Null returned? Seriously.
     if (private_data == 0)
     {
-        private_data = ERROR(-EIO);
+        res = -EIO;
+        goto out;
     }
 
     if (ISERR(private_data))
     {
-        return ERROR_I(private_data);
+        res = ERROR_I(private_data);
+        goto out;
     }
 
+    struct file_descriptor *desc = 0;
+    res = file_new_descriptor(&desc);
+    if (res < 0)
+    {
+        goto out;
+    }
 
+    desc->filesystem = disk->filesystem;
+    desc->private = private_data;
+    desc->disk = disk;
+    res = desc->index;
+out:
+    // fopen shouldnt return negative values.
+    if (res < 0)
+        res = 0;
 
-    return 1;
+    return res;
+}
+
+int fseek(int fd, int offset, FILE_SEEK_MODE whence)
+{
+    int res = 0;
+    struct file_descriptor* desc = file_get_descriptor(fd);
+    if (!desc)
+    {
+        res = -EINVARG;
+        goto out;
+    }
+
+    res = desc->filesystem->seek(desc->private, offset, whence);
+out:
+    return res;
+}
+
+int fclose(int fd)
+{
+    int res = 0;
+    struct file_descriptor *desc = file_get_descriptor(fd);
+    if (!desc)
+    {
+        res = -EINVARG;
+        goto out;
+    }
+
+    res = desc->filesystem->close(desc->private);
+out:
+    return res;
 }
 
 struct filesystem *fs_resolve(struct disk *disk)

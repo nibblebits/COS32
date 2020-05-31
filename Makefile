@@ -9,6 +9,7 @@ all: ./bin/kernel.bin ./bin/boot.bin ${FILES}
 	sudo mount -t vfat ./bin/os.bin /mnt/d
 	sudo cp ./src/status.h /mnt/d
 	sudo cp ./src/types.h /mnt/d
+	sudo cp ./img.jpg /mnt/d
 	sudo umount /mnt/d
 	sudo chmod 777 ./bin/os.bin
 

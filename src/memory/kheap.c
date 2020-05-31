@@ -28,5 +28,8 @@ void* kzalloc(int size)
 
 void kfree(void* ptr)
 {
+    if (!ptr)
+        return;
+        
     return heap_free(kheap, ptr);
 }
