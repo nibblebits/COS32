@@ -116,6 +116,12 @@ static uint32_t fat16_get_first_fat_sector(struct disk *disk)
     return fat_private->header.primary_header.reserved_sectors;
 }
 
+static uint32_t fat16_get_cluster_size_in_bytes(struct disk *disk)
+{
+    struct fat_private *fat_private = disk->fs_private;
+    return fat_private->header.primary_header.sectors_per_cluster * disk->sector_size;
+}
+
 static int fat16_get_next_cluster_for_item(uint32_t item_last_cluster_abs, struct disk *disk)
 {
     int res = 0;
@@ -172,7 +178,15 @@ int fat16_read_next(struct disk *disk, void *private, uint32_t size, uint32_t nm
     // +1 is required as size does not have to be sector_size aligned
     uint32_t total_sectors_to_read = (size / disk->sector_size) + 1;
 
-    char *buf = kzalloc(size * disk->sector_size);
+    // We don't allow you to cross the size boundary into multiple clusters, right now
+    if (size >= fat16_get_cluster_size_in_bytes(disk))
+    {
+        res = -EINVARG;
+        goto out;
+    }
+
+    // Possibly move kzalloc in the function that calls this function, the size is the same across the board, this is a waste of cycles
+    char *buf = kzalloc(total_sectors_to_read * disk->sector_size);
 
     if (desc_item->type != FAT_ITEM_TYPE_FILE)
     {
@@ -182,6 +196,20 @@ int fat16_read_next(struct disk *disk, void *private, uint32_t size, uint32_t nm
     }
 
     struct fat_directory_item *item = desc_item->item;
+    #warning currently its not possible to read past the 1st cluster, this needs to be implemented at some point
+    if (descriptor->pos >= fat16_get_cluster_size_in_bytes(disk))
+    {
+        res = -EUNIMP;
+        goto out;
+    }
+
+    if (descriptor->pos + size > item->filesize)
+    {
+        // We can't read another block we have gone too far! Zero blocks read for this iteration
+        res = 0;
+        goto out;
+    }
+    
     uint32_t first_cluster_abs = fat16_get_first_cluster(item);
     uint32_t file_first_sector = fat16_cluster_to_sector(fat_private, first_cluster_abs);
 
@@ -189,8 +217,6 @@ int fat16_read_next(struct disk *disk, void *private, uint32_t size, uint32_t nm
     uint32_t offset_bytes = descriptor->pos;
     uint32_t offset_sector = offset_bytes / disk->sector_size;
     uint32_t offset_relative_remainder = offset_bytes % disk->sector_size;
-
-#warning reading of only the first cluster is all that is supported right now
 
     uint32_t abs_file_sector = file_first_sector + offset_sector;
     if (disk_read_block(disk, abs_file_sector, total_sectors_to_read, buf) != COS32_ALL_OK)
@@ -201,7 +227,7 @@ int fat16_read_next(struct disk *disk, void *private, uint32_t size, uint32_t nm
     // Let's now push the remainder to memory
     for (int i = 0; i < size; i++)
     {
-        out_ptr[i] = buf[i+offset_relative_remainder];
+        out_ptr[i] = buf[i + offset_relative_remainder];
     }
     // One block read
     res = 1;
