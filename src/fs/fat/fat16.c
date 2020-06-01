@@ -102,13 +102,17 @@ void *fat16_open(struct disk *disk, char *filename, FILE_MODE mode);
 int fat16_close(void *private);
 int fat16_read(struct disk *disk, void *private, uint32_t size, uint32_t nmemb, char *out_ptr);
 int fat16_seek(void *private, uint32_t offset, FILE_SEEK_MODE seek_mode);
+int fat16_stat(struct disk *disk, void *private, struct file_stat* stat);
+
 
 struct filesystem fat16_fs = {
     .open = fat16_open,
     .resolve = fat16_resolve,
     .close = fat16_close,
     .read = fat16_read,
-    .seek = fat16_seek};
+    .seek = fat16_seek,
+    .stat = fat16_stat
+    };
 
 static uint32_t fat16_get_first_fat_sector(struct disk *disk)
 {
@@ -155,6 +159,28 @@ static void fat16_free_private(struct fat_file_descriptor *private)
 {
     kfree(private->item);
     kfree(private);
+}
+
+
+int fat16_stat(struct disk *disk, void *private, struct file_stat* stat)
+{
+    int res = 0;
+    struct fat_file_descriptor *descriptor = (struct fat_file_descriptor *)private;
+    struct fat_item* desc_item = descriptor->item;
+    // We only allow statting of files at the moment
+    if (desc_item->type != FAT_ITEM_TYPE_FILE)
+    {
+        res = -EINVARG;
+        goto out;
+    }
+
+    struct fat_directory_item* ritem = desc_item->item;
+    stat->filesize = ritem->filesize;
+    // We aren't bothered about flags right now
+    stat->flags = 0;
+
+out:
+    return res;
 }
 
 int fat16_close(void *private)

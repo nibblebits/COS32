@@ -246,6 +246,20 @@ out:
     return res;
 }
 
+int fstat(int fd, struct file_stat* stat)
+{
+    int res = 0;
+    struct file_descriptor* desc = file_get_descriptor(fd);
+    if (!desc)
+    {
+        res = -EINVARG;
+        goto out;
+    }
+    
+    res = desc->filesystem->stat(desc->disk, desc->private, stat);
+out:
+    return res;
+}
 int fclose(int fd)
 {
     int res = 0;
@@ -260,6 +274,7 @@ int fclose(int fd)
 out:
     return res;
 }
+
 
 struct filesystem *fs_resolve(struct disk *disk)
 {
