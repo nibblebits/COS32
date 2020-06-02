@@ -94,7 +94,7 @@ static int fs_get_drive_by_path(char *filename)
 
 static int file_new_descriptor(struct file_descriptor **desc_out)
 {
-    int res = -EMEM;
+    int res = -ENOMEM;
     for (int i = 0; i < COS32_MAX_FILE_DESCRIPTORS; i++)
     {
         if (file_descriptors[i] == 0)
@@ -237,7 +237,7 @@ int fseek(int fd, int offset, FILE_SEEK_MODE whence)
     struct file_descriptor* desc = file_get_descriptor(fd);
     if (!desc)
     {
-        res = -EINVARG;
+        res = -EIO;
         goto out;
     }
 
@@ -252,7 +252,7 @@ int fstat(int fd, struct file_stat* stat)
     struct file_descriptor* desc = file_get_descriptor(fd);
     if (!desc)
     {
-        res = -EINVARG;
+        res = -EIO;
         goto out;
     }
     
@@ -266,7 +266,7 @@ int fclose(int fd)
     struct file_descriptor *desc = file_get_descriptor(fd);
     if (!desc)
     {
-        res = -EINVARG;
+        res = -EIO;
         goto out;
     }
 

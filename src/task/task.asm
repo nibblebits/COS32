@@ -11,7 +11,7 @@ user_mode_enter:
     mov fs, ax
     mov gs, ax
 
-    mov eax, 0x400000
+    mov eax, 0x900000
     push dword 0x23
     push dword eax
     pushf

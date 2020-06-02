@@ -21,7 +21,6 @@ struct paging_4gb_chunk *paging_new_4gb(uint8_t flags)
         directory[i] = (uint32_t)entry | flags;
     }
 
-    directory[90] = 0;
     struct paging_4gb_chunk *chunk_4gb = kzalloc(sizeof(struct paging_4gb_chunk));
     chunk_4gb->directory_entry = directory;
     return chunk_4gb;

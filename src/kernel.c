@@ -13,6 +13,7 @@
 #include "memory/memory.h"
 #include "task/task.h"
 #include "task/tss.h"
+#include "task/process.h"
 #include "gdt/gdt.h"
 #include "config.h"
 
@@ -225,19 +226,6 @@ void panic(char *message)
 	}
 }
 
-void int_zero();
-void testing()
-{
-	
-		int80h();
-
-	print("fuck yes!!");
-	//int x = 0 / 0;
-	while (1)
-	{
-	}
-}
-
 struct tss tss;
 
 struct gdt gdt_real[COS32_TOTAL_GDT_SEGMENTS];
@@ -252,6 +240,14 @@ struct gdt_structured gdt_structured[COS32_TOTAL_GDT_SEGMENTS] = {
 };
 
 void int80h();
+
+struct paging_4gb_chunk *kernel_paging_chunk = 0;
+void kernel_page()
+{
+	paging_switch(kernel_paging_chunk->directory_entry);
+}
+
+
 void kernel_main(void)
 {
 	/* Initialize terminal interface */
@@ -264,10 +260,8 @@ void kernel_main(void)
 	// Load our new GDT
 	gdt_load(&gdt_real, sizeof(struct gdt) * COS32_TOTAL_GDT_SEGMENTS);
 
-
 	// Initialize interrupts
 	idt_init();
-
 
 	// Setup TSS
 	memset(&tss, 0, sizeof(tss));
@@ -276,18 +270,15 @@ void kernel_main(void)
 
 	// Load the TSS
 	tss_load(0x28);
-	
+
 	// Initialize the heap
 	kheap_init();
 
 	// Initialize paging
-	struct paging_4gb_chunk *kernel_chunk = paging_new_4gb(PAGING_ACCESS_FROM_ALL | PAGING_PAGE_PRESENT);
-
-	paging_map_range(kernel_chunk->directory_entry, 0x800000, 0xA0000, 1024, PAGING_PAGE_PRESENT);
-	paging_switch(kernel_chunk->directory_entry);
+	kernel_paging_chunk = paging_new_4gb(PAGING_ACCESS_FROM_ALL | PAGING_PAGE_PRESENT | PAGING_PAGE_WRITEABLE);
+	kernel_page();
 	enable_paging();
 
-	print("eieie");
 
 	// Initialize filesystems
 	fs_init();
@@ -295,25 +286,15 @@ void kernel_main(void)
 	// Find the disks
 	disk_search_and_init();
 
-	int fd = fopen("0:/img.jpg", "r");
-	if (!fd)
-	{
-		panic("Failed to open file");
-	}
-
-	char buf[64];
-
-	if(fread(buf, 32, 2, fd) != 2)
-	{
-		panic("Failed to fread");
-	}
-
-
-	print(buf);
-
-	//print("File opened\n");
-	fclose(fd);
-
-
 	print("Kernel initialized");
+
+	struct process *process = 0;
+	// Why does start.bin or start.raw not work? Investigate it further
+	int res = process_load("0:/start.r", &process);
+	if (res < 0)
+	{
+		panic("Failed to load the start program!");
+	}
+
+	process_start(process);
 }

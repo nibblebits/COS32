@@ -375,7 +375,7 @@ int fat16_get_root_directory(struct disk *disk, struct fat_private *fat_private,
     struct fat_directory_item *dir = kzalloc(root_dir_size);
     if (!dir)
     {
-        ret = -EMEM;
+        ret = -ENOMEM;
         goto out;
     }
     if (disk_read_block(disk, root_dir_sector_pos, 1, dir) != COS32_ALL_OK)
@@ -497,7 +497,7 @@ void *fat16_open(struct disk *disk, char *filename, FILE_MODE mode)
 
     struct fat_file_descriptor *descriptor = 0;
     struct fat_item *item = fat16_search_for_file(disk, filename);
-    if (item == 0)
+    if (item == 0 || ISERR(item))
     {
         goto out;
     }

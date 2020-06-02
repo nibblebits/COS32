@@ -1,15 +1,13 @@
-FILES = ./build/kernel.asm.o ./build/kernel.o ./build/task/tss.asm.o ./build/gdt/gdt.asm.o ./build/gdt/gdt.o ./build/task/task.asm.o ./build/memory/paging/paging.o ./build/memory/paging/paging.asm.o ./build/memory/idt/idt.asm.o ./build/memory/idt/idt.o ./build/io/io.o  ./build/disk/disk.o ./build/fs/file.o ./build/fs/fat/fat16.o ./build/memory/heap.o ./build/memory/kheap.o ./build/memory/memory.o ./build/string/string.o
+FILES = ./build/kernel.asm.o ./build/task/task.o ./build/task/process.o ./build/kernel.o ./build/task/tss.asm.o ./build/gdt/gdt.asm.o ./build/gdt/gdt.o ./build/task/task.asm.o ./build/memory/paging/paging.o ./build/memory/paging/paging.asm.o ./build/memory/idt/idt.asm.o ./build/memory/idt/idt.o ./build/io/io.o  ./build/disk/disk.o ./build/fs/file.o ./build/fs/fat/fat16.o ./build/memory/heap.o ./build/memory/kheap.o ./build/memory/memory.o ./build/string/string.o
 FLAGS = -g
 INCLUDES = -I./src
-all: ./bin/kernel.bin ./bin/boot.bin ${FILES}
+all: ./bin/kernel.bin ./bin/boot.bin ${FILES} programs
 	rm -f ./bin/os.bin
 	dd if=./bin/boot.bin >> ./bin/os.bin
 	dd if=./bin/kernel.bin >> ./bin/os.bin
 	dd if=/dev/zero bs=1048576 count=16 >> ./bin/os.bin
 	sudo mount -t vfat ./bin/os.bin /mnt/d
-	sudo cp ./src/status.h /mnt/d
-	sudo cp ./src/types.h /mnt/d
-	sudo cp ./img.jpg /mnt/d
+	sudo cp ./src/programs/helloworld/helloworld.bin /mnt/d/start.r
 	sudo umount /mnt/d
 	sudo chmod 777 ./bin/os.bin
 
@@ -29,8 +27,14 @@ all: ./bin/kernel.bin ./bin/boot.bin ${FILES}
 ./build/task/tss.asm.o: ./src/task/tss.asm ./src/task/task.h
 	nasm -f elf -g ./src/task/tss.asm -o ./build/task/tss.asm.o
 
+./build/task/task.o: ./src/task/task.c ./src/task/task.h
+	i686-elf-gcc $(INCLUDES) -I./src/task ${FLAGS} -c ./src/task/task.c -o ./build/task/task.o -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g
+
 ./build/task/task.asm.o: ./src/task/task.asm ./src/task/task.h
 	nasm -f elf -g ./src/task/task.asm -o ./build/task/task.asm.o
+
+./build/task/process.o: ./src/task/process.c ./src/task/process.h ./src/task/task.h
+	i686-elf-gcc $(INCLUDES) -I./src/task ${FLAGS} -c ./src/task/process.c -o ./build/task/process.o -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g
 
 ./build/memory/idt/idt.asm.o: ./src/memory/idt/idt.asm ./src/memory/idt/idt.h
 	nasm -f elf -g ./src/memory/idt/idt.asm -o ./build/memory/idt/idt.asm.o
@@ -74,7 +78,13 @@ all: ./bin/kernel.bin ./bin/boot.bin ${FILES}
 ./build/kernel.o: ./src/kernel.c ./src/kernel.h
 	i686-elf-gcc $(INCLUDES) ${FLAGS} -c ./src/kernel.c -o ./build/kernel.o -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g
 
-clean:
+programs:
+	cd ./src/programs/helloworld && $(MAKE) all
+
+programs_clean:
+	cd ./src/programs/helloworld && $(MAKE) clean
+
+clean: programs_clean
 	rm -rf ${FILES}
 	rm -rf ./bin/boot.bin
 	rm -rf ./bin/kernel.bin
