@@ -26,8 +26,9 @@ int task_init(struct task* task)
         return -EIO;
     }
 
+
+    #warning We can't unmap all the pages because we still need access to the kernel at this point!!!
     // By default the entire task should have access to no memory at all
-    // Allow for now
-    //paging_unmap_all(task->page_directory);
+   // paging_unmap_all(task->page_directory);
     return 0;
 }

@@ -4,6 +4,8 @@
 #include "io/io.h"
 #include "kernel.h"
 #include "task/tss.h"
+#include "task/process.h"
+
 struct idt_desc idt_desc[COS32_MAX_INTERRUPTS];
 struct idtr_desc idtr_desc;
 extern struct tss tss;
@@ -24,22 +26,29 @@ struct interrupt_frame
 };
 void isr80h_handler(struct interrupt_frame frame)
 {
+    process_mark_running(false);
+    kernel_page();
     print("Interrupted 80h\n");
+    process_page();
+    process_mark_running(true);
 }
 
 void isr_no_interrupt(struct interrupt_frame frame)
 {
     // Let the bus know we have finished the interrupt
 
-       // outb(0x20, 0x20);
-
+    // outb(0x20, 0x20);
 }
 
 void isr0_handler(struct interrupt_frame frame)
 {
-    print("INT 0");
-    while(1) {}
-    outb(0x20, 0x20);
+    if (process_running())
+    {
+        // Replace with program termination
+        panic("Divide by zero in process\n");
+    }
+
+    panic("Divide by zero in kernel");
 }
 
 void isr_page_fault_handler(struct interrupt_frame frame)

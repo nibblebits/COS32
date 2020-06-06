@@ -11,6 +11,8 @@ _start:
     mov eax, 0  ; Function zero = print
     mov ebx, _message
     int 0x80 ; Call the kernel
+
+
     jmp $
     
 _message: db 'Hello world! it works!', 0
