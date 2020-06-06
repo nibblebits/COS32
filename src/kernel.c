@@ -253,12 +253,12 @@ void kernel_main(void)
 	/* Initialize terminal interface */
 	terminal_initialize();
 
-	memset(&gdt_real, 0, sizeof(gdt_real));
-	gdt_structured_to_gdt(&gdt_real, gdt_structured, COS32_TOTAL_GDT_SEGMENTS);
+	memset(gdt_real, 0, sizeof(gdt_real));
+	gdt_structured_to_gdt(gdt_real, gdt_structured, COS32_TOTAL_GDT_SEGMENTS);
 
 	print("hello?");
 	// Load our new GDT
-	gdt_load(&gdt_real, sizeof(struct gdt) * COS32_TOTAL_GDT_SEGMENTS);
+	gdt_load(gdt_real, sizeof(struct gdt) * COS32_TOTAL_GDT_SEGMENTS);
 
 	// Initialize interrupts
 	idt_init();

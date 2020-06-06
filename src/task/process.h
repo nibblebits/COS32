@@ -13,6 +13,9 @@ struct process
     // The physical pointer to the process memory
     void* ptr;
 
+    // The physical pointer to the stack memory
+    void* stack;
+    
     // The physical size of the data pointed to by the pointer
     uint32_t size;
 

@@ -2,6 +2,7 @@
 #include "config.h"
 #include "status.h"
 #include "memory/kheap.h"
+#include "kernel.h"
 //PAGE_DIRECTORY_ENTRY page_directory[1024] __attribute__((aligned(4096)));
 //PAGE_TABLE_ENTRY first_page_table[1024] __attribute__((aligned(4096)));
 
@@ -25,6 +26,19 @@ struct paging_4gb_chunk *paging_new_4gb(uint8_t flags)
     chunk_4gb->directory_entry = directory;
     return chunk_4gb;
 }
+
+
+// void paging_map_page_directory_to_user_space(struct paging_4gb_chunk* in_chunk, uint32_t* out)
+// {
+//     // First map the input chunk
+//     paging_map(out, in_chunk, in_chunk, )
+//     for (int i = 0; i < 1024; i++)
+//     {
+//         for (int b = 0; b < 1024; b++)
+//         {
+//         }
+//     }
+// }
 
 void paging_unmap_all(struct paging_4gb_chunk *chunk)
 {
@@ -76,6 +90,30 @@ int paging_map(uint32_t *directory, void *virt, void *phys, int flags)
 void paging_switch(uint32_t *directory)
 {
     paging_load_directory(directory);
+}
+
+void* paging_align_address(void* ptr)
+{   
+    if ((uint32_t)ptr % COS32_PAGE_SIZE)
+    {
+        // Not aligned lets align it
+        return (uint32_t)ptr + COS32_PAGE_SIZE - ((uint32_t)ptr % COS32_PAGE_SIZE);
+    }
+
+    // It's aligned lets return the same pointer provided
+    return ptr;
+}
+
+int paging_map_to(uint32_t* directory, void* virt, void* phys, void* phys_end, int flags)
+{
+    ASSERT(((uint32_t)virt % COS32_PAGE_SIZE) == 0);
+    ASSERT(((uint32_t)phys % COS32_PAGE_SIZE) == 0);
+    ASSERT(((uint32_t)phys_end % COS32_PAGE_SIZE) == 0);
+    ASSERT((uint32_t)phys_end > (uint32_t)phys);
+
+    int total_bytes = phys_end - phys;
+    int total_pages = total_bytes / COS32_PAGE_SIZE;
+    return paging_map_range(directory, virt, phys, total_pages, flags);
 }
 
 void paging_free_4gb(struct paging_4gb_chunk *chunk)

@@ -56,8 +56,9 @@ int process_start(struct process* process)
         return -EIO;
 
     process_switch(process);
+
     // In the future we will push argc, argv and other arguments
-    user_mode_enter((USER_MODE_FUNCTION)(COS32_PROGRAM_VIRTUAL_ADDRESS));
+    user_mode_enter((USER_MODE_FUNCTION)(COS32_PROGRAM_VIRTUAL_ADDRESS), COS32_PROGRAM_VIRTUAL_STACK_ADDRESS);
 }
 
 int process_get_free_slot()
@@ -96,20 +97,28 @@ int process_load(const char* filename, struct process** process)
     }
 
     // Let's create some memory for this program
-    void* ptr = kzalloc(stat.filesize);
-    if (!ptr)
+    void* program_data_ptr = kzalloc(stat.filesize);
+    if (!program_data_ptr)
     {
         res = -ENOMEM;
         goto out;
     }
 
     // Now load it in ;)  (Note we are loading it in as one block here, this may be problematic)
-    if(fread(ptr, stat.filesize, 1, fd) != 1)
+    if(fread(program_data_ptr, stat.filesize, 1, fd) != 1)
     {
         res = -EIO;
         goto out;
     }
 
+
+    // Let's now create a 16K stack
+    void* program_stack_ptr = kzalloc(1024*16);
+    if (!program_stack_ptr)
+    {
+        res = -ENOMEM;
+        goto out;
+    }
     
     struct process* _process = kzalloc(sizeof(struct process));
     if (!_process)
@@ -119,9 +128,10 @@ int process_load(const char* filename, struct process** process)
     }
 
 
-    process_init(process);
+    process_init(_process);
     strncpy(_process->filename, filename, sizeof(_process->filename));
-    _process->ptr = ptr;
+    _process->ptr = program_data_ptr;
+    _process->stack = program_stack_ptr;
     _process->size = stat.filesize;
     res = task_init(&_process->task);
     if (res != COS32_ALL_OK)
@@ -130,8 +140,8 @@ int process_load(const char* filename, struct process** process)
     }
 
     // We now need to map the process memory into real memory
-    uint32_t required_pages = (_process->size / COS32_PAGE_SIZE) + 1;
-    ASSERT(paging_map_range(_process->task.page_directory->directory_entry,COS32_PROGRAM_VIRTUAL_ADDRESS, _process->ptr, required_pages, PAGING_PAGE_PRESENT | PAGING_ACCESS_FROM_ALL | PAGING_PAGE_WRITEABLE) == 0);
+    ASSERT(paging_map_to(_process->task.page_directory->directory_entry, COS32_PROGRAM_VIRTUAL_ADDRESS, _process->ptr, paging_align_address(_process->ptr+_process->size), PAGING_PAGE_PRESENT | PAGING_ACCESS_FROM_ALL | PAGING_PAGE_WRITEABLE) == 0);
+   
     // We have the program loaded :o 
     *process = _process;
 

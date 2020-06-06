@@ -13,7 +13,7 @@ struct task
 };
 
 typedef void (*USER_MODE_FUNCTION)();
-void user_mode_enter(USER_MODE_FUNCTION);
+void user_mode_enter(USER_MODE_FUNCTION func, uint32_t stack_addr);
 struct task* task_current();
 int task_init(struct task* task);
 int task_switch(struct task* task);
