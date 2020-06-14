@@ -3,6 +3,7 @@ global idt_load
 global enable_interrupts
 global disable_interrupts
 global isr0_wrapper
+global isr1h_wrapper
 global isr80h_wrapper
 global isr_no_interrupt_wrapper
 global isr_invalid_tss_wrapper
@@ -10,6 +11,7 @@ global isr_segment_not_present_wrapper
 global isr_page_fault_wrapper
 extern isr0_handler
 extern isr_no_interrupt
+extern isr1h_handler
 extern isr80h_handler
 extern isr_invalid_tss_handler
 extern isr_segment_not_present_handler
@@ -35,6 +37,14 @@ isr0_wrapper:
     cld
     call isr0_handler
     iret
+
+isr1h_wrapper:
+    cli
+    mov ebx, esp
+    call isr1h_handler
+    sti
+    iretd
+
 
 isr80h_wrapper:
     cli

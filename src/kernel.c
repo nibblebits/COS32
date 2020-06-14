@@ -11,6 +11,7 @@
 #include "kernel.h"
 #include "memory/paging/paging.h"
 #include "memory/memory.h"
+#include "keyboard/keyboard.h"
 #include "task/task.h"
 #include "task/tss.h"
 #include "task/process.h"
@@ -273,6 +274,9 @@ void kernel_main(void)
 
 	// Initialize the heap
 	kheap_init();
+
+	// Let's enable the keyboard
+	enable_keyboard();
 
 	// Initialize paging
 	kernel_paging_chunk = paging_new_4gb(PAGING_ACCESS_FROM_ALL | PAGING_PAGE_PRESENT | PAGING_PAGE_WRITEABLE);

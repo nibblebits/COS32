@@ -206,7 +206,7 @@ int copy_string_from_user_process(struct process *process, void *virtual, void *
     }
 
     // Now that we are back on the kernel page lets copy from that "tmp" pointer we made back into the kernel space "phys" address
-    strncmp(phys, tmp, max);
+    strncpy(phys, tmp, max);
 out_free:
     kfree(tmp);
 out:

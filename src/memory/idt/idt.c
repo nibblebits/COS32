@@ -11,6 +11,7 @@ struct idt_desc idt_desc[COS32_MAX_INTERRUPTS];
 struct idtr_desc idtr_desc;
 extern struct tss tss;
 void isr0_wrapper();
+void isr1h_wrapper();
 void isr80h_wrapper();
 void isr_invalid_tss_wrapper();
 void isr_no_interrupt_wrapper();
@@ -32,6 +33,11 @@ struct isr80h_function1_print
     const char* message
 };
 
+void isr1h_handler(struct interrupt_frame frame)
+{
+    print("testing?\n");
+}
+
 void isr80h_handler(struct interrupt_frame* frame)
 {
     process_mark_running(false);
@@ -43,6 +49,7 @@ void isr80h_handler(struct interrupt_frame* frame)
     char buf[1024];
     ASSERT(copy_string_from_user_process(process_current(), msg_user_space_addr, buf, sizeof(buf)) == 0);
     print(buf);
+    print("testing?");
     process_page();
     process_mark_running(true);
 }
@@ -108,6 +115,7 @@ void idt_init()
     }
 
     idt_set(0, isr0_wrapper);
+    idt_set(1, isr1h_wrapper);
     idt_set(0x80, isr80h_wrapper);
     idt_set(0x0A, isr_invalid_tss_wrapper);
     idt_set(0x0B, isr_segment_not_present_wrapper);
