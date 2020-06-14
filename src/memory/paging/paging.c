@@ -201,6 +201,7 @@ int copy_string_from_user_process(struct process *process, void *virtual, void *
     res = paging_set(process_directory, tmp, old_entry);
     if (res < 0)
     {
+        res = -EIO;
         goto out_free;
     }
 
