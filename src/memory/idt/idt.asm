@@ -38,7 +38,10 @@ isr0_wrapper:
 
 isr80h_wrapper:
     cli
+    mov ebx, esp ; We should pass the stack as a pointer so isr 80h can access it
+    push ebx
     call isr80h_handler
+    pop ebx
     sti
     iretd
 isr_invalid_tss_wrapper:

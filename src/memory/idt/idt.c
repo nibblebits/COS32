@@ -5,6 +5,7 @@
 #include "kernel.h"
 #include "task/tss.h"
 #include "task/process.h"
+#include "string/string.h"
 
 struct idt_desc idt_desc[COS32_MAX_INTERRUPTS];
 struct idtr_desc idtr_desc;
@@ -24,11 +25,24 @@ struct interrupt_frame
     uint32_t sp;
     uint32_t ss;
 };
-void isr80h_handler(struct interrupt_frame frame)
+
+
+struct isr80h_function1_print
+{
+    const char* message
+};
+
+void isr80h_handler(struct interrupt_frame* frame)
 {
     process_mark_running(false);
+    // Inaccessible from the kernel page, must get it here
+    struct isr80h_function1_print* function1 = (struct isr80h_function1_print*) frame->sp;
+    const char* msg_user_space_addr = function1->message;
     kernel_page();
-    print("Interrupted 80h\n");
+
+    char buf[1024];
+    ASSERT(copy_string_from_user_process(process_current(), msg_user_space_addr, buf, sizeof(buf)) == 0);
+    print(buf);
     process_page();
     process_mark_running(true);
 }

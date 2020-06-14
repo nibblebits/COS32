@@ -8,8 +8,8 @@
 ; Putting anything above this will cause corruption know what your doing
 _start:
     ; In future we will push to the stack instead
-    mov eax, 0  ; Function zero = print
-  ;  push _message
+    mov eax, 1  ; Function zero = print
+    push _message
     int 0x80 ; Call the kernel
 
     jmp $

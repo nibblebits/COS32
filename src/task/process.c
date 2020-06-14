@@ -56,9 +56,10 @@ int process_start(struct process* process)
         return -EIO;
 
     process_switch(process);
+    // Now that we have switched to the process you should bare in mind its now dangerous to do anything else other than go to user mode
 
     // In the future we will push argc, argv and other arguments
-    user_mode_enter((USER_MODE_FUNCTION)(COS32_PROGRAM_VIRTUAL_ADDRESS), COS32_PROGRAM_VIRTUAL_STACK_ADDRESS);
+    user_mode_enter((USER_MODE_FUNCTION)(COS32_PROGRAM_VIRTUAL_ADDRESS), COS32_PROGRAM_VIRTUAL_STACK_ADDRESS_START);
 }
 
 int process_get_free_slot()
@@ -113,7 +114,7 @@ int process_load(const char* filename, struct process** process)
 
 
     // Let's now create a 16K stack
-    void* program_stack_ptr = kzalloc(1024*16);
+    void* program_stack_ptr = kzalloc(COS32_USER_PROGRAM_STACK_SIZE);
     if (!program_stack_ptr)
     {
         res = -ENOMEM;
@@ -141,12 +142,13 @@ int process_load(const char* filename, struct process** process)
 
     // We now need to map the process memory into real memory
     ASSERT(paging_map_to(_process->task.page_directory->directory_entry, COS32_PROGRAM_VIRTUAL_ADDRESS, _process->ptr, paging_align_address(_process->ptr+_process->size), PAGING_PAGE_PRESENT | PAGING_ACCESS_FROM_ALL | PAGING_PAGE_WRITEABLE) == 0);
-   
+    ASSERT(paging_map_to(_process->task.page_directory->directory_entry, COS32_PROGRAM_VIRTUAL_STACK_ADDRESS_END, _process->stack, paging_align_address(_process->stack+COS32_USER_PROGRAM_STACK_SIZE), PAGING_ACCESS_FROM_ALL | PAGING_PAGE_PRESENT | PAGING_PAGE_WRITEABLE) == 0);
+
     // We have the program loaded :o 
     *process = _process;
 
     // Add the process to the array
-    processes[process_slot] = process;
+    processes[process_slot] = _process;
     
 out:
     return res;
