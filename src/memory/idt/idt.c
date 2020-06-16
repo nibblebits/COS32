@@ -34,11 +34,13 @@ struct isr80h_function1_print
 
 void isr1h_handler()
 {
+    uint8_t scancode = insb(0x60);
+    if (keyboard_is_function_key(scancode))
+    {
+        print("Function key Pressed\n");
+    }
     // Let the PIC know we acknowledge the ISR
-    insb(0x60);
-    print("testing5555?\n");
-    outb(0x20, 0x20);
-    
+    outb(PIC1, PIC_EOI);
 }
 
 void isr80h_handler(struct interrupt_frame *frame)
@@ -60,7 +62,7 @@ void isr80h_handler(struct interrupt_frame *frame)
 void isr_no_interrupt(struct interrupt_frame frame)
 {
     // Let the PIC know we acknowledge the ISR
-    outb(0x20, 0x20);
+    outb(PIC1, PIC_EOI);
 }
 
 void isr0_handler(struct interrupt_frame frame)
