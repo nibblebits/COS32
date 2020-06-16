@@ -39,10 +39,9 @@ isr0_wrapper:
     iret
 
 isr1h_wrapper:
-    cli
-    mov ebx, esp
+    pushad
     call isr1h_handler
-    sti
+    popad
     iretd
 
 
@@ -71,5 +70,6 @@ isr_segment_not_present_wrapper:
 
 isr_no_interrupt_wrapper:
     cli
+    call isr_no_interrupt
     sti
     iretd

@@ -27,23 +27,26 @@ struct interrupt_frame
     uint32_t ss;
 };
 
-
 struct isr80h_function1_print
 {
-    const char* message
+    const char *message
 };
 
-void isr1h_handler(struct interrupt_frame frame)
+void isr1h_handler()
 {
-    print("testing?\n");
+    // Let the PIC know we acknowledge the ISR
+    insb(0x60);
+    print("testing5555?\n");
+    outb(0x20, 0x20);
+    
 }
 
-void isr80h_handler(struct interrupt_frame* frame)
+void isr80h_handler(struct interrupt_frame *frame)
 {
     process_mark_running(false);
     // Inaccessible from the kernel page, must get it here
-    struct isr80h_function1_print* function1 = (struct isr80h_function1_print*) frame->sp;
-    const char* msg_user_space_addr = function1->message;
+    struct isr80h_function1_print *function1 = (struct isr80h_function1_print *)frame->sp;
+    const char *msg_user_space_addr = function1->message;
     kernel_page();
 
     char buf[1024];
@@ -56,9 +59,8 @@ void isr80h_handler(struct interrupt_frame* frame)
 
 void isr_no_interrupt(struct interrupt_frame frame)
 {
-    // Let the bus know we have finished the interrupt
-
-    // outb(0x20, 0x20);
+    // Let the PIC know we acknowledge the ISR
+    outb(0x20, 0x20);
 }
 
 void isr0_handler(struct interrupt_frame frame)
@@ -115,7 +117,7 @@ void idt_init()
     }
 
     idt_set(0, isr0_wrapper);
-    idt_set(1, isr1h_wrapper);
+    idt_set(0x21, isr1h_wrapper);
     idt_set(0x80, isr80h_wrapper);
     idt_set(0x0A, isr_invalid_tss_wrapper);
     idt_set(0x0B, isr_segment_not_present_wrapper);
