@@ -15,8 +15,30 @@
 #define F10_PRESSED 0x44
 #define F11_PRESSED 0x45
 #define F12_PRESSED 0x46
-void enable_keyboard();
+
+#define KEYBOARD_INPUT_PORT 0x60
+
+
+
+typedef int(*KEYBOARD_INIT_FUNCTION)();
+struct keyboard
+{
+    
+    KEYBOARD_INIT_FUNCTION init;
+    char name[20];
+    struct keyboard* next;
+};
+
 
 bool keyboard_is_function_key(int key);
+int keyboard_insert(struct keyboard* keyboard);
+
+/**
+ * Pushes the character to the keyboard buffer, current implementation assumes we only have ascii
+ * future implementations will need to be changed to support different character sets
+ */
+void keyboard_push(char c);
+
+void keyboard_init();
 
 #endif

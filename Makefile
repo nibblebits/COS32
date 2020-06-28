@@ -1,4 +1,4 @@
-FILES = ./build/kernel.asm.o ./build/keyboard/keyboard.o ./build/task/task.o ./build/task/process.o ./build/kernel.o ./build/task/tss.asm.o ./build/gdt/gdt.asm.o ./build/gdt/gdt.o ./build/task/task.asm.o ./build/memory/paging/paging.o ./build/memory/paging/paging.asm.o ./build/memory/idt/idt.asm.o ./build/memory/idt/idt.o ./build/io/io.o  ./build/disk/disk.o ./build/fs/file.o ./build/fs/fat/fat16.o ./build/memory/heap.o ./build/memory/kheap.o ./build/memory/memory.o ./build/string/string.o
+FILES = ./build/kernel.asm.o ./build/keyboard/keyboard.o ./build/keyboard/classic.o ./build/task/task.o ./build/task/process.o ./build/kernel.o ./build/task/tss.asm.o ./build/gdt/gdt.asm.o ./build/gdt/gdt.o ./build/task/task.asm.o ./build/memory/paging/paging.o ./build/memory/paging/paging.asm.o ./build/memory/idt/idt.asm.o ./build/memory/idt/idt.o ./build/io/io.o  ./build/disk/disk.o ./build/fs/file.o ./build/fs/fat/fat16.o ./build/memory/heap.o ./build/memory/kheap.o ./build/memory/memory.o ./build/string/string.o
 FLAGS = -g
 INCLUDES = -I./src
 all: ./bin/kernel.bin ./bin/boot.bin ${FILES} programs
@@ -44,6 +44,10 @@ all: ./bin/kernel.bin ./bin/boot.bin ${FILES} programs
 
 ./build/keyboard/keyboard.o: ./src/keyboard/keyboard.c ./src/keyboard/keyboard.h
 	i686-elf-gcc $(INCLUDES) -I./src/keyboard  ${FLAGS} -c ./src/keyboard/keyboard.c -o ./build/keyboard/keyboard.o -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g
+
+./build/keyboard/classic.o: ./src/keyboard/classic.c ./src/keyboard/classic.h
+	i686-elf-gcc $(INCLUDES) -I./src/keyboard  ${FLAGS} -c ./src/keyboard/classic.c -o ./build/keyboard/classic.o -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g
+
 
 ./build/memory/paging/paging.asm.o: ./src/memory/paging/paging.asm ./src/memory/paging/paging.h
 	nasm -f elf -g ./src/memory/paging/paging.asm -o ./build/memory/paging/paging.asm.o

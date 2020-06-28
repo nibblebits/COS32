@@ -6,7 +6,9 @@
 #include "task/tss.h"
 #include "task/process.h"
 #include "string/string.h"
-
+#include "keyboard/keyboard.h"
+#include "keyboard/classic.h"
+#include "status.h"
 struct idt_desc idt_desc[COS32_MAX_INTERRUPTS];
 struct idtr_desc idtr_desc;
 extern struct tss tss;
@@ -17,6 +19,12 @@ void isr_invalid_tss_wrapper();
 void isr_no_interrupt_wrapper();
 void isr_segment_not_present_wrapper();
 void isr_page_fault_wrapper();
+
+extern void *interrupt_pointer_table[COS32_MAX_INTERRUPTS];
+static INTERRUPT_CALLBACK_FUNCTION interrupt_callbacks[COS32_MAX_INTERRUPTS];
+
+// Our kernel interrupt and divide by zero exception are reserved and cannot be registered by external resources
+static int reserved_interrupts[] = {0x80, 0x00};
 
 struct interrupt_frame
 {
@@ -32,29 +40,96 @@ struct isr80h_function1_print
     const char *message
 };
 
-void isr1h_handler()
+bool idt_is_reserved(int interrupt)
 {
-    uint8_t scancode = insb(0x60);
-    if (keyboard_is_function_key(scancode))
+    int size_of_array = sizeof(reserved_interrupts) / sizeof(int);
+    for (int i = 0; i < size_of_array; i++)
     {
-        print("Function key Pressed\n");
+        if (reserved_interrupts[i] == interrupt)
+            return true;
     }
-    // Let the PIC know we acknowledge the ISR
+
+    return false;
+}
+
+void interrupt_handler(int interrupt)
+{
+    if (interrupt_callbacks[interrupt] != 0)
+    {
+        interrupt_callbacks[interrupt]();
+    }
+
     outb(PIC1, PIC_EOI);
 }
 
-void isr80h_handler(struct interrupt_frame *frame)
+int idt_function_is_valid(int interrupt, INTERRUPT_CALLBACK_FUNCTION interrupt_callback)
 {
-    process_mark_running(false);
-    // Inaccessible from the kernel page, must get it here
+    int res = COS32_ALL_OK;
+    if (interrupt >= COS32_MAX_INTERRUPTS || interrupt < 0)
+    {
+        res = -EINVARG;
+        goto out;
+    }
+
+    if (idt_is_reserved(interrupt))
+    {
+        res = -EINVARG;
+        goto out;
+    }
+
+out:
+    return res;
+}
+
+int idt_register_interrupt_callback(int interrupt, INTERRUPT_CALLBACK_FUNCTION interrupt_callback)
+{
+    int res = COS32_ALL_OK;
+    res = idt_function_is_valid(interrupt, interrupt_callback);
+    if (res < 0)
+    {
+        goto out;
+    }
+    interrupt_callbacks[interrupt] = interrupt_callback;
+
+out:
+    return res;
+}
+
+void idt_general_protection_fault(int interrupt)
+{
+    panic("General Protection Fault!\n");
+}
+
+void isr80h_command1_print(struct interrupt_frame *frame)
+{
+    process_page();
     struct isr80h_function1_print *function1 = (struct isr80h_function1_print *)frame->sp;
     const char *msg_user_space_addr = function1->message;
+
     kernel_page();
 
     char buf[1024];
     ASSERT(copy_string_from_user_process(process_current(), msg_user_space_addr, buf, sizeof(buf)) == 0);
     print(buf);
-    print("testing?");
+}
+
+
+
+void isr80h_handle_command(int command, struct interrupt_frame *frame)
+{
+    switch (command)
+    {
+    case SYSTEM_COMMAND_PRINT:
+        isr80h_command1_print(frame);
+        break;
+    };
+}
+
+void isr80h_handler(int command, struct interrupt_frame *frame)
+{
+    process_mark_running(false);
+    kernel_page();
+    isr80h_handle_command(command, frame);
     process_page();
     process_mark_running(true);
 }
@@ -112,17 +187,18 @@ void idt_init()
     idtr_desc.limit = COS32_MAX_INTERRUPTS * sizeof(struct idt_desc);
     idtr_desc.base = (uint32_t)idt_desc;
 
-    // Set all the interrupts to a default interrupt that does nothing, these are ones we don't bother handling
+    // Set all the interrupts to equal the address in the interrupt pointer table, upon calling an interrupt
+    // the correct interrupt wrapper will be called, see "idt.asm"
     for (int i = 0; i < COS32_MAX_INTERRUPTS; i++)
     {
-        idt_set(i, isr_no_interrupt_wrapper);
+        idt_set(i, interrupt_pointer_table[i]);
     }
 
-    idt_set(0, isr0_wrapper);
-    idt_set(0x21, isr1h_wrapper);
+    // Our custom interrupt is reserved and cannot be taken
     idt_set(0x80, isr80h_wrapper);
-    idt_set(0x0A, isr_invalid_tss_wrapper);
-    idt_set(0x0B, isr_segment_not_present_wrapper);
-    idt_set(0x0E, isr_page_fault_wrapper);
+
+    // Setup the general protection fault interrupt
+    idt_register_interrupt_callback(0x0D, idt_general_protection_fault);
+
     idt_load(&idtr_desc);
 }

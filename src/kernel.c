@@ -243,6 +243,12 @@ struct gdt_structured gdt_structured[COS32_TOTAL_GDT_SEGMENTS] = {
 void int80h();
 
 struct paging_4gb_chunk *kernel_paging_chunk = 0;
+
+uint32_t* kernel_get_page_directory()
+{
+	return kernel_paging_chunk->directory_entry;
+}
+
 void kernel_page()
 {
 	paging_switch(kernel_paging_chunk->directory_entry);
@@ -257,7 +263,6 @@ void kernel_main(void)
 	memset(gdt_real, 0, sizeof(gdt_real));
 	gdt_structured_to_gdt(gdt_real, gdt_structured, COS32_TOTAL_GDT_SEGMENTS);
 
-	print("hello?");
 	// Load our new GDT
 	gdt_load(gdt_real, sizeof(struct gdt) * COS32_TOTAL_GDT_SEGMENTS);
 
@@ -275,8 +280,8 @@ void kernel_main(void)
 	// Initialize the heap
 	kheap_init();
 
-	// Let's enable the keyboard
-	enable_keyboard();
+	// Initialize all the keyboards
+	keyboard_init();
 
 	// Initialize paging
 	kernel_paging_chunk = paging_new_4gb(PAGING_ACCESS_FROM_ALL | PAGING_PAGE_PRESENT | PAGING_PAGE_WRITEABLE);

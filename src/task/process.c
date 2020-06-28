@@ -73,6 +73,11 @@ int process_get_free_slot()
     return -1;
 }
 
+struct process* process_get(int index)
+{
+    return processes[index];
+}
+
 int process_load(const char* filename, struct process** process)
 {
     int res = 0;

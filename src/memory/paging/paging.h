@@ -46,8 +46,17 @@ void *paging_align_address(void *ptr);
 int paging_map_to(uint32_t *directory, void *virt, void *phys, void *phys_end, int flags);
 
 void paging_free_4gb(struct paging_4gb_chunk *chunk);
+/**
+ * Switches the processor to page with the provided directory
+ */
 void paging_switch(uint32_t *directory);
 void paging_unmap_all(struct paging_4gb_chunk *chunk);
+
+
+/**
+ * Returns the current page directory this processor is bound to, this only works properly if you switch pages using the paging_switch function
+ */
+uint32_t* paging_current_directory();
 
 /**
  * Copies the string located at the virtual address provided for the user process into the physical address provided.
@@ -74,7 +83,6 @@ int paging_set(uint32_t *directory, void *virt, uint32_t val);
  */
 uint32_t paging_get(uint32_t *directory, void *virt);
 
-extern void paging_load_directory(uint32_t *);
 extern void enable_paging();
 
 #endif

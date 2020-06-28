@@ -7,9 +7,8 @@
 #include "task/process.h"
 #include "string/string.h"
 #include "kernel.h"
-//PAGE_DIRECTORY_ENTRY page_directory[1024] __attribute__((aligned(4096)));
-//PAGE_TABLE_ENTRY first_page_table[1024] __attribute__((aligned(4096)));
 
+static uint32_t current_directory = 0;
 struct paging_4gb_chunk *paging_new_4gb(uint8_t flags)
 {
     uint32_t *directory = kzalloc(sizeof(uint32_t) * 1024);
@@ -31,17 +30,10 @@ struct paging_4gb_chunk *paging_new_4gb(uint8_t flags)
     return chunk_4gb;
 }
 
-// void paging_map_page_directory_to_user_space(struct paging_4gb_chunk* in_chunk, uint32_t* out)
-// {
-//     // First map the input chunk
-//     paging_map(out, in_chunk, in_chunk, )
-//     for (int i = 0; i < 1024; i++)
-//     {
-//         for (int b = 0; b < 1024; b++)
-//         {
-//         }
-//     }
-// }
+uint32_t* paging_current_directory()
+{
+    return current_directory;
+}
 
 void paging_unmap_all(struct paging_4gb_chunk *chunk)
 {
@@ -142,6 +134,7 @@ int paging_map(uint32_t *directory, void *virt, void *phys, int flags)
 void paging_switch(uint32_t *directory)
 {
     paging_load_directory(directory);
+    current_directory = directory;
 }
 
 void *paging_align_address(void *ptr)
@@ -174,6 +167,10 @@ void paging_free_4gb(struct paging_4gb_chunk *chunk)
 
 int copy_string_from_user_process(struct process *process, void *virtual, void *phys, int max)
 {
+
+    // Let's assert we are on the kernel page, we can't do anything without this being the case. We will assume a bug if its not
+    ASSERT(paging_current_directory() == kernel_get_page_directory());
+
     // We only support copying of strings that are no larger than a page.
     if (max >= COS32_PAGE_SIZE)
     {
@@ -212,30 +209,3 @@ out_free:
 out:
     return 0;
 }
-
-/*
-void paging_init()
-{
-    for (int i = 0; i < 1024; i++)
-    {
-        page_directory[i] = 0x00000002;
-    }
-
-    // holds the physical address where we want to start mapping these pages to.
-    // in this case, we want to map these pages to the very beginning of memory.
-    unsigned int i;
-
-    //we will fill all 1024 entries in the table, mapping 4 megabytes
-    for (i = 0; i < 1024; i++)
-    {
-        // As the address is page aligned, it will always leave 12 bits zeroed.
-        // Those bits are used by the attributes ;)
-        first_page_table[i] = (i * 0x1000) | 3; // attributes: supervisor level, read/write, present.
-    }
-
-    // attributes: supervisor level, read/write, present
-    page_directory[0] = ((unsigned int)first_page_table) | 3;
-    first_page_table[1] = (0x100000) | 1;
-
-    paging_load_directory(page_directory);
-}*/

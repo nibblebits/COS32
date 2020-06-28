@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+typedef void(*INTERRUPT_CALLBACK_FUNCTION)();
 
 // ISR Definitions
 #define PIC1		0x20		/* IO base address for master PIC */
@@ -18,6 +19,13 @@
 #define IDT_TASK_GATE 0x85
 #define IDT_INTERRUPT_GATE 0x8E
 #define IDT_TRAP_GATE 0x8F
+
+
+enum SystemCommands
+{
+    SYSTEM_COMMAND_EXIT,
+    SYSTEM_COMMAND_PRINT
+};
 
 struct idt_desc
 {
@@ -38,4 +46,6 @@ void idt_init();
 void idt_load(struct idtr_desc* desc);
 void enable_interrupts();
 void disable_interrupts();
+
+int idt_register_interrupt_callback(int interrupt, INTERRUPT_CALLBACK_FUNCTION interrupt_callback);
 #endif
