@@ -254,6 +254,10 @@ void kernel_page()
 	paging_switch(kernel_paging_chunk->directory_entry);
 }
 
+bool is_kernel_page()
+{
+	return paging_current_directory() == kernel_get_page_directory();
+}
 
 void kernel_main(void)
 {

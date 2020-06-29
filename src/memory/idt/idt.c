@@ -26,15 +26,6 @@ static INTERRUPT_CALLBACK_FUNCTION interrupt_callbacks[COS32_MAX_INTERRUPTS];
 // Our kernel interrupt and divide by zero exception are reserved and cannot be registered by external resources
 static int reserved_interrupts[] = {0x80, 0x00};
 
-struct interrupt_frame
-{
-    uint32_t ip;
-    uint32_t cs;
-    uint32_t flags;
-    uint32_t sp;
-    uint32_t ss;
-};
-
 struct isr80h_function1_print
 {
     const char *message
@@ -102,13 +93,8 @@ void idt_general_protection_fault(int interrupt)
 
 void isr80h_command1_print(struct interrupt_frame *frame)
 {
-    struct isr80h_function1_print *function1 = (struct isr80h_function1_print *)frame->sp;
-    process_page();
-    const char *msg_user_space_addr = function1->message;
-    kernel_page();
-
-    const char* message = process_get_stack_item(0);
-
+    // The message to print is the first element on the user stack
+    const char *msg_user_space_addr = (const char*) process_get_stack_item(0);
     char buf[1024];
     ASSERT(copy_string_from_user_process(process_current(), msg_user_space_addr, buf, sizeof(buf)) == 0);
     print(buf);
@@ -123,6 +109,10 @@ void isr80h_handle_command(int command, struct interrupt_frame *frame)
     case SYSTEM_COMMAND_PRINT:
         isr80h_command1_print(frame);
         break;
+
+        case SYSTEM_COMMAND_GET_KEY:
+
+        break;
     };
 }
 
@@ -131,6 +121,7 @@ void isr80h_handler(int command, struct interrupt_frame *frame)
     // Our interrupt handler may only be called by programs and not the kernel
     ASSERT(process_running());
 
+    process_save_state(frame);
     process_mark_running(false);
     kernel_page();
     isr80h_handle_command(command, frame);

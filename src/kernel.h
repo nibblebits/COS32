@@ -2,12 +2,14 @@
 #define KERNEL_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
 void print(const char* message);
 void panic(char* message);
 void print_number(int number);
 char* itoa(int i);
 void kernel_page();
+bool is_kernel_page();
 
 /**
  * Returns the page directory that the kernel uses

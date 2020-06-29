@@ -24,7 +24,8 @@ typedef void(*INTERRUPT_CALLBACK_FUNCTION)();
 enum SystemCommands
 {
     SYSTEM_COMMAND_EXIT,
-    SYSTEM_COMMAND_PRINT
+    SYSTEM_COMMAND_PRINT,
+    SYSTEM_COMMAND_GET_KEY
 };
 
 struct idt_desc
@@ -41,6 +42,17 @@ struct idtr_desc
     uint16_t limit;
     uint32_t base;
 } __attribute__((packed));
+
+
+
+struct interrupt_frame
+{
+    uint32_t ip;
+    uint32_t cs;
+    uint32_t flags;
+    uint32_t sp;
+    uint32_t ss;
+};
 
 void idt_init();
 void idt_load(struct idtr_desc* desc);

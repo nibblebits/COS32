@@ -5,23 +5,22 @@
 #include "memory/kheap.h"
 #include "memory/memory.h"
 #include "string/string.h"
+#include "memory/idt/idt.h"
 #include "kernel.h"
 
-
 // The current process that was just running or is running
-struct process* current_process = 0;
+struct process *current_process = 0;
 // This is true if the process is running right now
 bool process_is_running = 0;
 
-struct process* processes[COS32_MAX_PROCESSES] = {};
+struct process *processes[COS32_MAX_PROCESSES] = {};
 
-static void process_init(struct process* process)
+static void process_init(struct process *process)
 {
     memset(process, 0, sizeof(struct process));
 }
 
-
-struct process* process_current()
+struct process *process_current()
 {
     return current_process;
 }
@@ -36,13 +35,53 @@ bool process_running()
     return process_is_running;
 }
 
+
+void process_save_state(struct interrupt_frame* frame)
+{
+    // Asserts that we have a process
+   ASSERT(process_current());
+
+   // Save the registers
+   struct process* proc = process_current();
+   proc->registers.ip = frame->ip;
+   proc->registers.cs = frame->cs;
+   proc->registers.flags = frame->flags;
+   proc->registers.sp = frame->sp;
+   proc->registers.ss = frame->ss;
+
+}
+
+void *process_get_stack_item(int index)
+{
+    void* result = 0;
+    struct process* proc = process_current();
+
+    // Assert that we have a process
+    ASSERT(proc);
+  
+    // Assert that we are currently paging the kernel, if someone calls us whilst in a process page we will assume an error as we swap back to kernel when we are done, which may have unpredictable results
+    ASSERT(is_kernel_page());
+
+    // Let's switch to the process page
+    process_page();
+
+    // We assume the stack grows downwards for this implementation to work.
+    uint32_t* sp_ptr = (uint32_t*) proc->registers.sp;
+    result = (void*) sp_ptr[index];
+
+    // We should switch back to the kernel page
+    kernel_page();
+
+    return result;
+}
+
 int process_page()
 {
     task_switch(&current_process->task);
     return 0;
 }
 
-int process_switch(struct process* process)
+int process_switch(struct process *process)
 {
     current_process = process;
     process_is_running = true;
@@ -50,7 +89,7 @@ int process_switch(struct process* process)
     return 0;
 }
 
-int process_start(struct process* process)
+int process_start(struct process *process)
 {
     if (process->started)
         return -EIO;
@@ -73,12 +112,12 @@ int process_get_free_slot()
     return -1;
 }
 
-struct process* process_get(int index)
+struct process *process_get(int index)
 {
     return processes[index];
 }
 
-int process_load(const char* filename, struct process** process)
+int process_load(const char *filename, struct process **process)
 {
     int res = 0;
     int process_slot = process_get_free_slot();
@@ -103,7 +142,7 @@ int process_load(const char* filename, struct process** process)
     }
 
     // Let's create some memory for this program
-    void* program_data_ptr = kzalloc(stat.filesize);
+    void *program_data_ptr = kzalloc(stat.filesize);
     if (!program_data_ptr)
     {
         res = -ENOMEM;
@@ -111,28 +150,26 @@ int process_load(const char* filename, struct process** process)
     }
 
     // Now load it in ;)  (Note we are loading it in as one block here, this may be problematic)
-    if(fread(program_data_ptr, stat.filesize, 1, fd) != 1)
+    if (fread(program_data_ptr, stat.filesize, 1, fd) != 1)
     {
         res = -EIO;
         goto out;
     }
 
-
     // Let's now create a 16K stack
-    void* program_stack_ptr = kzalloc(COS32_USER_PROGRAM_STACK_SIZE);
+    void *program_stack_ptr = kzalloc(COS32_USER_PROGRAM_STACK_SIZE);
     if (!program_stack_ptr)
     {
         res = -ENOMEM;
         goto out;
     }
-    
-    struct process* _process = kzalloc(sizeof(struct process));
+
+    struct process *_process = kzalloc(sizeof(struct process));
     if (!_process)
     {
         res = -ENOMEM;
         goto out;
     }
-
 
     process_init(_process);
     strncpy(_process->filename, filename, sizeof(_process->filename));
@@ -146,15 +183,15 @@ int process_load(const char* filename, struct process** process)
     }
 
     // We now need to map the process memory into real memory
-    ASSERT(paging_map_to(_process->task.page_directory->directory_entry, COS32_PROGRAM_VIRTUAL_ADDRESS, _process->ptr, paging_align_address(_process->ptr+_process->size), PAGING_PAGE_PRESENT | PAGING_ACCESS_FROM_ALL | PAGING_PAGE_WRITEABLE) == 0);
-    ASSERT(paging_map_to(_process->task.page_directory->directory_entry, COS32_PROGRAM_VIRTUAL_STACK_ADDRESS_END, _process->stack, paging_align_address(_process->stack+COS32_USER_PROGRAM_STACK_SIZE), PAGING_ACCESS_FROM_ALL | PAGING_PAGE_PRESENT | PAGING_PAGE_WRITEABLE) == 0);
+    ASSERT(paging_map_to(_process->task.page_directory->directory_entry, COS32_PROGRAM_VIRTUAL_ADDRESS, _process->ptr, paging_align_address(_process->ptr + _process->size), PAGING_PAGE_PRESENT | PAGING_ACCESS_FROM_ALL | PAGING_PAGE_WRITEABLE) == 0);
+    ASSERT(paging_map_to(_process->task.page_directory->directory_entry, COS32_PROGRAM_VIRTUAL_STACK_ADDRESS_END, _process->stack, paging_align_address(_process->stack + COS32_USER_PROGRAM_STACK_SIZE), PAGING_ACCESS_FROM_ALL | PAGING_PAGE_PRESENT | PAGING_PAGE_WRITEABLE) == 0);
 
-    // We have the program loaded :o 
+    // We have the program loaded :o
     *process = _process;
 
     // Add the process to the array
     processes[process_slot] = _process;
-    
+
 out:
     return res;
 }

@@ -169,7 +169,7 @@ int copy_string_from_user_process(struct process *process, void *virtual, void *
 {
 
     // Let's assert we are on the kernel page, we can't do anything without this being the case. We will assume a bug if its not
-    ASSERT(paging_current_directory() == kernel_get_page_directory());
+    ASSERT(is_kernel_page());
 
     // We only support copying of strings that are no larger than a page.
     if (max >= COS32_PAGE_SIZE)
