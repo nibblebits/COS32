@@ -102,11 +102,12 @@ void idt_general_protection_fault(int interrupt)
 
 void isr80h_command1_print(struct interrupt_frame *frame)
 {
-    process_page();
     struct isr80h_function1_print *function1 = (struct isr80h_function1_print *)frame->sp;
+    process_page();
     const char *msg_user_space_addr = function1->message;
-
     kernel_page();
+
+    const char* message = process_get_stack_item(0);
 
     char buf[1024];
     ASSERT(copy_string_from_user_process(process_current(), msg_user_space_addr, buf, sizeof(buf)) == 0);
@@ -127,6 +128,9 @@ void isr80h_handle_command(int command, struct interrupt_frame *frame)
 
 void isr80h_handler(int command, struct interrupt_frame *frame)
 {
+    // Our interrupt handler may only be called by programs and not the kernel
+    ASSERT(process_running());
+
     process_mark_running(false);
     kernel_page();
     isr80h_handle_command(command, frame);
