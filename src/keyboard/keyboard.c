@@ -60,6 +60,7 @@ char keyboard_pop()
     struct process *process = process_current();
     int real_index = process->keyboard.head % sizeof(process->keyboard.buffer);
     char c = process->keyboard.buffer[real_index];
+    process->keyboard.buffer[real_index] = 0;
     process->keyboard.head++;
     return c;
 }

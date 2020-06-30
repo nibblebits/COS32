@@ -35,39 +35,49 @@ bool process_running()
     return process_is_running;
 }
 
-
-void process_save_state(struct interrupt_frame* frame)
+void process_save_state(struct interrupt_frame *frame)
 {
+    // Assert that we are currently paging the kernel, if someone calls us whilst in a process page we will assume an error as we swap back to kernel when we are done, which may have unpredictable results
+    ASSERT(is_kernel_page());
+
     // Asserts that we have a process
-   ASSERT(process_current());
+    ASSERT(process_current());
 
-   // Save the registers
-   struct process* proc = process_current();
-   proc->registers.ip = frame->ip;
-   proc->registers.cs = frame->cs;
-   proc->registers.flags = frame->flags;
-   proc->registers.sp = frame->sp;
-   proc->registers.ss = frame->ss;
 
+    // Save the registers
+    struct process *proc = process_current();
+    proc->registers.ip = frame->ip;
+    proc->registers.cs = frame->cs;
+    proc->registers.flags = frame->flags;
+    proc->registers.sp = frame->sp;
+    proc->registers.ss = frame->ss;
+
+    // We are going to have to switch to the current processes page to access these registers
+    process_page();
+    uint32_t *general_reg_ptr = (uint32_t *)proc->registers.sp;
+
+    // Let's switch back to the kernel page
+    kernel_page();
 }
 
 void *process_get_stack_item(int index)
 {
-    void* result = 0;
-    struct process* proc = process_current();
+    void *result = 0;
+    struct process *proc = process_current();
 
     // Assert that we have a process
     ASSERT(proc);
-  
+
     // Assert that we are currently paging the kernel, if someone calls us whilst in a process page we will assume an error as we swap back to kernel when we are done, which may have unpredictable results
     ASSERT(is_kernel_page());
 
+    // We assume the stack grows downwards for this implementation to work.
+    uint32_t *sp_ptr = (uint32_t *)proc->registers.sp;
+    
     // Let's switch to the process page
     process_page();
 
-    // We assume the stack grows downwards for this implementation to work.
-    uint32_t* sp_ptr = (uint32_t*) proc->registers.sp;
-    result = (void*) sp_ptr[index];
+    result = (void *)sp_ptr[index];
 
     // We should switch back to the kernel page
     kernel_page();

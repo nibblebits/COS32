@@ -34,10 +34,15 @@ bool keyboard_is_function_key(int key);
 int keyboard_insert(struct keyboard* keyboard);
 
 /**
- * Pushes the character to the keyboard buffer, current implementation assumes we only have ascii
- * future implementations will need to be changed to support different character sets
+ * Pushes the character to the keyboard buffer of the current process, current implementation assumes we only have ascii
+ * future implementations will need to be changed to support different character sets.
  */
 void keyboard_push(char c);
+
+/**
+ * Pops off the first key in the keyboard buffer of the current process. Returned value is character equivilant of the scancode
+ */
+char keyboard_pop();
 
 void keyboard_init();
 

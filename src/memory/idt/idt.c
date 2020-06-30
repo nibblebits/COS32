@@ -91,42 +91,52 @@ void idt_general_protection_fault(int interrupt)
     panic("General Protection Fault!\n");
 }
 
-void isr80h_command1_print(struct interrupt_frame *frame)
+void* isr80h_command1_print(struct interrupt_frame *frame)
 {
     // The message to print is the first element on the user stack
-    const char *msg_user_space_addr = (const char*) process_get_stack_item(0);
+    const char *msg_user_space_addr = (const char *)process_get_stack_item(0);
     char buf[1024];
     ASSERT(copy_string_from_user_process(process_current(), msg_user_space_addr, buf, sizeof(buf)) == 0);
     print(buf);
+    return 0;
 }
 
-
-
-void isr80h_handle_command(int command, struct interrupt_frame *frame)
+void* isr80h_command2_get_key(struct interrupt_frame *frame)
 {
+    char key = keyboard_pop();
+    struct process *proc = process_current();
+    return key;
+}
+
+void* isr80h_handle_command(int command, struct interrupt_frame *frame)
+{
+    void* result = 0;
     switch (command)
     {
     case SYSTEM_COMMAND_PRINT:
-        isr80h_command1_print(frame);
+        result = isr80h_command1_print(frame);
         break;
 
-        case SYSTEM_COMMAND_GET_KEY:
-
+    case SYSTEM_COMMAND_GET_KEY:
+        result = isr80h_command2_get_key(frame);
         break;
     };
+
+    return result;
 }
 
-void isr80h_handler(int command, struct interrupt_frame *frame)
+void* isr80h_handler(int command, struct interrupt_frame *frame)
 {
+    void* res = 0;
     // Our interrupt handler may only be called by programs and not the kernel
-    ASSERT(process_running());
-
-    process_save_state(frame);
-    process_mark_running(false);
     kernel_page();
-    isr80h_handle_command(command, frame);
-    process_page();
+    ASSERT(process_running());
+    process_mark_running(false);
+    process_save_state(frame);
+    res = isr80h_handle_command(command, frame);
     process_mark_running(true);
+    process_page();
+    return res;
 }
 
 void isr_no_interrupt(struct interrupt_frame frame)

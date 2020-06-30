@@ -73,17 +73,33 @@ isr0_wrapper:
     call isr0_handler
     iret
 
+
 isr80h_wrapper:
+    push ebp
+    mov ebp, esp
     cli
-    mov ebx, esp ; We should pass the stack as a pointer so isr 80h can access it
+    ; Save user land registers
+    pushad
+    ; Here we pass in the stack as it was when we entered this routine, this is important so our isr80h_handler can access the interrupt frame.
+    lea ebx, [ebp+4]
     push ebx
     ; EAX holds our command lets push it
     push eax
     call isr80h_handler
-    pop eax
+    mov dword[.tmp_res], eax
     pop ebx
+    pop ebx
+    ; Restore user land registers
+    popad
     sti
+    pop ebp
+    ; Set the EAX register to the return result stored in .tmp_res
+    mov eax, [.tmp_res]
     iretd
+
+; Stores the return result of the interrupt operation
+.tmp_res: dd 0
+
 isr_invalid_tss_wrapper:
     cld
     call isr_invalid_tss_handler
