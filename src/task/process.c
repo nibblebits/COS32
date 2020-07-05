@@ -73,7 +73,7 @@ void *process_get_stack_item(int index)
 
     // We assume the stack grows downwards for this implementation to work.
     uint32_t *sp_ptr = (uint32_t *)proc->registers.sp;
-    
+
     // Let's switch to the process page
     process_page();
 
@@ -205,3 +205,4 @@ int process_load(const char *filename, struct process **process)
 out:
     return res;
 }
+

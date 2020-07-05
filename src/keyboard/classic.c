@@ -8,6 +8,10 @@ int classic_keyboard_init();
 int classic_keyboard_push(int keycode);
 int classic_keyboard_pop();
 
+// An array of special key scancodes ( I don't like magic numbers change this soon )
+static uint8_t keyboard_special_keys_set_one[] = {
+    0x3B, 0x3B, 0x3C, 0x3D, 0x3E, 0x3F, 0x40, 0x41, 0xf2, 0x43, 0x44, 0x57, 0x58};
+
 /*
  		0x01 	escape pressed 	0x02 	1 pressed 	0x03 	2 pressed
 0x04 	3 pressed 	0x05 	4 pressed 	0x06 	5 pressed 	0x07 	6 pressed
@@ -35,7 +39,7 @@ int classic_keyboard_pop();
 		0x81 	escape released 	0x82 	1 released 	0x83 	2 released
 0x84 	3 released 	0x85 	4 released 	0x86 	5 released 	0x87 	6 released 
 */
-uint8_t keyboard_scan_set_one[] = {
+static uint8_t keyboard_scan_set_one[] = {
     0x00,
     0x1B,
     '1',
@@ -130,6 +134,24 @@ void classic_enable_keyboard()
     outb(0x64, 0xAE);
 }
 
+/**
+ * Returns the index in the special array of the special scan code provided.
+ * If the scan code is not special -1 is returned
+ */
+static int classic_keyboard_scancode_special(uint8_t scancode)
+{
+    size_t total_special_keys = sizeof(keyboard_special_keys_set_one) / sizeof(uint8_t);
+    for (size_t i = 0; i < total_special_keys; i++)
+    {
+        if (keyboard_special_keys_set_one[i] == scancode)
+        {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
 uint8_t classic_keyboard_scancode_to_char(uint8_t scancode)
 {
     size_t size_of_keyboard_set_one = sizeof(keyboard_scan_set_one) / sizeof(uint8_t);
@@ -151,9 +173,25 @@ void classic_keyboard_handle_interrupt()
     // Sometimes we have a rouge IRQ, osdev says to do a dummy read
     insb(KEYBOARD_INPUT_PORT);
 
-    if (scancode & 0x80)
+    // Unset the key released b it as we want to get the special index regardless if the key was released or not
+    int special_index = classic_keyboard_scancode_special(scancode & ~CLASSIC_KEYBOARD_KEY_RELEASED);
+
+    // Key is released
+    if (scancode & CLASSIC_KEYBOARD_KEY_RELEASED)
     {
-        // Key is released
+        // Is the scan code special?
+        if (special_index != -1)
+        {
+            keyboard_special_off(special_index);
+        }
+
+        return;
+    }
+
+    // Is the scan code special?
+    if (special_index != -1)
+    {
+        keyboard_special_on(special_index);
         return;
     }
 

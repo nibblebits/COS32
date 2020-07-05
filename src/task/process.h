@@ -3,6 +3,7 @@
 
 #include "config.h"
 #include "task.h"
+#include "keyboard/keyboard.h"
 #include <stdbool.h>
 
 struct interrupt_frame;
@@ -32,7 +33,6 @@ struct process
         int head;
     } keyboard;
 
-
     // When we switch out of user space the process registers are saved in memory
     struct registers
     {
@@ -43,7 +43,7 @@ struct process
         uint32_t edx;
         uint32_t ecx;
         uint32_t eax;
-         
+
         uint32_t ip;
         uint32_t cs;
         uint32_t flags;
@@ -69,8 +69,6 @@ void *process_get_stack_item(int index);
 /**
  * Saves the current processes state, this is useful for task switching later on
  */
-void process_save_state(struct interrupt_frame* frame);
-
-
+void process_save_state(struct interrupt_frame *frame);
 
 #endif
