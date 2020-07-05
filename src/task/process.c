@@ -99,6 +99,21 @@ int process_switch(struct process *process)
     return 0;
 }
 
+int process_load_start(const char* path)
+{
+    int res = 0;
+    struct process* process;
+    res = process_load(path, &process);
+    if (res < 0)
+    {
+        return res;
+    }
+
+    // Start the process :)
+    res = process_start(process);
+    return res;
+}
+
 int process_start(struct process *process)
 {
     if (process->started)
@@ -109,6 +124,8 @@ int process_start(struct process *process)
 
     // In the future we will push argc, argv and other arguments
     user_mode_enter((USER_MODE_FUNCTION)(COS32_PROGRAM_VIRTUAL_ADDRESS), COS32_PROGRAM_VIRTUAL_STACK_ADDRESS_START);
+
+    return 0;
 }
 
 int process_get_free_slot()

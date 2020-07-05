@@ -305,13 +305,12 @@ void kernel_main(void)
 
 	print("Kernel initialized");
 
-	struct process *process = 0;
-	// Why does start.bin or start.raw not work? Investigate it further
-	int res = process_load("0:/start.r", &process);
+
+	// Load the start program
+	int res = process_load_start("0:/start.r");
 	if (res < 0)
 	{
 		panic("Failed to load the start program!");
 	}
-
-	process_start(process);
+	
 }

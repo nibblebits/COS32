@@ -56,6 +56,7 @@ int process_page();
 int process_load(const char *filename, struct process **process);
 int process_switch(struct process *process);
 int process_start(struct process *process);
+int process_load_start(const char* path);
 bool process_running();
 void process_mark_running(bool running);
 struct process *process_current();
