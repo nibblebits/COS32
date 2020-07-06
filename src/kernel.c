@@ -19,6 +19,8 @@
 #include "gdt/gdt.h"
 #include "config.h"
 
+void kernel_registers();
+
 /* Check if the compiler thinks you are targeting the wrong operating system. */
 #if defined(__linux__)
 #error "You are not using a cross-compiler, you will most certainly run into trouble"
@@ -252,6 +254,7 @@ uint32_t* kernel_get_page_directory()
 
 void kernel_page()
 {
+	kernel_registers();
 	paging_switch(kernel_paging_chunk->directory_entry);
 }
 
@@ -303,14 +306,14 @@ void kernel_main(void)
 	// Find the disks
 	disk_search_and_init();
 
-	print("Kernel initialized");
+	print("Kernel initialized\n");
 
 
 	// Load the start program
 	int res = process_load_start("0:/start.r");
 	if (res < 0)
 	{
-		panic("Failed to load the start program!");
+		panic("Failed to load the start program!\n");
 	}
 	
 }

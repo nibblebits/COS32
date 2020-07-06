@@ -10,4 +10,6 @@
 #define EINVARG 6
 #define ENOMEM 7
 #define EUNIMP 8
+// Error the entity is taken
+#define EISTKN 9
 #endif

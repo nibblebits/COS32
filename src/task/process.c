@@ -43,7 +43,6 @@ void process_save_state(struct interrupt_frame *frame)
     // Asserts that we have a process
     ASSERT(process_current());
 
-
     // Save the registers
     struct process *proc = process_current();
     proc->registers.ip = frame->ip;
@@ -87,6 +86,7 @@ void *process_get_stack_item(int index)
 
 int process_page()
 {
+    user_registers();
     task_switch(&current_process->task);
     return 0;
 }
@@ -99,10 +99,10 @@ int process_switch(struct process *process)
     return 0;
 }
 
-int process_load_start(const char* path)
+int process_load_start(const char *path)
 {
     int res = 0;
-    struct process* process;
+    struct process *process;
     res = process_load(path, &process);
     if (res < 0)
     {
@@ -118,6 +118,9 @@ int process_start(struct process *process)
 {
     if (process->started)
         return -EIO;
+
+    // Before entering user mode we may need to acknolwedge an interrupt on the ISR because we will never return to the caller of process_start
+    outb(PIC1, PIC_EOI);
 
     process_switch(process);
     // Now that we have switched to the process you should bare in mind its now dangerous to do anything else other than go to user mode
@@ -141,16 +144,22 @@ int process_get_free_slot()
 
 struct process *process_get(int index)
 {
+    // Out of bounds
+    if (index < 0 || index >= COS32_MAX_PROCESSES)
+    {
+        return NULL;
+    }
     return processes[index];
 }
 
-int process_load(const char *filename, struct process **process)
+int process_load_for_slot(const char *filename, struct process **process, int process_slot)
 {
     int res = 0;
-    int process_slot = process_get_free_slot();
-    if (process_slot < 0)
+
+    // A process with the given id is already taken
+    if (process_get(process_slot) != 0)
     {
-        res = -ENOMEM;
+        res = -EISTKN;
         goto out;
     }
 
@@ -223,3 +232,17 @@ out:
     return res;
 }
 
+int process_load(const char *filename, struct process **process)
+{
+    int res = 0;
+    int process_slot = process_get_free_slot();
+    if (process_slot < 0)
+    {
+        res = -ENOMEM;
+        goto out;
+    }
+
+    res = process_load_for_slot(filename, process, process_slot);
+out:
+    return res;
+}

@@ -2,10 +2,12 @@
 #include "memory/memory.h"
 #include "memory/paging/paging.h"
 #include "status.h"
-
+#include "kernel.h"
 struct task *current_task = 0;
+void user_registers();
 int task_switch(struct task *task)
 {
+    ASSERT(task->page_directory);
     current_task = task;
     paging_switch(task->page_directory->directory_entry);
     return 0;

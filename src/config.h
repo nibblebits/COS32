@@ -3,9 +3,9 @@
 #define COS32_KEYBOARD_BUFFER_SIZE 1024
 #define COS32_MAX_FILESYSTEMS 10
 #define COS32_MAX_FILE_DESCRIPTORS 128
-// We allow for around 10 MB of memory, it will be slightly less due to the space some tables will take up
-#define COS32_MAX_HEAP_ALLOCATIONS 2460
-#define COS32_MAX_HEAP_SIZE 10485760
+// We allow for around 30 MB of memory, it will be slightly less due to the space some tables will take up
+#define COS32_MAX_HEAP_ALLOCATIONS 8000
+#define COS32_MAX_HEAP_SIZE 314572800
 #define COS32_MEMORY_BLOCK_SIZE 4096
 // 13 Megabyte maximum at this region for kernel heap
 #define COS32_KERNEL_HEAP_ADDRESS  0x01000000

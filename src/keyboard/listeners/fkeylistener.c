@@ -1,6 +1,8 @@
 #include "fkeylistener.h"
 #include "keyboard/listener.h"
 #include "keyboard/keyboard.h"
+#include "task/process.h"
+#include "status.h"
 void fkeylistener_keypress(char c);
 void fkeylistener_special(enum SpecialKeys key);
 
@@ -21,13 +23,32 @@ void fkeylistener_keypress(char c)
 void fkeylistener_special(enum SpecialKeys key)
 {
     bool is_down = keyboard_is_special_on(key);
-    if (key == F1_PRESSED_OR_RELEASED)
+    // We only care about function keys
+    if (key < F1_PRESSED_OR_RELEASED || key > F12_PRESSED_OR_RELEASED)
     {
-        if(is_down)
-        {
-            print("F1 Pressed\n");
-        } else {
-            print("F1 Released\n");
-        }
+        return;
     }
+
+    struct process* process = 0;
+    int res = 0;
+    if (is_down)
+    {
+        print("Starting new process\n");
+        res = process_load_for_slot("0:/start.r", &process, key);
+        if (res == -EISTKN)
+        {
+            print("Switching to process\n");
+            return;
+        }
+
+        if (res < 0)
+        {
+            print("Fatal error loading the process\n");
+            return;
+        }
+
+        print("Starting process\n");
+        process_start(process);
+    }
+   
 }

@@ -1,4 +1,6 @@
 global user_mode_enter
+global user_registers
+
 
 user_mode_enter:
     mov ebp, esp
@@ -6,11 +8,7 @@ user_mode_enter:
     mov eax, [ebp+8] ; Stack address for this process
     cli
     push eax        ; Save stack address for later
-    mov ax, 0x23
-    mov ds, ax
-    mov es, ax
-    mov fs, ax
-    mov gs, ax
+    call user_registers ; Switch to the user registers
     pop eax        ; Restore the stack address, we need to push it to the stack
     
     push dword 0x23
@@ -22,3 +20,13 @@ user_mode_enter:
     push 0x1b
     push ebx ; FUNCTION TO RUN IN USER LAND
     iret
+    
+user_registers:
+    cli
+    mov ax, 0x23
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+    sti
+    ret

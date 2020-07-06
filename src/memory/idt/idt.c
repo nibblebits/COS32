@@ -7,7 +7,6 @@
 #include "task/process.h"
 #include "string/string.h"
 #include "keyboard/keyboard.h"
-#include "keyboard/classic.h"
 #include "status.h"
 struct idt_desc idt_desc[COS32_MAX_INTERRUPTS];
 struct idtr_desc idtr_desc;
@@ -45,12 +44,28 @@ bool idt_is_reserved(int interrupt)
 
 void interrupt_handler(int interrupt)
 {
-    if (interrupt_callbacks[interrupt] != 0)
+
+    // Our interrupt handler may only be called by programs and not the kernel
+    if (!process_current())
     {
-        interrupt_callbacks[interrupt]();
+        // If we have no process running we wont process this interrupt
+        goto out;
     }
 
+    if (interrupt_callbacks[interrupt] != 0)
+    {
+        kernel_page();
+        process_mark_running(false);
+        //process_save_state(frame);
+        interrupt_callbacks[interrupt]();
+        process_mark_running(true);
+        process_page();
+    }
+
+out:
+     // Acknowledge the interrupt
     outb(PIC1, PIC_EOI);
+    
 }
 
 int idt_function_is_valid(int interrupt, INTERRUPT_CALLBACK_FUNCTION interrupt_callback)
@@ -91,7 +106,7 @@ void idt_general_protection_fault(int interrupt)
     panic("General Protection Fault!\n");
 }
 
-void* isr80h_command1_print(struct interrupt_frame *frame)
+void *isr80h_command1_print(struct interrupt_frame *frame)
 {
     // The message to print is the first element on the user stack
     const char *msg_user_space_addr = (const char *)process_get_stack_item(0);
@@ -101,16 +116,16 @@ void* isr80h_command1_print(struct interrupt_frame *frame)
     return 0;
 }
 
-void* isr80h_command2_get_key(struct interrupt_frame *frame)
+void *isr80h_command2_get_key(struct interrupt_frame *frame)
 {
     char key = keyboard_pop();
     struct process *proc = process_current();
     return key;
 }
 
-void* isr80h_handle_command(int command, struct interrupt_frame *frame)
+void *isr80h_handle_command(int command, struct interrupt_frame *frame)
 {
-    void* result = 0;
+    void *result = 0;
     switch (command)
     {
     case SYSTEM_COMMAND_PRINT:
@@ -125,9 +140,9 @@ void* isr80h_handle_command(int command, struct interrupt_frame *frame)
     return result;
 }
 
-void* isr80h_handler(int command, struct interrupt_frame *frame)
+void *isr80h_handler(int command, struct interrupt_frame *frame)
 {
-    void* res = 0;
+    void *res = 0;
     // Our interrupt handler may only be called by programs and not the kernel
     kernel_page();
     ASSERT(process_running());

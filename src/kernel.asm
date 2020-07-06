@@ -3,6 +3,8 @@ global _start
 global int80h
 
 extern kernel_main
+global kernel_registers
+
 CODE_SEG equ 0x08
 DATA_SEG equ 0x10
 _start:	
@@ -17,7 +19,6 @@ _start:
 
 
     call setup_pic
-
 	call kernel_main
 
 	cli
@@ -37,7 +38,16 @@ setup_pic:
 
     ; We don't bother telling the slave, this may cause us problems later
     ret
-    
-int80h:
-    int 0x80
+
+
+; Switches the registers to the kernel registers, must be run while the code segment is in ring 0
+kernel_registers:
+    ; Kernel data segment
+    cli
+    mov ax, 0x10
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+    sti
     ret
