@@ -50,6 +50,13 @@ void process_save_state(struct interrupt_frame *frame)
     proc->registers.flags = frame->flags;
     proc->registers.sp = frame->sp;
     proc->registers.ss = frame->ss;
+    proc->registers.eax = frame->eax;
+    proc->registers.ebp = frame->ebp;
+    proc->registers.ebx = frame->ebx;
+    proc->registers.ecx = frame->ecx;
+    proc->registers.edi = frame->edi;
+    proc->registers.edx = frame->edx;
+    proc->registers.esi = frame->esi;
     
     // We are going to have to switch to the current processes page to access these registers
     process_page();
