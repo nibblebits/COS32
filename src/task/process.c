@@ -57,13 +57,7 @@ void process_save_state(struct interrupt_frame *frame)
     proc->registers.edi = frame->edi;
     proc->registers.edx = frame->edx;
     proc->registers.esi = frame->esi;
-    
-    // We are going to have to switch to the current processes page to access these registers
-    process_page();
-    uint32_t *general_reg_ptr = (uint32_t *)proc->registers.sp;
 
-    // Let's switch back to the kernel page
-    kernel_page();
 }
 
 void *process_get_stack_item(int index)
