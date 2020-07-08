@@ -8,10 +8,10 @@
 ; Putting anything above this will cause corruption know what your doing
 _start:
     ; In future we will push to the stack instead
-  ;  push _message
-   ; call read_string
+   push _message
+   call read_string
 
-    push hello
+    push _message
     mov eax, 1
     int 0x80
 
@@ -35,5 +35,5 @@ read_string:
     pop ebp
     ret
 
-;_message: times 512 db 0
+_message: times 512 db 0
 hello: db 'Hello world this is a test', 0

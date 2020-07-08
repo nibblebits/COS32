@@ -50,7 +50,7 @@ void process_save_state(struct interrupt_frame *frame)
     proc->registers.flags = frame->flags;
     proc->registers.sp = frame->sp;
     proc->registers.ss = frame->ss;
-
+    
     // We are going to have to switch to the current processes page to access these registers
     process_page();
     uint32_t *general_reg_ptr = (uint32_t *)proc->registers.sp;

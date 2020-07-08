@@ -75,14 +75,22 @@ isr0_wrapper:
 
 
 isr80h_wrapper:
-    push ebp
-    mov ebp, esp
     cli
+    ; INTERRUPT FRAME START
+    ; ALREADY PUSHED TO US IS THE USER LAND STACK INFORMATION
+    ; uint32_t ip;
+    ; uint32_t cs;
+    ; uint32_t flags;
+    ; uint32_t sp;
+    ; uint32_t ss;
     ; Save user land registers
     pushad
-    ; Here we pass in the stack as it was when we entered this routine, this is important so our isr80h_handler can access the interrupt frame.
-    lea ebx, [ebp+4]
-    push ebx
+
+    ; INTERRUPT FRAME END 
+
+    ; Push a pointer to the user land registers, and the stack that was passed to us. Essentially push a pointer to the interrupt frame
+    push esp
+
     ; EAX holds our command lets push it
     push eax
     call isr80h_handler
@@ -92,7 +100,7 @@ isr80h_wrapper:
     ; Restore user land registers
     popad
     sti
-    pop ebp
+
     ; Set the EAX register to the return result stored in .tmp_res
     mov eax, [.tmp_res]
     iretd
