@@ -38,10 +38,24 @@ disable_interrupts:
     global int%1
     int%1:
         cli
+        ; INTERRUPT FRAME START
+        ; ALREADY PUSHED TO US IS THE USER LAND STACK INFORMATION
+        ; uint32_t ip;
+        ; uint32_t cs;
+        ; uint32_t flags;
+        ; uint32_t sp;
+        ; uint32_t ss;
+        ; Save user land registers
         pushad
+
+        ; INTERRUPT FRAME END 
+
+        ; Push a pointer to the user land registers, and the stack that was passed to us. Essentially push a pointer of the interrupt frame
+        push esp
         push dword %1
         call interrupt_handler
         pop eax
+        pop ebx
         popad
         sti
         iretd

@@ -37,7 +37,10 @@ void fkeylistener_special(enum SpecialKeys key)
         res = process_load_for_slot("0:/start.r", &process, key);
         if (res == -EISTKN)
         {
+            process = process_get(key);
             print("Switching to process\n");
+            process_switch(process);
+            //user_mode_enter()
             return;
         }
 

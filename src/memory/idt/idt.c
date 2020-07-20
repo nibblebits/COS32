@@ -42,7 +42,7 @@ bool idt_is_reserved(int interrupt)
     return false;
 }
 
-void interrupt_handler(int interrupt)
+void interrupt_handler(int interrupt, struct interrupt_frame* frame)
 {
 
     // Our interrupt handler may only be called by programs and not the kernel
@@ -52,11 +52,13 @@ void interrupt_handler(int interrupt)
         goto out;
     }
 
+    
     if (interrupt_callbacks[interrupt] != 0)
-    {
+    {    
+
         kernel_page();
         process_mark_running(false);
-      //  process_save_state(frame);
+        process_save_state(frame);
         interrupt_callbacks[interrupt]();
         process_mark_running(true);
         process_page();

@@ -169,7 +169,7 @@ FILE_MODE file_get_mode_by_string(const char *str)
 
 int fopen(char *filename, const char *mode_str)
 {
-    int res = 5;
+    int res = 0;
     int drive_no = fs_get_drive_by_path(filename);
 
     char path[COS32_MAX_PATH];

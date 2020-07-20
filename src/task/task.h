@@ -10,10 +10,34 @@ struct task
     // The page directory for this task. Upon running this task at any moment this page directory should be enabled for paging
     // When we switch to another task this should not be enabled
     struct paging_4gb_chunk* page_directory;
+
+
+    // When we switch out of user space the process registers are saved in memory
+    struct registers
+    {
+        uint32_t edi;
+        uint32_t esi;
+        uint32_t ebp;
+        uint32_t ebx;
+        uint32_t edx;
+        uint32_t ecx;
+        uint32_t eax;
+
+        uint32_t ip;
+        uint32_t cs;
+        uint32_t flags;
+        uint32_t sp;
+        uint32_t ss;
+    } registers;
+
 };
 
+struct interrupt_frame;
+
 typedef void (*USER_MODE_FUNCTION)();
-void user_mode_enter(USER_MODE_FUNCTION func, uint32_t stack_addr);
+//void user_mode_enter(USER_MODE_FUNCTION func, uint32_t stack_addr, uint32_t data_segment);
+void* task_get_stack_item(struct task* task, int index);
+int task_save_state(struct task* task, struct interrupt_frame* frame);
 struct task* task_current();
 int task_init(struct task* task);
 int task_switch(struct task* task);

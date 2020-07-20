@@ -33,23 +33,7 @@ struct process
         int head;
     } keyboard;
 
-    // When we switch out of user space the process registers are saved in memory
-    struct registers
-    {
-        uint32_t edi;
-        uint32_t esi;
-        uint32_t ebp;
-        uint32_t ebx;
-        uint32_t edx;
-        uint32_t ecx;
-        uint32_t eax;
-
-        uint32_t ip;
-        uint32_t cs;
-        uint32_t flags;
-        uint32_t sp;
-        uint32_t ss;
-    } registers;
+    
 };
 
 int process_page();
@@ -58,6 +42,7 @@ int process_switch(struct process *process);
 int process_start(struct process *process);
 int process_load_start(const char* path);
 int process_load_for_slot(const char* filename, struct process** process, int process_slot);
+struct process *process_get(int index);
 bool process_running();
 void process_mark_running(bool running);
 struct process *process_current();

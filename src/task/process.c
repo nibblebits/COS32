@@ -45,18 +45,7 @@ void process_save_state(struct interrupt_frame *frame)
 
     // Save the registers
     struct process *proc = process_current();
-    proc->registers.ip = frame->ip;
-    proc->registers.cs = frame->cs;
-    proc->registers.flags = frame->flags;
-    proc->registers.sp = frame->sp;
-    proc->registers.ss = frame->ss;
-    proc->registers.eax = frame->eax;
-    proc->registers.ebp = frame->ebp;
-    proc->registers.ebx = frame->ebx;
-    proc->registers.ecx = frame->ecx;
-    proc->registers.edi = frame->edi;
-    proc->registers.edx = frame->edx;
-    proc->registers.esi = frame->esi;
+    ASSERT(task_save_state(&proc->task, frame) == 0);
 
 }
 
@@ -68,26 +57,14 @@ void *process_get_stack_item(int index)
     // Assert that we have a process
     ASSERT(proc);
 
-    // Assert that we are currently paging the kernel, if someone calls us whilst in a process page we will assume an error as we swap back to kernel when we are done, which may have unpredictable results
-    ASSERT(is_kernel_page());
-
-    // We assume the stack grows downwards for this implementation to work.
-    uint32_t *sp_ptr = (uint32_t *)proc->registers.sp;
-
-    // Let's switch to the process page
-    process_page();
-
-    result = (void *)sp_ptr[index];
-
-    // We should switch back to the kernel page
-    kernel_page();
-
-    return result;
+   return task_get_stack_item(&proc->task, index);
 }
 
 int process_page()
 {
+    disable_interrupts();
     user_registers();
+    enable_interrupts();
     task_switch(&current_process->task);
     return 0;
 }
@@ -127,7 +104,7 @@ int process_start(struct process *process)
     // Now that we have switched to the process you should bare in mind its now dangerous to do anything else other than go to user mode
 
     // In the future we will push argc, argv and other arguments
-    user_mode_enter((USER_MODE_FUNCTION)(COS32_PROGRAM_VIRTUAL_ADDRESS), COS32_PROGRAM_VIRTUAL_STACK_ADDRESS_START);
+    user_mode_enter((USER_MODE_FUNCTION)(COS32_PROGRAM_VIRTUAL_ADDRESS), COS32_PROGRAM_VIRTUAL_STACK_ADDRESS_START, USER_DATA_SEGMENT);
 
     return 0;
 }

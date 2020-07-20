@@ -36,4 +36,15 @@
 
 // The maximum amount of malloc allocations a user program can have
 #define COS32_MAX_PROGRAM_ALLOCATIONS 1024
+
+
+
+
+#define KERNEL_CODE_SEGMENT 0x8
+#define KERNEL_DATA_SEGMENT 0x10
+
+// 0x20 comes to mind but its wrong I'll need to remember why
+#define USER_DATA_SEGMENT 0x23
+
+
 #endif
