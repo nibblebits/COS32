@@ -41,33 +41,26 @@ user_mode_enter_old:
    ; uint32_t ss;
 
 
-; CHANGE THIS TO A POINTER EVENTUALLY!!!!
 user_mode_enter:
     push esp
     mov ebp, esp
-    ; We could just pass the stack as it is but this would be a bad idea, could easily forget. We will 
-    ; pass it down again. But switch to pointers eventually!
-    push dword [ebp+32]
-    push dword [ebp+28]
-    push dword [ebp+24]
-    push dword [ebp+20]
-    push dword [ebp+16]
-    push dword [ebp+12]
-    push dword  [ebp+8]
+    push dword [ebp+8] ; The pointer to the registers
     call restore_general_purpose_registers
     pop esp
     ret
 
+; void restore_general_purpose_registers(struct registers* registers)
 restore_general_purpose_registers:
     push esp
     mov ebp, esp
-    mov edi, [ebp+8]
-    mov esi, [ebp+12]
-    mov ebp, [ebp+16]
-    mov ebx, [ebp+20]
-    mov edx, [ebp+24]
-    mov ecx, [ebp+28]
-    mov eax, [ebp+32]
+    mov ebx, [ebp+8]
+    mov edi, [ebx]
+    mov esi, [ebx+4]
+    mov ebp, [ebx+8]
+    mov ebx, [ebx+12]
+    mov edx, [ebx+16]
+    mov ecx, [ebx+20]
+    mov eax, [ebx+24]
     pop esp
     ret
 

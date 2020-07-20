@@ -105,10 +105,10 @@ int process_start(struct process *process)
     process->task.registers.edi = 0xfffffff;
     process->task.registers.ss = 0x44444444;
     process->task.registers.esi = 0x55555555;
-        process->task.registers.ebp = 0x666666666;
+    process->task.registers.ebp = 0x666666666;
 
     // In the future we will push argc, argv and other arguments
-    user_mode_enter(process->task.registers);
+    user_mode_enter(&process->task.registers);
 
     return 0;
 }

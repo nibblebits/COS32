@@ -38,8 +38,8 @@ struct interrupt_frame;
 
 typedef void (*USER_MODE_FUNCTION)();
 //void user_mode_enter(USER_MODE_FUNCTION func, uint32_t stack_addr, uint32_t data_segment);
-void user_mode_enter(struct registers regs);
-void restore_general_purpose_registers(struct registers regs);
+void user_mode_enter(struct registers* regs);
+void restore_general_purpose_registers(struct registers* regs);
 
 void *task_get_stack_item(struct task *task, int index);
 int task_save_state(struct task *task, struct interrupt_frame *frame);
