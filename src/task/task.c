@@ -31,7 +31,7 @@ void* task_get_stack_item(struct task* task, int index)
     ASSERT(is_kernel_page());
 
     // We assume the stack grows downwards for this implementation to work.
-    uint32_t *sp_ptr = (uint32_t *)task->registers.sp;
+    uint32_t *sp_ptr = (uint32_t *)task->registers.esp;
 
     // Let's switch to the process page
     process_page();
@@ -50,7 +50,7 @@ int task_save_state(struct task* task, struct interrupt_frame* frame)
     task->registers.ip = frame->ip;
     task->registers.cs = frame->cs;
     task->registers.flags = frame->flags;
-    task->registers.sp = frame->sp;
+    task->registers.esp = frame->esp;
     task->registers.ss = frame->ss;
     task->registers.eax = frame->eax;
     task->registers.ebp = frame->ebp;

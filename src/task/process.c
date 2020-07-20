@@ -46,7 +46,6 @@ void process_save_state(struct interrupt_frame *frame)
     // Save the registers
     struct process *proc = process_current();
     ASSERT(task_save_state(&proc->task, frame) == 0);
-
 }
 
 void *process_get_stack_item(int index)
@@ -57,7 +56,7 @@ void *process_get_stack_item(int index)
     // Assert that we have a process
     ASSERT(proc);
 
-   return task_get_stack_item(&proc->task, index);
+    return task_get_stack_item(&proc->task, index);
 }
 
 int process_page()
@@ -103,8 +102,13 @@ int process_start(struct process *process)
     process_switch(process);
     // Now that we have switched to the process you should bare in mind its now dangerous to do anything else other than go to user mode
 
+    process->task.registers.edi = 0xfffffff;
+    process->task.registers.ss = 0x44444444;
+    process->task.registers.esi = 0x55555555;
+        process->task.registers.ebp = 0x666666666;
+
     // In the future we will push argc, argv and other arguments
-    user_mode_enter((USER_MODE_FUNCTION)(COS32_PROGRAM_VIRTUAL_ADDRESS), COS32_PROGRAM_VIRTUAL_STACK_ADDRESS_START, USER_DATA_SEGMENT);
+    user_mode_enter(process->task.registers);
 
     return 0;
 }
