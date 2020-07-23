@@ -46,5 +46,8 @@
 // 0x20 comes to mind but its wrong I'll need to remember why
 #define USER_DATA_SEGMENT 0x23
 
+// DOuble check this thing
+#define USER_CODE_SEGMENT 0x1b
+
 
 #endif

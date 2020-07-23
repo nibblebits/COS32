@@ -2,29 +2,6 @@ global user_mode_enter
 global user_registers
 global restore_general_purpose_registers
 
-user_mode_enter_old:
-    mov ebp, esp
-    mov ebx, [ebp+4] ; FUNCTION POINTER FOR USER LAND TO RUN
-    mov eax, [ebp+8] ; Stack address for this process
-  
-    cli
-    push eax        ; Save stack address for later
-    call user_registers ; Switch to the user registers
-    pop eax        ; Restore the stack address, we need to push it to the stack
-
-
-    push dword [ebp+12] 
-    push dword eax
-
-    pushf
-    pop eax
-    or eax, 0x200
-    push eax
-    push 0x1b
-    push ebx ; FUNCTION TO RUN IN USER LAND
-    iret
-
-
 
 ; uint32_t edi; 0
   ;  uint32_t esi; 4
@@ -36,16 +13,28 @@ user_mode_enter_old:
 
    ; uint32_t ip; 28
   ;  uint32_t cs; 32 
-  ;  uint32_t flags;
-   ; uint32_t esp;
-   ; uint32_t ss;
-
-
+  ;  uint32_t flags; 36
+   ; uint32_t esp; 40
+   ; uint32_t ss; 44
 
 
 user_mode_enter:
     mov ebp, esp
+    ; PUSH THE DATA SEGMENT (SS WILL DO FINE WE USE THE SAME)
+    ; PUSH THE STACK ADDRESS
+    ; PUSH THE FLAGS
+    ; PUSH THE CODE SEGMENT
+    ; PUSH IP
 
+    ; Let's access the structure passed to us
+    mov ebx, [ebp+4]
+    
+    ; Push the data/stack selector one and the same in our implemention
+    push dword[ebx+44]
+    ; Push the stack pointer
+    push dword[ebx+40]
+
+    ; Push the flags
     ; NOTE WE NEED TO RESTORE FLAGS AT SOME POINT ALSO!!!! FOR NOW WE WILL PUSH WHAT WE HAVE! NEEDS IMPROVEMENT!!!!
     ; HERE WE SET THE INTERRUPT FLAG AS WE CAN'T DO THIS IN USER LAND
     pushf
@@ -53,22 +42,29 @@ user_mode_enter:
     or eax, 0x200
     push eax
 
-    ; Let's access the structure passed to us
-    mov ebx, [ebp+4]
-    ; Now comes the code segment. 
-    push dword [ebx+32]
-    
-    ; Now comes the IP
-    push dword [ebx+28]
+    ; Push the code segment
+    push dword[ebx+32]
 
-    ; Restore the general purpose registers
-    push dword [ebp+4] ; The pointer to the registers
+    ; Push the IP we want to execute
+    push dword[ebx+28]
+
+    ; We want to setup the segment registers. WIll work I Hope?
+    mov ax, [ebx+44]
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+    ; NO need to change the stack segment!!! This happens when we return from interrupt
+    ; We don't want to fault!
+
+
+    ; Last thing to do is restore the registers provided to us
+    push dword[ebp+4]
     call restore_general_purpose_registers
-    ; Let's discard the last item
+    ; We can't pop this or we will corrupt a register, lets adjust the stack pointer to discard
     add esp, 4
 
-    ; Consider using popa in future to avoid these complications
-
+    ; Let's leave and execute!
     iretd
 
 ; void restore_general_purpose_registers(struct registers* registers)

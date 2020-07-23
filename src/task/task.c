@@ -76,7 +76,9 @@ int task_init(struct task *task)
     // Let's setup some register defaults
     task->registers.ip = COS32_PROGRAM_VIRTUAL_ADDRESS;
     task->registers.ss = USER_DATA_SEGMENT;
-    
+    task->registers.cs = USER_CODE_SEGMENT;
+    task->registers.esp = COS32_PROGRAM_VIRTUAL_STACK_ADDRESS_START;
+
     // NOTE THE ENTIRE 4GB ADDRESS SPACE IS MAPPED TO ITS SELF AT THIS POINT, KEEP IN MIND WHEN RUNNING UNPRIVILAGED CODE
     // A MALICIOUS PROGRAM COULD INSPECT MEMORY AND READ WHAT IT SHOULDNT BE READING
 

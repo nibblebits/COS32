@@ -102,11 +102,6 @@ int process_start(struct process *process)
     process_switch(process);
     // Now that we have switched to the process you should bare in mind its now dangerous to do anything else other than go to user mode
 
-    process->task.registers.edi = 0xfffffff;
-    process->task.registers.ss = 0x44444444;
-    process->task.registers.esi = 0x55555555;
-    process->task.registers.ebp = 0x666666666;
-
     // In the future we will push argc, argv and other arguments
     user_mode_enter(&process->task.registers);
 
