@@ -102,3 +102,4 @@ clean: programs_clean
 	rm -rf ${FILES}
 	rm -rf ./bin/boot.bin
 	rm -rf ./bin/kernel.bin
+	rm -rf ./build/kernelfull.o

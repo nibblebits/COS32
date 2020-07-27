@@ -131,7 +131,7 @@ struct keyboard classic_keyboard = {
 void classic_enable_keyboard()
 {
     // Magic numbers are always crap, this needs changing
-    outb(0x64, 0xAE);
+    outb(0x64, 0xAE);    
 }
 
 /**
@@ -175,7 +175,7 @@ void classic_keyboard_handle_interrupt()
 
     // Unset the key released b it as we want to get the special index regardless if the key was released or not
     int special_index = classic_keyboard_scancode_special(scancode & ~CLASSIC_KEYBOARD_KEY_RELEASED);
-
+    
     // Key is released
     if (scancode & CLASSIC_KEYBOARD_KEY_RELEASED)
     {

@@ -1,4 +1,4 @@
-global user_mode_enter
+global task_return
 global user_registers
 global restore_general_purpose_registers
 
@@ -18,7 +18,7 @@ global restore_general_purpose_registers
    ; uint32_t ss; 44
 
 
-user_mode_enter:
+task_return:
     mov ebp, esp
     ; PUSH THE DATA SEGMENT (SS WILL DO FINE WE USE THE SAME)
     ; PUSH THE STACK ADDRESS

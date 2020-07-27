@@ -8,6 +8,8 @@
 ; Putting anything above this will cause corruption know what your doing
 _start:
     ; In future we will push to the stack instead
+
+    jmp $
    push _message
    call read_string
 

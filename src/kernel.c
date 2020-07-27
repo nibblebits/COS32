@@ -265,6 +265,9 @@ bool is_kernel_page()
 
 void kernel_main(void)
 {
+	// Interrupts should start disabled, we only want them to work while a program runs
+	disable_interrupts();
+
 	/* Initialize terminal interface */
 	terminal_initialize();
 

@@ -42,9 +42,10 @@ bool idt_is_reserved(int interrupt)
     return false;
 }
 
+
+#warning TIMING BUG, IF WE HOLD FUNCTION KEYS ALL WORKS FINE OTHERWISE THEIRS A PROBLEM
 void interrupt_handler(int interrupt, struct interrupt_frame* frame)
 {
-
     // Our interrupt handler may only be called by programs and not the kernel
     if (!process_current())
     {
@@ -52,10 +53,16 @@ void interrupt_handler(int interrupt, struct interrupt_frame* frame)
         goto out;
     }
 
-    
+
+    // A hack just to check something
+    if (frame->ip < 0x400000)
+    {
+        goto out;
+    }
+
     if (interrupt_callbacks[interrupt] != 0)
     {    
-
+ 
         kernel_page();
         process_mark_running(false);
         process_save_state(frame);
@@ -67,7 +74,7 @@ void interrupt_handler(int interrupt, struct interrupt_frame* frame)
 out:
      // Acknowledge the interrupt
     outb(PIC1, PIC_EOI);
-    
+        
 }
 
 int idt_function_is_valid(int interrupt, INTERRUPT_CALLBACK_FUNCTION interrupt_callback)

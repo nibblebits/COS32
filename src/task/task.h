@@ -36,9 +36,13 @@ struct task
 
 struct interrupt_frame;
 
-typedef void (*USER_MODE_FUNCTION)();
-//void user_mode_enter(USER_MODE_FUNCTION func, uint32_t stack_addr, uint32_t data_segment);
-void user_mode_enter(struct registers* regs);
+
+/**
+ * Returns to the given task based on the registers provided.
+ * Note that if the registers are wrong the kernel will fault.
+ * They must be initialized correctly!
+ */
+void task_return(struct registers* regs);
 void restore_general_purpose_registers(struct registers* regs);
 
 void *task_get_stack_item(struct task *task, int index);

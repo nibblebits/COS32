@@ -91,6 +91,7 @@ int process_load_start(const char *path)
     return res;
 }
 
+
 int process_start(struct process *process)
 {
     if (process->started)
@@ -99,11 +100,13 @@ int process_start(struct process *process)
     // Before entering user mode we may need to acknolwedge an interrupt on the ISR because we will never return to the caller of process_start
     outb(PIC1, PIC_EOI);
 
+
+
     process_switch(process);
     // Now that we have switched to the process you should bare in mind its now dangerous to do anything else other than go to user mode
 
-    // In the future we will push argc, argv and other arguments
-    user_mode_enter(&process->task.registers);
+    // Let's start executing the task
+    task_return(&process->task.registers);
 
     return 0;
 }

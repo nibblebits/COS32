@@ -160,11 +160,22 @@ load32:
     ;mov ax, 0x28  ;The descriptor of the TSS in the GDT (e.g. 0x28 if the sixths entry in your GDT describes your TSS)
     ;ltr ax        ;The actual load
 
+    ; Let's enable the A20 LINE
+
+    in al, 0x92
+    or al, 2
+    out 0x92, al
+
+    ; Load 120 sectors of the kernel
     mov eax, 1
     mov ecx, 120
     mov edi, 0x0100000
     call ata_lba_read
+
+    ; Jump to the kernel!
     jmp CODE_SEG:0x0100000
+
+    
 ; ECX - total sectors
 ; EDI - Destination
 ; EAX - LBA
