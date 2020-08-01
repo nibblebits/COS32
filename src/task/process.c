@@ -45,7 +45,7 @@ void process_save_state(struct interrupt_frame *frame)
 
     // Save the registers
     struct process *proc = process_current();
-    ASSERT(task_save_state(&proc->task, frame) == 0);
+    ASSERT(task_save_state(proc->task, frame) == 0);
 }
 
 void *process_get_stack_item(int index)
@@ -56,7 +56,7 @@ void *process_get_stack_item(int index)
     // Assert that we have a process
     ASSERT(proc);
 
-    return task_get_stack_item(&proc->task, index);
+    return task_get_stack_item(proc->task, index);
 }
 
 int process_page()
@@ -64,7 +64,7 @@ int process_page()
     disable_interrupts();
     user_registers();
     enable_interrupts();
-    task_switch(&current_process->task);
+    task_switch(current_process->task);
     return 0;
 }
 
@@ -72,7 +72,7 @@ int process_switch(struct process *process)
 {
     current_process = process;
     process_is_running = true;
-    task_switch(&process->task);
+    task_switch(process->task);
     return 0;
 }
 
@@ -106,7 +106,7 @@ int process_start(struct process *process)
     // Now that we have switched to the process you should bare in mind its now dangerous to do anything else other than go to user mode
 
     // Let's start executing the task
-    task_return(&process->task.registers);
+    task_return(&process->task->registers);
 
     return 0;
 }
@@ -192,15 +192,18 @@ int process_load_for_slot(const char *filename, struct process **process, int pr
     _process->ptr = program_data_ptr;
     _process->stack = program_stack_ptr;
     _process->size = stat.filesize;
-    res = task_init(&_process->task);
-    if (res != COS32_ALL_OK)
+    
+    struct task* task = task_new();
+    if (task <= 0)
     {
+        res = ERROR_I(task);
         goto out;
     }
 
+    _process->task = task;
     // We now need to map the process memory into real memory
-    ASSERT(paging_map_to(_process->task.page_directory->directory_entry, COS32_PROGRAM_VIRTUAL_ADDRESS, _process->ptr, paging_align_address(_process->ptr + _process->size), PAGING_PAGE_PRESENT | PAGING_ACCESS_FROM_ALL | PAGING_PAGE_WRITEABLE) == 0);
-    ASSERT(paging_map_to(_process->task.page_directory->directory_entry, COS32_PROGRAM_VIRTUAL_STACK_ADDRESS_END, _process->stack, paging_align_address(_process->stack + COS32_USER_PROGRAM_STACK_SIZE), PAGING_ACCESS_FROM_ALL | PAGING_PAGE_PRESENT | PAGING_PAGE_WRITEABLE) == 0);
+    ASSERT(paging_map_to(_process->task->page_directory->directory_entry, COS32_PROGRAM_VIRTUAL_ADDRESS, _process->ptr, paging_align_address(_process->ptr + _process->size), PAGING_PAGE_PRESENT | PAGING_ACCESS_FROM_ALL | PAGING_PAGE_WRITEABLE) == 0);
+    ASSERT(paging_map_to(_process->task->page_directory->directory_entry, COS32_PROGRAM_VIRTUAL_STACK_ADDRESS_END, _process->stack, paging_align_address(_process->stack + COS32_USER_PROGRAM_STACK_SIZE), PAGING_ACCESS_FROM_ALL | PAGING_PAGE_PRESENT | PAGING_PAGE_WRITEABLE) == 0);
 
     // We have the program loaded :o
     *process = _process;

@@ -51,7 +51,7 @@ void fkeylistener_special(enum SpecialKeys key)
            // Acknowledge the interrupt
             outb(PIC1, PIC_EOI);
             // Now we have switched the process let's execute where we left off. Multitasking/Task switching :D
-            task_return(&process->task.registers);
+            task_return(&process->task->registers);
             return;
         }
 

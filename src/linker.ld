@@ -14,26 +14,26 @@ SECTIONS
 	/* First put the multiboot header, as it is required to be put very early
 	   early in the image or the bootloader won't recognize the file format.
 	   Next we'll put the .text section. */
-	.text :
+	.text : ALIGN(4)
 	{
 		*(.multiboot)
 		*(.text)
 	}
  
 	/* Read-only data. */
-	.rodata :
+	.rodata : ALIGN(4)
 	{
 		*(.rodata)
 	}
  
 	/* Read-write data (initialized) */
-	.data :
+	.data : ALIGN(4)
 	{
 		*(.data)
 	}
  
 	/* Read-write data (uninitialized) and stack */
-	.bss :
+	.bss : ALIGN(4)
 	{
 		*(COMMON)
 		*(.bss)

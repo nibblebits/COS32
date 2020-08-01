@@ -1,5 +1,5 @@
 FILES = ./build/kernel.asm.o  ./build/keyboard/listener.o ./build/keyboard/listeners/fkeylistener.o ./build/keyboard/keyboard.o ./build/keyboard/classic.o ./build/task/task.o ./build/task/process.o ./build/kernel.o ./build/task/tss.asm.o ./build/gdt/gdt.asm.o ./build/gdt/gdt.o ./build/task/task.asm.o ./build/memory/paging/paging.o ./build/memory/paging/paging.asm.o ./build/memory/idt/idt.asm.o ./build/memory/idt/idt.o ./build/io/io.o  ./build/disk/disk.o ./build/fs/file.o ./build/fs/fat/fat16.o ./build/memory/heap.o ./build/memory/kheap.o ./build/memory/memory.o ./build/string/string.o
-FLAGS = -g
+FLAGS = -g -m32 -falign-functions=4
 INCLUDES = -I./src
 all: ./bin/kernel.bin ./bin/boot.bin ${FILES} programs
 	rm -f ./bin/os.bin
@@ -16,7 +16,7 @@ all: ./bin/kernel.bin ./bin/boot.bin ${FILES} programs
 
 ./bin/kernel.bin: ${FILES}
 	i686-elf-ld  -g -relocatable ${FILES} -o ./build/kernelfull.o
-	i686-elf-gcc -T ./src/linker.ld -o ./bin/kernel.bin -ffreestanding -O2 -nostdlib -g ./build/kernelfull.o
+	i686-elf-gcc -T ./src/linker.ld -o ./bin/kernel.bin -ffreestanding -O2 -nostdlib -fpic -falign-functions=4 -g ./build/kernelfull.o
 
 ./build/gdt/gdt.o: ./src/gdt/gdt.c ./src/gdt/gdt.h
 	i686-elf-gcc $(INCLUDES) -I./src/gdt ${FLAGS} -c ./src/gdt/gdt.c -o ./build/gdt/gdt.o -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g

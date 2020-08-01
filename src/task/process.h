@@ -11,7 +11,7 @@ struct process
 {
     char filename[COS32_MAX_PATH];
     // Each process has a task for its self
-    struct task task;
+    struct task* task;
 
     // The physical pointer to the process memory
     void *ptr;

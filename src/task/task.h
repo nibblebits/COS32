@@ -30,6 +30,9 @@ struct task
 
     // When we switch out of user space the process registers are saved in memory
     struct registers registers;
+
+    // The next task in the linked list
+    struct task* next;
     
 };  
 
@@ -50,4 +53,5 @@ int task_save_state(struct task *task, struct interrupt_frame *frame);
 struct task *task_current();
 int task_init(struct task *task);
 int task_switch(struct task *task);
+struct task* task_new();
 #endif

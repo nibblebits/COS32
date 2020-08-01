@@ -9,11 +9,7 @@
 _start:
     ; In future we will push to the stack instead
 
-    jmp $
-   push _message
-   call read_string
-
-    push _message
+    push dword hello
     mov eax, 1
     int 0x80
 
@@ -37,5 +33,4 @@ read_string:
     pop ebp
     ret
 
-_message: times 512 db 0
 hello: db 'Hello world this is a test', 0

@@ -5,10 +5,14 @@
 #include "memory/memory.h"
 #include "string/string.h"
 #include "memory/idt/idt.h"
+#include "process.h"
 #include "status.h"
 #include "config.h"
 #include "kernel.h"
 struct task *current_task = 0;
+struct task* task_tail = 0;
+struct task* task_head = 0;
+
 void user_registers();
 int task_switch(struct task *task)
 {
@@ -60,6 +64,33 @@ int task_save_state(struct task* task, struct interrupt_frame* frame)
     task->registers.edx = frame->edx;
     task->registers.esi = frame->esi;
     return 0;
+}
+
+struct task* task_new()
+{
+    int res = 0;
+    struct task* task = kzalloc(sizeof(struct task));
+    res = task_init(task);
+    if (res != COS32_ALL_OK)
+    {
+        goto err;
+    }
+    if (task_head == 0)
+    {
+        task_head = task;
+        task_tail = task;
+        goto out;
+    }
+
+    task_tail->next = task;
+    task_tail = task;
+out:
+    return task;
+
+err:
+    kfree(task);
+    return ERROR(res);
+
 }
 
 int task_init(struct task *task)

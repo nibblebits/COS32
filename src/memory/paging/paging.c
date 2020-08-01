@@ -188,7 +188,7 @@ int copy_string_from_user_process(struct process *process, void *virtual, void *
         goto out;
     }
 
-    uint32_t *process_directory = process->task.page_directory->directory_entry;
+    uint32_t *process_directory = process->task->page_directory->directory_entry;
     // We must map "tmp" into process memory but first lets remember the old value for later
     uint32_t old_entry = paging_get(process_directory, tmp);
     paging_map(process_directory, tmp, tmp, PAGING_PAGE_WRITEABLE | PAGING_PAGE_PRESENT | PAGING_CACHE_DISABLED | PAGING_ACCESS_FROM_ALL);
