@@ -5,6 +5,7 @@
 #include "kernel.h"
 #include "task/tss.h"
 #include "task/process.h"
+#include "task/task.h"
 #include "string/string.h"
 #include "keyboard/keyboard.h"
 #include "status.h"
@@ -50,10 +51,10 @@ void interrupt_handler(int interrupt, struct interrupt_frame* frame)
     {    
         kernel_page();
         process_mark_running(false);
-        process_save_state(frame);
+        task_current_save_state(frame);
         interrupt_callbacks[interrupt]();
         process_mark_running(true);
-        process_page();
+        task_page();
     }
 
 out:
@@ -103,9 +104,9 @@ void idt_general_protection_fault(int interrupt)
 void *isr80h_command1_print(struct interrupt_frame *frame)
 {
     // The message to print is the first element on the user stack
-    void *msg_user_space_addr = process_get_stack_item(0);
+    void *msg_user_space_addr = task_current_get_stack_item(0);
     char buf[1024];
-    ASSERT(copy_string_from_user_process(process_current(), msg_user_space_addr, buf, sizeof(buf)) == 0);
+    ASSERT(copy_string_from_task(task_current(), msg_user_space_addr, buf, sizeof(buf)) == 0);
     print(buf);
     return 0;
 }
@@ -138,9 +139,9 @@ void *isr80h_handler(int command, struct interrupt_frame *frame)
     void *res = 0;
     // Our interrupt handler may only be called by programs and not the kernel
     kernel_page();
-    process_save_state(frame);
+    task_current_save_state(frame);
     res = isr80h_handle_command(command, frame);
-    process_page();
+    task_page();
     return res;
 }
 

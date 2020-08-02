@@ -37,9 +37,9 @@ struct process
     } keyboard;
 
     
+    
 };
 
-int process_page();
 int process_load(const char *filename, struct process **process);
 int process_switch(struct process *process);
 int process_start(struct process *process);
@@ -50,15 +50,6 @@ bool process_running();
 void process_mark_running(bool running);
 struct process *process_current();
 
-/**
- * Gets the current stack value by index, for the current process
- * function assumes that stack is growing downwards
- */
-void *process_get_stack_item(int index);
 
-/**
- * Saves the current processes state, this is useful for task switching later on
- */
-void process_save_state(struct interrupt_frame *frame);
 
 #endif

@@ -36,36 +36,6 @@ bool process_running()
     return process_is_running;
 }
 
-void process_save_state(struct interrupt_frame *frame)
-{
-    // Assert that we are currently paging the kernel, if someone calls us whilst in a process page we will assume an error as we swap back to kernel when we are done, which may have unpredictable results
-    ASSERT(is_kernel_page());
-
-    // Asserts that we have a process
-    ASSERT(process_current());
-
-    // Save the registers
-    struct process *proc = process_current();
-    ASSERT(task_save_state(proc->task, frame) == 0);
-}
-
-void *process_get_stack_item(int index)
-{
-    struct process *proc = process_current();
-
-    // Assert that we have a process
-    ASSERT(proc);
-
-    return task_get_stack_item(proc->task, index);
-}
-
-int process_page()
-{
-    user_registers();
-    task_switch(current_process->task);
-    return 0;
-}
-
 int process_switch(struct process *process)
 {
     current_process = process;

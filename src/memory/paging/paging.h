@@ -58,12 +58,6 @@ void paging_unmap_all(struct paging_4gb_chunk *chunk);
  */
 uint32_t* paging_current_directory();
 
-/**
- * Copies the string located at the virtual address provided for the user process into the physical address provided.
- * If "max" is reached then copying of the string stops.
- * Returns 0 on success, below zero is an error
- */
-int copy_string_from_user_process(struct process *process, void *virtual, void *phys, int max);
 
 int paging_get_indexes(uint32_t *directory, void *virt, uint32_t *directory_index_out, uint32_t *table_index_out);
 

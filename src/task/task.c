@@ -14,6 +14,22 @@ struct task* task_tail = 0;
 struct task* task_head = 0;
 
 void user_registers();
+
+
+void task_current_save_state(struct interrupt_frame *frame)
+{
+    // Assert that we are currently paging the kernel, if someone calls us whilst in a process page we will assume an error as we swap back to kernel when we are done, which may have unpredictable results
+    ASSERT(is_kernel_page());
+
+    // Asserts that we have a process
+    ASSERT(task_current());
+
+    // Save the registers
+    struct task* task = task_current();
+    ASSERT(task_save_state(task, frame) == 0);
+}
+
+
 int task_switch(struct task *task)
 {
     ASSERT(task->page_directory);
@@ -27,6 +43,71 @@ struct task *task_current()
     return current_task;
 }
 
+int task_page()
+{
+    user_registers();
+    task_switch(current_task);
+    return 0;
+}
+
+
+
+int copy_string_from_task(struct task *task, void *virtual, void *phys, int max)
+{
+
+    // Let's assert we are on the kernel page, we can't do anything without this being the case. We will assume a bug if its not
+    ASSERT(is_kernel_page());
+
+    // We only support copying of strings that are no larger than a page.
+    if (max >= COS32_PAGE_SIZE)
+    {
+        return -EINVARG;
+    }
+
+    int res = 0;
+    char *tmp = kzalloc(max);
+    if (!tmp)
+    {
+        res = -ENOMEM;
+        goto out;
+    }
+
+    uint32_t *task_directory = task->page_directory->directory_entry;
+    // We must map "tmp" into process memory but first lets remember the old value for later
+    uint32_t old_entry = paging_get(task_directory, tmp);
+    paging_map(task_directory, tmp, tmp, PAGING_PAGE_WRITEABLE | PAGING_PAGE_PRESENT | PAGING_CACHE_DISABLED | PAGING_ACCESS_FROM_ALL);
+    paging_switch(task_directory);
+    // Now we have switched to the page of the process we can now access the user process address, lets copy it over to the kernel buffer
+    strncpy(tmp, virtual, max);
+    kernel_page();
+
+    // Restore the old entry as we possibly remapped one that the process was using
+    res = paging_set(task_directory, tmp, old_entry);
+    if (res < 0)
+    {
+        res = -EIO;
+        goto out_free;
+    }
+
+    // Now that we are back on the kernel page lets copy from that "tmp" pointer we made back into the kernel space "phys" address
+    strncpy(phys, tmp, max);
+out_free:
+    kfree(tmp);
+out:
+    return 0;
+}
+
+
+void *task_current_get_stack_item(int index)
+{
+    struct task *task = task_current();
+
+    // Assert that we have a task
+    ASSERT(task);
+
+    return task_get_stack_item(task, index);
+}
+
 
 void* task_get_stack_item(struct task* task, int index)
 {
@@ -38,7 +119,7 @@ void* task_get_stack_item(struct task* task, int index)
     uint32_t *sp_ptr = (uint32_t *)task->registers.esp;
 
     // Let's switch to the process page
-    process_page();
+    task_page();
 
     result = (void *)sp_ptr[index];
 

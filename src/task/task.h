@@ -52,12 +52,38 @@ struct interrupt_frame;
 void task_return(struct registers* regs);
 void restore_general_purpose_registers(struct registers* regs);
 
+
+/**
+ * Copies the string located at the virtual address provided for the user process into the physical address provided.
+ * If "max" is reached then copying of the string stops.
+ * Returns 0 on success, below zero is an error
+ */
+int copy_string_from_task(struct task *task, void *virtual, void *phys, int max);
+
+/**
+ * Returns the given stack item from the tasks stack for the given index
+ */
 void *task_get_stack_item(struct task *task, int index);
+
+/**
+ * Saves the state for the current task
+ */
+void task_current_save_state(struct interrupt_frame *frame);
 int task_save_state(struct task *task, struct interrupt_frame *frame);
 struct task *task_current();
 int task_init(struct task *task);
 int task_switch(struct task *task);
 struct task* task_new();
+
+/**
+ * Gets the stack item from the currently running task
+ */
+void *task_current_get_stack_item(int index);
+
+/**
+ * Switches the processor into the task page and swaps back to user segment registers
+ */
+int task_page();
 
 /**
  * Should be called for the first task we ever run, i.e no tasks exist before us

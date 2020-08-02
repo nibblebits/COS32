@@ -6,8 +6,6 @@
 
 ; First label that should be called for our program, our program is a binary file, so it has no header information
 ; Putting anything above this will cause corruption know what your doing
-_start:
-
 start:
     mov ecx, 10000000
 continue:
@@ -38,4 +36,4 @@ read_string:
     pop ebp
     ret
 
-hello: db 'Hello', 0
+hello: db 'This is another test', 0
