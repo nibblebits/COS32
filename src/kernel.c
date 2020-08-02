@@ -318,5 +318,10 @@ void kernel_main(void)
 	{
 		panic("Failed to load the start program!\n");
 	}
+
+	// Usually the interrupt handler will call this, but as we have started the very first process
+	// we are responsible
+	
+	task_run_first_ever_task();
 	
 }

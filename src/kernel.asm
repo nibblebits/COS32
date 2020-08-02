@@ -21,8 +21,7 @@ _start:
     call setup_pic
 	call kernel_main
 
-	cli
-	hlt
+    ; We rely just on interrupts from here on.
 	jmp $
 
 setup_pic:
@@ -43,11 +42,9 @@ setup_pic:
 ; Switches the registers to the kernel registers, must be run while the code segment is in ring 0
 kernel_registers:
     ; Kernel data segment
-    cli
     mov ax, 0x10
     mov ds, ax
     mov es, ax
     mov fs, ax
     mov gs, ax
-    sti
     ret

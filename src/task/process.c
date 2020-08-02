@@ -61,9 +61,7 @@ void *process_get_stack_item(int index)
 
 int process_page()
 {
-    disable_interrupts();
     user_registers();
-    enable_interrupts();
     task_switch(current_process->task);
     return 0;
 }
@@ -72,7 +70,6 @@ int process_switch(struct process *process)
 {
     current_process = process;
     process_is_running = true;
-    task_switch(process->task);
     return 0;
 }
 
@@ -97,17 +94,12 @@ int process_start(struct process *process)
     if (process->started)
         return -EIO;
 
-    // Before entering user mode we may need to acknolwedge an interrupt on the ISR because we will never return to the caller of process_start
-    outb(PIC1, PIC_EOI);
+    process->started = true;
 
-
-
+    // As we have started a process we should switch to it
     process_switch(process);
-    // Now that we have switched to the process you should bare in mind its now dangerous to do anything else other than go to user mode
 
-    // Let's start executing the task
-    task_return(&process->task->registers);
-
+    //task_resume(&process->task);
     return 0;
 }
 

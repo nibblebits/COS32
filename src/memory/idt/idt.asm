@@ -113,10 +113,11 @@ isr80h_wrapper:
     pop ebx
     ; Restore user land registers
     popad
-    sti
 
     ; Set the EAX register to the return result stored in .tmp_res
     mov eax, [.tmp_res]
+    
+    sti
     iretd
 
 ; Stores the return result of the interrupt operation

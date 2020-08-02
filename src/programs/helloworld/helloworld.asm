@@ -7,8 +7,7 @@
 ; First label that should be called for our program, our program is a binary file, so it has no header information
 ; Putting anything above this will cause corruption know what your doing
 _start:
-    ; In future we will push to the stack instead
-
+    ; In future we will push to the stack instead    
     push dword hello
     mov eax, 1
     int 0x80

@@ -27,7 +27,7 @@ static int reserved_interrupts[] = {0x80, 0x00};
 
 struct isr80h_function1_print
 {
-    const char *message
+    const char *message;
 };
 
 bool idt_is_reserved(int interrupt)
@@ -46,23 +46,8 @@ bool idt_is_reserved(int interrupt)
 #warning TIMING BUG, IF WE HOLD FUNCTION KEYS ALL WORKS FINE OTHERWISE THEIRS A PROBLEM
 void interrupt_handler(int interrupt, struct interrupt_frame* frame)
 {
-    // Our interrupt handler may only be called by programs and not the kernel
-    if (!process_current())
-    {
-        // If we have no process running we wont process this interrupt
-        goto out;
-    }
-
-
-    // A hack just to check something
-    if (frame->ip < 0x400000)
-    {
-        goto out;
-    }
-
     if (interrupt_callbacks[interrupt] != 0)
     {    
- 
         kernel_page();
         process_mark_running(false);
         process_save_state(frame);
@@ -129,7 +114,7 @@ void *isr80h_command2_get_key(struct interrupt_frame *frame)
 {
     char key = keyboard_pop();
     struct process *proc = process_current();
-    return key;
+    return (void*)key;
 }
 
 void *isr80h_handle_command(int command, struct interrupt_frame *frame)
@@ -154,11 +139,8 @@ void *isr80h_handler(int command, struct interrupt_frame *frame)
     void *res = 0;
     // Our interrupt handler may only be called by programs and not the kernel
     kernel_page();
-    ASSERT(process_running());
-    process_mark_running(false);
     process_save_state(frame);
     res = isr80h_handle_command(command, frame);
-    process_mark_running(true);
     process_page();
     return res;
 }
@@ -210,6 +192,13 @@ void idt_set(int i, void *address)
     ptr->offset_2 = (uint32_t)address >> 16;
 }
 
+void isr_timer(int interrupt)
+{
+     // Acknowledge the interrupt
+    outb(PIC1, PIC_EOI);    
+    task_next();    
+}
+
 void idt_init()
 {
     memset(idt_desc, 0, sizeof(idt_desc));
@@ -229,5 +218,8 @@ void idt_init()
     // Setup the general protection fault interrupt
     idt_register_interrupt_callback(0x0D, idt_general_protection_fault);
 
+    // Setup the timer interrupt
+    idt_register_interrupt_callback(0x20, isr_timer);
+    
     idt_load(&idtr_desc);
 }

@@ -19,6 +19,7 @@ struct registers
     uint32_t esp;
     uint32_t ss;
 };
+
 struct task
 {
     // These are all the heap allocations that this process has, if its not NULL then its allocated
@@ -30,6 +31,9 @@ struct task
 
     // When we switch out of user space the process registers are saved in memory
     struct registers registers;
+
+    // True if this task is currently running, if its false then its in a paused state
+    bool awake;
 
     // The next task in the linked list
     struct task* next;
@@ -54,4 +58,22 @@ struct task *task_current();
 int task_init(struct task *task);
 int task_switch(struct task *task);
 struct task* task_new();
+
+/**
+ * Should be called for the first task we ever run, i.e no tasks exist before us
+ */
+void task_run_first_ever_task();
+
+/**
+ * Switches to the next task, used for multi-tasking purposes, flips back around when it reaches
+ * the end of the task queue. No priority is currently implemented
+ */
+void task_next();
+
+/**
+ * Resumes the given task allow it to run once again
+ */
+void task_resume(struct task* task);
+
+
 #endif

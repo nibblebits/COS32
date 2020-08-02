@@ -6,6 +6,7 @@
 #include "memory/idt/idt.h"
 #include "config.h"
 #include "status.h"
+#include "kernel.h"
 
 void fkeylistener_keypress(char c);
 void fkeylistener_special(enum SpecialKeys key);

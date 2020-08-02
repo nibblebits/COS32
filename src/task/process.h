@@ -25,6 +25,9 @@ struct process
     // True if this process was ever started
     bool started;
 
+    // True if this process is currently awake
+    bool awake;
+
     // This is the keyboard buffer for this process, any keyboard interrupts that happen will write to the buffer of the current process
     struct keyboard_buffer
     {

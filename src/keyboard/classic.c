@@ -1,8 +1,10 @@
 #include "classic.h"
 #include "memory/memory.h"
 #include "memory/idt/idt.h"
+#include "io/io.h"
 #include "status.h"
 #include "kernel.h"
+
 
 int classic_keyboard_init();
 int classic_keyboard_push(int keycode);

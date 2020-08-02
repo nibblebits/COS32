@@ -7,8 +7,7 @@ static struct heap* kheap;
 
 void kheap_init()
 {
-    // Our kernel heap should be just after the stack
-    kheap = heap_create((void*)COS32_KERNEL_HEAP_ADDRESS);   
+    kheap = heap_create(COS32_KERNEL_HEAP_ADDRESS);   
 }
 
 void* kmalloc(int size)

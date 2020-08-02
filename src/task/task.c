@@ -66,6 +66,36 @@ int task_save_state(struct task* task, struct interrupt_frame* frame)
     return 0;
 }
 
+void task_run_first_ever_task()
+{
+    ASSERT(current_task == 0);
+    ASSERT(task_head);
+    task_switch(task_head);
+    task_return(&task_head->registers);
+}
+
+/**
+ * Switches to the next task, used for multi-tasking purposes, flips back around when it reaches
+ * the end of the task queue. No priority is currently implemented
+ */
+void task_next()
+{
+    ASSERT(current_task);
+    
+    struct task* task = current_task->next;
+    // No more tasks? loop back to the head!
+    if (!task)
+    {
+        task = task_head;
+    }
+    
+
+    // Switch the current task and get straight back into user land
+    task_switch(task);
+    task_return(&task->registers);
+
+}
+
 struct task* task_new()
 {
     int res = 0;
@@ -109,6 +139,9 @@ int task_init(struct task *task)
     task->registers.ss = USER_DATA_SEGMENT;
     task->registers.cs = USER_CODE_SEGMENT;
     task->registers.esp = COS32_PROGRAM_VIRTUAL_STACK_ADDRESS_START;
+
+    // This task should be in an awake state
+    task->awake = true;
 
     // NOTE THE ENTIRE 4GB ADDRESS SPACE IS MAPPED TO ITS SELF AT THIS POINT, KEEP IN MIND WHEN RUNNING UNPRIVILAGED CODE
     // A MALICIOUS PROGRAM COULD INSPECT MEMORY AND READ WHAT IT SHOULDNT BE READING
