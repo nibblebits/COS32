@@ -1,4 +1,6 @@
 [BITS 32]
+
+section .code
 global idt_load
 global enable_interrupts
 global disable_interrupts
@@ -68,18 +70,6 @@ disable_interrupts:
 %endrep
 
 
-; We need to make a pointer table for all the interrupt entries, these will point to the associated wrappers
-%macro interrupt_array_entry 1
-    dd int%1
-%endmacro
-
-; Pointer table
-interrupt_pointer_table:
-%assign i 0
-%rep 512
-    interrupt_array_entry i
-%assign i i+1
-%endrep
 
 
 isr0_wrapper:
@@ -143,3 +133,19 @@ isr_no_interrupt_wrapper:
     call isr_no_interrupt
     sti
     iretd
+
+
+; We need to make a pointer table for all the interrupt entries, these will point to the associated wrappers
+
+section .data
+%macro interrupt_array_entry 1
+    dd int%1
+%endmacro
+
+; Pointer table
+interrupt_pointer_table:
+%assign i 0
+%rep 512
+    interrupt_array_entry i
+%assign i i+1
+%endrep

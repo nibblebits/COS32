@@ -5,6 +5,7 @@
 #include "memory/kheap.h"
 #include "memory/memory.h"
 #include "string/string.h"
+#include "video/video.h"
 #include "memory/idt/idt.h"
 #include "task.h"
 #include "kernel.h"
@@ -36,10 +37,35 @@ bool process_running()
     return process_is_running;
 }
 
-int process_switch(struct process *process)
+void process_save(struct process* process)
+{
+    // Save the video memory back into our processes video memory, so when we switch back
+    // we can carry on where we left off
+    video_save(process->video_memory);
+}
+
+void process_restore(struct process* process)
 {
     current_process = process;
     process_is_running = true;
+
+    // Restore the processes video memory back into the main video memory
+    // So what was once shown shows again on the screen
+    video_restore(process->video_memory);
+}
+
+
+int process_switch(struct process *process)
+{
+    if (current_process != 0)
+    {
+        // We must save the old process state
+        process_save(current_process);
+    }
+    
+
+    // Restore the given process
+    process_restore(process);
     return 0;
 }
 
@@ -68,8 +94,6 @@ int process_start(struct process *process)
 
     // As we have started a process we should switch to it
     process_switch(process);
-
-    //task_resume(&process->task);
     return 0;
 }
 
@@ -154,7 +178,8 @@ int process_load_for_slot(const char *filename, struct process **process, int pr
     _process->ptr = program_data_ptr;
     _process->stack = program_stack_ptr;
     _process->size = stat.filesize;
-    
+    _process->video_memory = video_new();
+
     struct task* task = task_new();
     if (ERROR_I(task) <= 0)
     {

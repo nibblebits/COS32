@@ -11,6 +11,7 @@
 #include "kernel.h"
 #include "memory/paging/paging.h"
 #include "memory/memory.h"
+#include "video/video.h"
 #include "keyboard/keyboard.h"
 #include "keyboard/listener.h"
 #include "task/task.h"
@@ -268,7 +269,7 @@ void kernel_main(void)
 	// Interrupts should start disabled, we only want them to work while a program runs
 	disable_interrupts();
 
-	/* Initialize terminal interface */
+	/* Initialize terminal interface (Should be moved to video.c but then we don't have heap... leave for now)*/
 	terminal_initialize();
 
 	memset(gdt_real, 0, sizeof(gdt_real));
@@ -290,6 +291,9 @@ void kernel_main(void)
 
 	// Initialize the heap
 	kheap_init();
+
+	// Initialize the video memory
+	video_init();
 
 	// Initialize all the keyboards
 	keyboard_init();

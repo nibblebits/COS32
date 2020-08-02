@@ -1,10 +1,8 @@
 [BITS 32]
+
+section .code
 global gdt_load
 extern print_number
-
-gdt_descriptor:
-    dw 0x00 ; Size -1
-    dd 0x00  ; GDT start address
 
 gdt_load:
    MOV   EAX, [esp + 4]
@@ -13,3 +11,8 @@ gdt_load:
    MOV   [gdt_descriptor], AX
    LGDT  [gdt_descriptor]
    RET
+
+section .data
+gdt_descriptor:
+    dw 0x00 ; Size -1
+    dd 0x00  ; GDT start address
