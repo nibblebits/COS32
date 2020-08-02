@@ -1,16 +1,5 @@
 FILES = ./build/kernel.asm.o  ./build/keyboard/listener.o ./build/keyboard/listeners/fkeylistener.o ./build/keyboard/keyboard.o ./build/keyboard/classic.o ./build/task/task.o ./build/task/process.o ./build/kernel.o ./build/task/tss.asm.o ./build/gdt/gdt.asm.o ./build/gdt/gdt.o ./build/task/task.asm.o ./build/memory/paging/paging.o ./build/memory/paging/paging.asm.o ./build/memory/idt/idt.asm.o ./build/memory/idt/idt.o ./build/io/io.o  ./build/disk/disk.o ./build/fs/file.o ./build/fs/fat/fat16.o ./build/memory/heap.o ./build/memory/kheap.o ./build/memory/memory.o ./build/string/string.o
-FLAGS = -m32 \
-	-nodefaultlibs \
-	-nostdlib \
-	-static \
-	-ffreestanding \
-	-fno-builtin \
-	-fno-pie \
-	-fno-stack-protector \
-	-s \
-	-g \
-	 -falign-functions=16\
-  
+FLAGS = --freestanding -fstrength-reduce -fomit-frame-pointer -finline-functions -Wno-unused-function -fno-builtin -Werror -Wno-unused-label -Wno-cpp -Wno-unused-parameter -nostdlib -nostartfiles -nodefaultlibs -Wall -O0 -Iinc
 
 INCLUDES = -I./src
 all: ./bin/kernel.bin ./bin/boot.bin ${FILES} programs

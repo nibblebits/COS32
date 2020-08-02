@@ -66,7 +66,7 @@ int paging_map_range(uint32_t *directory, void *virt, void *phys, int count, int
     return res;
 }
 
-int paging_get_indexes(uint32_t *directory, void *virt, uint32_t *directory_index_out, uint32_t *table_index_out)
+int paging_get_indexes(__attribute__((unused)) uint32_t *directory, void *virt, uint32_t *directory_index_out, uint32_t *table_index_out)
 {
     // Addresses must be 4096 aligned
     if ((unsigned int)virt % COS32_PAGE_SIZE)
@@ -145,7 +145,7 @@ void *paging_align_address(void *ptr)
     if ((uint32_t)ptr % COS32_PAGE_SIZE)
     {
         // Not aligned lets align it
-        return (uint32_t)ptr + COS32_PAGE_SIZE - ((uint32_t)ptr % COS32_PAGE_SIZE);
+        return (void*) ((uint32_t)ptr + COS32_PAGE_SIZE - ((uint32_t)ptr % COS32_PAGE_SIZE));
     }
 
     // It's aligned lets return the same pointer provided
@@ -164,7 +164,7 @@ int paging_map_to(uint32_t *directory, void *virt, void *phys, void *phys_end, i
     return paging_map_range(directory, virt, phys, total_pages, flags);
 }
 
-void paging_free_4gb(struct paging_4gb_chunk *chunk)
+void paging_free_4gb(__attribute__((unused)) struct paging_4gb_chunk *chunk)
 {
 }
 

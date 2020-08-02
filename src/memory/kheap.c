@@ -7,14 +7,14 @@ static struct heap* kheap;
 
 void kheap_init()
 {
-    kheap = heap_create(COS32_KERNEL_HEAP_ADDRESS);   
+    kheap = heap_create((void*) COS32_KERNEL_HEAP_ADDRESS);   
 }
 
 void* kmalloc(int size)
 {
     void* ptr = heap_malloc(kheap, size);
     // While assertions are enabled if we fail to allocate we should panic the kernel
-    ASSERT(ptr >= kheap);
+    ASSERT((ptr >= (void*)kheap));
     return ptr;
 }
 

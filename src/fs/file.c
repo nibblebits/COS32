@@ -76,13 +76,13 @@ void fs_init()
  * A:/abc
  * B:/
  */
-static int fs_valid_path_format(char *filename)
+static int fs_valid_path_format(const char *filename)
 {
     int len = strnlen(filename, COS32_MAX_PATH);
-    return (len >= 3 && isdigit(filename[0])) && memcmp(&filename[1], ":/", 2) == 0;
+    return (len >= 3 && isdigit(filename[0])) && memcmp((void*)&filename[1], ":/", 2) == 0;
 }
 
-static int fs_get_drive_by_path(char *filename)
+static int fs_get_drive_by_path(const char *filename)
 {
     if (!fs_valid_path_format(filename))
     {
@@ -167,7 +167,7 @@ FILE_MODE file_get_mode_by_string(const char *str)
 }
 
 
-int fopen(char *filename, const char *mode_str)
+int fopen(const char *filename, const char *mode_str)
 {
     int res = 0;
     int drive_no = fs_get_drive_by_path(filename);

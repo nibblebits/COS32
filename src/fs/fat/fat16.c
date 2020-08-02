@@ -251,7 +251,7 @@ int fat16_read_next(struct disk *disk, void *private, uint32_t size, uint32_t nm
     }
 
     // Let's now push the remainder to memory
-    for (int i = 0; i < size; i++)
+    for (uint32_t i = 0; i < size; i++)
     {
         out_ptr[i] = buf[i + offset_relative_remainder];
     }

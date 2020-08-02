@@ -103,7 +103,7 @@ void idt_general_protection_fault(int interrupt)
 void *isr80h_command1_print(struct interrupt_frame *frame)
 {
     // The message to print is the first element on the user stack
-    const char *msg_user_space_addr = (const char *)process_get_stack_item(0);
+    void *msg_user_space_addr = process_get_stack_item(0);
     char buf[1024];
     ASSERT(copy_string_from_user_process(process_current(), msg_user_space_addr, buf, sizeof(buf)) == 0);
     print(buf);
@@ -113,8 +113,7 @@ void *isr80h_command1_print(struct interrupt_frame *frame)
 void *isr80h_command2_get_key(struct interrupt_frame *frame)
 {
     char key = keyboard_pop();
-    struct process *proc = process_current();
-    return (void*)key;
+    return (void*)((int)key);
 }
 
 void *isr80h_handle_command(int command, struct interrupt_frame *frame)
@@ -195,7 +194,7 @@ void idt_set(int i, void *address)
 void isr_timer(int interrupt)
 {
      // Acknowledge the interrupt
-    outb(PIC1, PIC_EOI);    
+    outb(PIC1, PIC_EOI);
     task_next();    
 }
 

@@ -6,6 +6,7 @@
 #include "memory/memory.h"
 #include "string/string.h"
 #include "memory/idt/idt.h"
+#include "task.h"
 #include "kernel.h"
 
 // The current process that was just running or is running
@@ -50,7 +51,6 @@ void process_save_state(struct interrupt_frame *frame)
 
 void *process_get_stack_item(int index)
 {
-    void *result = 0;
     struct process *proc = process_current();
 
     // Assert that we have a process
@@ -76,7 +76,7 @@ int process_switch(struct process *process)
 int process_load_start(const char *path)
 {
     int res = 0;
-    struct process *process;
+    struct process *process = 0x00;
     res = process_load(path, &process);
     if (res < 0)
     {
@@ -186,7 +186,7 @@ int process_load_for_slot(const char *filename, struct process **process, int pr
     _process->size = stat.filesize;
     
     struct task* task = task_new();
-    if (task <= 0)
+    if (ERROR_I(task) <= 0)
     {
         res = ERROR_I(task);
         goto out;
@@ -194,8 +194,8 @@ int process_load_for_slot(const char *filename, struct process **process, int pr
 
     _process->task = task;
     // We now need to map the process memory into real memory
-    ASSERT(paging_map_to(_process->task->page_directory->directory_entry, COS32_PROGRAM_VIRTUAL_ADDRESS, _process->ptr, paging_align_address(_process->ptr + _process->size), PAGING_PAGE_PRESENT | PAGING_ACCESS_FROM_ALL | PAGING_PAGE_WRITEABLE) == 0);
-    ASSERT(paging_map_to(_process->task->page_directory->directory_entry, COS32_PROGRAM_VIRTUAL_STACK_ADDRESS_END, _process->stack, paging_align_address(_process->stack + COS32_USER_PROGRAM_STACK_SIZE), PAGING_ACCESS_FROM_ALL | PAGING_PAGE_PRESENT | PAGING_PAGE_WRITEABLE) == 0);
+    ASSERT(paging_map_to(_process->task->page_directory->directory_entry, (void*) COS32_PROGRAM_VIRTUAL_ADDRESS, _process->ptr, paging_align_address(_process->ptr + _process->size), PAGING_PAGE_PRESENT | PAGING_ACCESS_FROM_ALL | PAGING_PAGE_WRITEABLE) == 0);
+    ASSERT(paging_map_to(_process->task->page_directory->directory_entry, (void*) COS32_PROGRAM_VIRTUAL_STACK_ADDRESS_END, _process->stack, paging_align_address(_process->stack + COS32_USER_PROGRAM_STACK_SIZE), PAGING_ACCESS_FROM_ALL | PAGING_PAGE_PRESENT | PAGING_PAGE_WRITEABLE) == 0);
 
     // We have the program loaded :o
     *process = _process;

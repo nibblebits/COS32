@@ -216,7 +216,7 @@ int classic_keyboard_init()
     return 0;
 }
 
-int classic_keyboard_push(int keycode)
+int classic_keyboard_push(__attribute__((unused))int keycode)
 {
     return -EIO;
 }

@@ -75,5 +75,6 @@ void task_next();
  */
 void task_resume(struct task* task);
 
+void user_registers();
 
 #endif

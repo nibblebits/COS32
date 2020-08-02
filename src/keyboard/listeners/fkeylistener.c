@@ -20,7 +20,7 @@ void fkeylistener_init()
     keyboard_listener_register(&listener);
 }
 
-void fkeylistener_keypress(char c)
+void fkeylistener_keypress(__attribute__((unused)) char c)
 {
     // We don't handle normal keypresses
 }
