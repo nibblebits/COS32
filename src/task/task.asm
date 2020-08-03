@@ -1,3 +1,6 @@
+[BITS 32]
+section .asm
+
 global task_return
 global user_registers
 global restore_general_purpose_registers

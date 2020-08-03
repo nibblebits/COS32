@@ -18,7 +18,7 @@ all: ./bin/kernel.bin ./bin/boot.bin ${FILES} programs
 	nasm -f bin ./src/boot/boot.asm -o ./bin/boot.bin
 
 ./bin/kernel.bin: ${FILES}
-	i686-elf-ld  -relocatable ${FILES} -o ./build/kernelfull.o
+	i686-elf-ld  -m elf_i386 -relocatable ${FILES} -o ./build/kernelfull.o
 	i686-elf-gcc $(FLAGS) -T ./src/linker.ld -o ./bin/kernel.bin -ffreestanding -O0 -nostdlib -fpic  -g ./build/kernelfull.o
 
 ./build/gdt/gdt.o: ./src/gdt/gdt.c ./src/gdt/gdt.h

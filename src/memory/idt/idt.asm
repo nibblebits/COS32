@@ -1,6 +1,7 @@
 [BITS 32]
 
-section .code
+section .asm
+
 global idt_load
 global enable_interrupts
 global disable_interrupts
@@ -98,20 +99,18 @@ isr80h_wrapper:
     ; EAX holds our command lets push it
     push eax
     call isr80h_handler
-    mov dword[.tmp_res], eax
+    mov dword[tmp_res], eax
     pop ebx
     pop ebx
     ; Restore user land registers
     popad
 
-    ; Set the EAX register to the return result stored in .tmp_res
-    mov eax, [.tmp_res]
+    ; Set the EAX register to the return result stored in tmp_res
+    mov eax, [tmp_res]
     
     sti
     iretd
 
-; Stores the return result of the interrupt operation
-.tmp_res: dd 0
 
 isr_invalid_tss_wrapper:
     cld
@@ -134,10 +133,12 @@ isr_no_interrupt_wrapper:
     sti
     iretd
 
-
 ; We need to make a pointer table for all the interrupt entries, these will point to the associated wrappers
-
 section .data
+
+; Stores the return result of the interrupt operation
+tmp_res: dd 0
+
 %macro interrupt_array_entry 1
     dd int%1
 %endmacro

@@ -7,6 +7,7 @@ global kernel_registers
 
 CODE_SEG equ 0x08
 DATA_SEG equ 0x10
+
 _start:	
 	mov    ax, DATA_SEG    
     mov    ds, ax        
@@ -48,3 +49,11 @@ kernel_registers:
     mov fs, ax
     mov gs, ax
     ret
+
+
+; We must ensure this is 16 byte aligned as its part of the text section where all our
+; C code will be apart of, GCC requires all functions to be aligned by 16 bytes by default
+; If this assembly causes misalignment our kernel will malfunction
+; Let's ensure we are aligned, all other assembly files will use the ".asm" section which will be placed
+; at the end of the binary, ensuring alignment issues do not happen
+TIMES 512-($-$$) db 0

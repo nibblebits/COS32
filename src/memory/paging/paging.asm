@@ -1,5 +1,7 @@
 [BITS 32]
 
+section .asm
+
 global paging_load_directory
 global enable_paging
 

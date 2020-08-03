@@ -1,6 +1,6 @@
 [BITS 32]
 
-section .code
+section .asm
 global gdt_load
 extern print_number
 
