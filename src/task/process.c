@@ -41,17 +41,28 @@ void process_save(struct process* process)
 {
     // Save the video memory back into our processes video memory, so when we switch back
     // we can carry on where we left off
-    video_save(process->video_memory);
+    video_save(process->video);
 }
 
 void process_restore(struct process* process)
 {
+    if (current_process != 0)
+    {
+        // Since we are switching process the task associated with the current process
+        // must have its video memory mapped back to its internal private video memory
+        // so that any prints made by this task do not write to the terminal
+        task_map_video_memory(current_process->task);
+    }
     current_process = process;
     process_is_running = true;
 
     // Restore the processes video memory back into the main video memory
     // So what was once shown shows again on the screen
-    video_restore(process->video_memory);
+    video_restore(process->video);
+
+    // We now need to unmap the restored processes video memory so that it outputs data directly to the terminal
+    // rather than its internal private video memory
+    task_unmap_video_memory(process->task);
 }
 
 
@@ -178,9 +189,9 @@ int process_load_for_slot(const char *filename, struct process **process, int pr
     _process->ptr = program_data_ptr;
     _process->stack = program_stack_ptr;
     _process->size = stat.filesize;
-    _process->video_memory = video_new();
-
-    struct task* task = task_new();
+    _process->video = video_new();
+    
+    struct task* task = task_new(_process);
     if (ERROR_I(task) <= 0)
     {
         res = ERROR_I(task);

@@ -11,6 +11,15 @@ char *strncpy(char *dest, const char *src, int n)
     return dest;
 }
 
+
+size_t strlen(const char *str)
+{
+	size_t len = 0;
+	while (str[len])
+		len++;
+	return len;
+}
+
 char tolower(char s1)
 {
     if (s1 >= 65 && s1 <= 90)

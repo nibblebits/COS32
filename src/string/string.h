@@ -1,7 +1,10 @@
 #ifndef STRING_H
 #define STRING_H
 
+#include <stddef.h>
+
 char *strncpy(char *dest, const char *src, int n);
+size_t strlen(const char *str);
 int strnlen(const char* str, int max);
 int strnlen_terminator(const char *str, int max, char terminator);
 int isdigit(char c);

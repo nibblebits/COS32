@@ -4,17 +4,17 @@
 #include "memory/kheap.h"
 #include "memory/memory.h"
 #include "string/string.h"
+#include "video/video.h"
 #include "memory/idt/idt.h"
 #include "process.h"
 #include "status.h"
 #include "config.h"
 #include "kernel.h"
 struct task *current_task = 0;
-struct task* task_tail = 0;
-struct task* task_head = 0;
+struct task *task_tail = 0;
+struct task *task_head = 0;
 
 void user_registers();
-
 
 void task_current_save_state(struct interrupt_frame *frame)
 {
@@ -25,15 +25,15 @@ void task_current_save_state(struct interrupt_frame *frame)
     ASSERT(task_current());
 
     // Save the registers
-    struct task* task = task_current();
+    struct task *task = task_current();
     ASSERT(task_save_state(task, frame) == 0);
 }
-
 
 int task_switch(struct task *task)
 {
     ASSERT(task->page_directory);
     current_task = task;
+
     paging_switch(task->page_directory->directory_entry);
     return 0;
 }
@@ -49,8 +49,6 @@ int task_page()
     task_switch(current_task);
     return 0;
 }
-
-
 
 int copy_string_from_task(struct task *task, void *virtual, void *phys, int max)
 {
@@ -97,7 +95,6 @@ out:
     return 0;
 }
 
-
 void *task_current_get_stack_item(int index)
 {
     struct task *task = task_current();
@@ -108,11 +105,10 @@ void *task_current_get_stack_item(int index)
     return task_get_stack_item(task, index);
 }
 
-
-void* task_get_stack_item(struct task* task, int index)
+void *task_get_stack_item(struct task *task, int index)
 {
-    void* result = 0;
-     // Assert that we are currently paging the kernel, if someone calls us whilst in a process page we will assume an error as we swap back to kernel when we are done, which may have unpredictable results
+    void *result = 0;
+    // Assert that we are currently paging the kernel, if someone calls us whilst in a process page we will assume an error as we swap back to kernel when we are done, which may have unpredictable results
     ASSERT(is_kernel_page());
 
     // We assume the stack grows downwards for this implementation to work.
@@ -129,8 +125,7 @@ void* task_get_stack_item(struct task* task, int index)
     return result;
 }
 
-
-int task_save_state(struct task* task, struct interrupt_frame* frame)
+int task_save_state(struct task *task, struct interrupt_frame *frame)
 {
     task->registers.ip = frame->ip;
     task->registers.cs = frame->cs;
@@ -162,30 +157,38 @@ void task_run_first_ever_task()
 void task_next()
 {
     ASSERT(current_task);
-    
-    struct task* task = current_task->next;
+
+    struct task *task = current_task->next;
     // No more tasks? loop back to the head!
     if (!task)
     {
         task = task_head;
     }
-    
 
     // Switch the current task and get straight back into user land
     task_switch(task);
     task_return(&task->registers);
-
 }
 
-struct task* task_new()
+void task_print(const char *message)
+{
+    // This only works because the task can see the entire kernel address space, bare in mind problems will happen
+    // if I change this in the future
+    task_page();
+    video_terminal_writestring(&current_task->process->video->properties, message);
+    kernel_page();
+}
+
+struct task *task_new(struct process *process)
 {
     int res = 0;
-    struct task* task = kzalloc(sizeof(struct task));
-    res = task_init(task);
+    struct task *task = kzalloc(sizeof(struct task));
+    res = task_init(task, process);
     if (res != COS32_ALL_OK)
     {
         goto err;
     }
+
     if (task_head == 0)
     {
         task_head = task;
@@ -201,11 +204,25 @@ out:
 err:
     kfree(task);
     return ERROR(res);
-
 }
 
-int task_init(struct task *task)
+int task_map_video_memory(struct task *task)
 {
+    void *video_memory = task->process->video->ptr;
+    return paging_map_to(task->page_directory->directory_entry, (void *)COS32_VIDEO_MEMORY_ADDRESS_START, video_memory, paging_align_address(video_memory + COS32_VIDEO_MEMORY_SIZE),
+                         PAGING_PAGE_PRESENT | PAGING_ACCESS_FROM_ALL | PAGING_PAGE_WRITEABLE);
+}
+
+int task_unmap_video_memory(struct task *task)
+{
+    return paging_map_to(task->page_directory->directory_entry, (void *)COS32_VIDEO_MEMORY_ADDRESS_START, (void *)COS32_VIDEO_MEMORY_ADDRESS_START, paging_align_address((void *)COS32_VIDEO_MEMORY_ADDRESS_START + COS32_VIDEO_MEMORY_SIZE),
+                         PAGING_PAGE_PRESENT | PAGING_ACCESS_FROM_ALL | PAGING_PAGE_WRITEABLE);
+}
+
+int task_init(struct task *task, struct process *process)
+{
+    ASSERT(process->video);
+    
     memset(task, 0, sizeof(struct task));
     // Maps the entire 4GB address space to its self
     task->page_directory = paging_new_4gb(PAGING_ACCESS_FROM_ALL | PAGING_PAGE_PRESENT);
@@ -213,7 +230,6 @@ int task_init(struct task *task)
     {
         return -EIO;
     }
-    
 
     // Let's setup some register defaults
     task->registers.ip = COS32_PROGRAM_VIRTUAL_ADDRESS;
@@ -223,6 +239,14 @@ int task_init(struct task *task)
 
     // This task should be in an awake state
     task->awake = true;
+
+    task->process = process;
+
+    // We must map the real video memory for this task, to its allocated video memory
+    // This video memory won't be outputted to the terminal but it will write to a buffer instead
+
+    // Let's map the video memory to the tasks video memory, unless its process is the one in view
+    ASSERT(task_map_video_memory(task) == 0);
 
     // NOTE THE ENTIRE 4GB ADDRESS SPACE IS MAPPED TO ITS SELF AT THIS POINT, KEEP IN MIND WHEN RUNNING UNPRIVILAGED CODE
     // A MALICIOUS PROGRAM COULD INSPECT MEMORY AND READ WHAT IT SHOULDNT BE READING

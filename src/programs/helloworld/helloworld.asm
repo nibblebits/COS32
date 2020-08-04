@@ -13,6 +13,8 @@ start:
 continue:
     loop continue
 
+    mov byte[hello], 'a'
+    
     ; In future we will push to the stack instead    
     push dword hello
     mov eax, 1

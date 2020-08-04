@@ -2,47 +2,159 @@
 #include "memory/memory.h"
 #include "memory/kheap.h"
 #include "io/io.h"
+#include "string/string.h"
 #include "config.h"
-void* video_default = 0;
 
+#include <stdint.h>
+#include <stddef.h>
+
+void *video_default = 0;
+
+
+/* Hardware text mode color constants. */
+enum vga_color
+{
+	VGA_COLOR_BLACK = 0,
+	VGA_COLOR_BLUE = 1,
+	VGA_COLOR_GREEN = 2,
+	VGA_COLOR_CYAN = 3,
+	VGA_COLOR_RED = 4,
+	VGA_COLOR_MAGENTA = 5,
+	VGA_COLOR_BROWN = 6,
+	VGA_COLOR_LIGHT_GREY = 7,
+	VGA_COLOR_DARK_GREY = 8,
+	VGA_COLOR_LIGHT_BLUE = 9,
+	VGA_COLOR_LIGHT_GREEN = 10,
+	VGA_COLOR_LIGHT_CYAN = 11,
+	VGA_COLOR_LIGHT_RED = 12,
+	VGA_COLOR_LIGHT_MAGENTA = 13,
+	VGA_COLOR_LIGHT_BROWN = 14,
+	VGA_COLOR_WHITE = 15,
+};
+
+static inline uint8_t vga_entry_color(enum vga_color fg, enum vga_color bg)
+{
+	return fg | bg << 4;
+}
+
+static inline uint16_t vga_entry(unsigned char uc, uint8_t color)
+{
+	return (uint16_t)uc | (uint16_t)color << 8;
+}
+
+
+
+static const size_t VGA_WIDTH = 80;
+static const size_t VGA_HEIGHT = 25;
+
+struct terminal_properties kernel_terminal_properties;
+uint16_t *terminal_buffer;
+
+void kernel_terminal_initialize(void)
+{
+	kernel_terminal_properties.terminal_row = 0;
+	kernel_terminal_properties.terminal_col = 0;
+	kernel_terminal_properties.terminal_color = vga_entry_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
+	terminal_buffer = (uint16_t *)0xB8000;
+	for (size_t y = 0; y < VGA_HEIGHT; y++)
+	{
+		for (size_t x = 0; x < VGA_WIDTH; x++)
+		{
+			const size_t index = y * VGA_WIDTH + x;
+			terminal_buffer[index] = vga_entry(' ', kernel_terminal_properties.terminal_color);
+		}
+	}
+}
+
+
+void terminal_putentryat(uint16_t* terminal_buffer, char c, uint8_t color, size_t x, size_t y)
+{
+	const size_t index = y * VGA_WIDTH + x;
+	terminal_buffer[index] = vga_entry(c, color);
+}
+
+void terminal_putchar(struct terminal_properties* properties, char c)
+{
+	if (c == '\n')
+	{
+		properties->terminal_col = 0;
+		properties->terminal_row  += 1;
+		return;
+	}
+
+    /**
+     * Notice we actually write directly to video memory and don't expect a videos buffer,
+     * this was no accident, each task has the real video memory paged to point to its own video memory.
+     * This makes more sense than setting the video memory of the video structure as we need to remember
+     * that pixels can also be set manually and theirs no gaurantee a user will use our functions, they may
+     * write to video memory directly. This is why paging is important. We can safetly write to the real video memory
+     * because if the task has paged it will write to its own internal buffers instead
+     */
+	terminal_putentryat(terminal_buffer, c, properties->terminal_color, properties->terminal_col, properties->terminal_row);
+	if (++properties->terminal_col == VGA_WIDTH)
+	{
+		properties->terminal_col = 0;
+		if (++properties->terminal_row == VGA_HEIGHT)
+			properties->terminal_row = 0;
+	}
+}
+
+void terminal_write(struct terminal_properties* properties, const char *data, size_t size)
+{
+	for (size_t i = 0; i < size; i++)
+		terminal_putchar(properties, data[i]);
+}
+
+void video_terminal_writestring(struct terminal_properties* properties, const char *data)
+{
+	terminal_write(properties, data, strlen(data));
+}
+
+void print(const char *message)
+{
+	video_terminal_writestring(&kernel_terminal_properties, message);
+}
 
 void video_init()
 {
-    video_default = kmalloc(COS32_VIDEO_MEMORY_SIZE);
+    kernel_terminal_initialize();
+
+    video_default = kzalloc(COS32_VIDEO_MEMORY_SIZE);
     // Let's copy in the real video memory now so we have a default to work with
-    memcpy(video_default, (void*) COS32_VIDEO_MEMORY_ADDRESS_START, COS32_VIDEO_MEMORY_SIZE);
+    memcpy(video_default, (void *)COS32_VIDEO_MEMORY_ADDRESS_START, COS32_VIDEO_MEMORY_SIZE);
 }
 
-void* video_new()
+struct video *video_new()
 {
-    // When creating new memory we will use the default video memory at the time of initializes
-    // the video
-    void* video_ptr = kmalloc(COS32_VIDEO_MEMORY_SIZE);
+    void *video_ptr = kmalloc(COS32_VIDEO_MEMORY_SIZE);
     memcpy(video_ptr, video_default, COS32_VIDEO_MEMORY_SIZE);
-    return video_ptr;
+
+    struct video *video = kzalloc(sizeof(struct video));
+    video->properties.terminal_row = 0;
+    video->properties.terminal_col = 0;
+	video->properties.terminal_color = vga_entry_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
+    
+    video->ptr = video_ptr;
+
+    return video;
 }
 
-void video_free(void* ptr)
+void video_free(struct video* video)
 {
-    kfree(ptr);
+    kfree(video->ptr);
+    kfree(video);
 }
 
-void video_save(void* ptr)
+/**
+ * Saves the current video  memory state into the provided video pointer
+ * so that it can be restored at a later time
+ */
+void video_save(struct video* video)
 {
-    memcpy(ptr, (void*) COS32_VIDEO_MEMORY_ADDRESS_START, COS32_VIDEO_MEMORY_SIZE);
+    memcpy(video->ptr, (void *)COS32_VIDEO_MEMORY_ADDRESS_START, COS32_VIDEO_MEMORY_SIZE);
 }
 
-void video_restore(void* ptr)
+void video_restore(struct video* video)
 {
-    memcpy((void*) COS32_VIDEO_MEMORY_ADDRESS_START, ptr, COS32_VIDEO_MEMORY_SIZE);
-    	outb(0x3D4, 0x0A);
-	outb(0x3D5, 0x20);
-}
-
-void video_reset_cursor()
-{ 
-	outb(0x3D4, 0x0F);
-	outb(0x3D5, (unsigned char) (0x00));
-	outb(0x3D4, 0x0E);
-	outb(0x3D5, (unsigned char) (0x00));
+    memcpy((void *)COS32_VIDEO_MEMORY_ADDRESS_START, video->ptr, COS32_VIDEO_MEMORY_SIZE);
 }

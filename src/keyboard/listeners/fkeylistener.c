@@ -43,25 +43,15 @@ void fkeylistener_special(enum SpecialKeys key)
         if (res == -EISTKN)
         {
             process = process_get(key);
-            print("Switching to process\n");
-
-            // Critical operation
-            disable_interrupts();
             process_switch(process);
-            // Interrupts will be re-enabled after task_return
-           // Acknowledge the interrupt
-            outb(PIC1, PIC_EOI);
-            // Now we have switched the process let's execute where we left off. Multitasking/Task switching :D
-            task_return(&process->task->registers);
             return;
-        }
+        }   
 
         if (res < 0)
         {
             print("Fatal error loading the process\n");
             return;
         }
-        print("Starting process\n");
         process_start(process);
     }
 }

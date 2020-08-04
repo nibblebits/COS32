@@ -20,6 +20,7 @@ struct registers
     uint32_t ss;
 };
 
+struct process;
 struct task
 {
     // These are all the heap allocations that this process has, if its not NULL then its allocated
@@ -34,6 +35,9 @@ struct task
 
     // True if this task is currently running, if its false then its in a paused state
     bool awake;
+
+    // The process associated with this task
+    struct process* process;
 
     // The next task in the linked list
     struct task* next;
@@ -71,9 +75,9 @@ void *task_get_stack_item(struct task *task, int index);
 void task_current_save_state(struct interrupt_frame *frame);
 int task_save_state(struct task *task, struct interrupt_frame *frame);
 struct task *task_current();
-int task_init(struct task *task);
+int task_init(struct task *task, struct process* process);
 int task_switch(struct task *task);
-struct task* task_new();
+struct task* task_new(struct process* process);
 
 /**
  * Gets the stack item from the currently running task
@@ -100,6 +104,24 @@ void task_next();
  * Resumes the given task allow it to run once again
  */
 void task_resume(struct task* task);
+
+/**
+ * Prints to video memory for the current task
+ */
+void task_print(const char* message);
+
+/**
+ * Maps the video memory to the given task, when ever page tables are set to this task
+ * any write to video memory will write into the tasks video memory so long as the video memory
+ * was mapped with this function
+ */
+int task_map_video_memory(struct task *task);
+
+/**
+ * Unmaps the video memory for the given task, video memory is set back to the real video memory addresses,
+ * call this if you want the given task to write directly to real video memory causing pixels to appear on the screen
+ */
+int task_unmap_video_memory(struct task* task);
 
 void user_registers();
 

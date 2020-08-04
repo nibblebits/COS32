@@ -107,7 +107,7 @@ void *isr80h_command1_print(struct interrupt_frame *frame)
     void *msg_user_space_addr = task_current_get_stack_item(0);
     char buf[1024];
     ASSERT(copy_string_from_task(task_current(), msg_user_space_addr, buf, sizeof(buf)) == 0);
-    print(buf);
+    task_print(buf);
     return 0;
 }
 

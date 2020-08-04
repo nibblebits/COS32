@@ -39,7 +39,7 @@ struct process
 
     // The video memory for this process, when we switch to this process the video memory
     // Should be wrote back out overwriting the current screen memory
-    void* video_memory;
+    struct video* video;
 };
 
 int process_load(const char *filename, struct process **process);
