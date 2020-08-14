@@ -77,6 +77,12 @@ int paging_set(uint32_t *directory, void *virt, uint32_t val);
  */
 uint32_t paging_get(uint32_t *directory, void *virt);
 
+
+/**
+ * Returns true if the given address is page aligned
+ */
+bool paging_is_address_aligned(void* ptr);
+
 extern void enable_paging();
 
 #endif

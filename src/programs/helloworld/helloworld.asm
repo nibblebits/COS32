@@ -1,5 +1,7 @@
 [BITS 32]
-[org 0x400000]
+
+global _start
+;[org 0x400000]
 
 ; Hello world is in assembly as I dont have the time to write a C wrapper right now
 
@@ -12,8 +14,6 @@ start:
     mov ecx, 10000000
 continue:
     loop continue
-
-    mov byte[hello], 'a'
     
     ; In future we will push to the stack instead    
     push dword hello
@@ -40,4 +40,5 @@ read_string:
     pop ebp
     ret
 
+section .data
 hello: db 'Hello', 0

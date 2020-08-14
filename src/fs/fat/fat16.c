@@ -185,7 +185,6 @@ out:
 
 int fat16_close(void *private)
 {
-
     fat16_free_private((struct fat_file_descriptor *)private);
     return 0;
 }

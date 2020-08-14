@@ -4,7 +4,16 @@
 #include "config.h"
 #include "task.h"
 #include "keyboard/keyboard.h"
+// This directory path is rubbish, change the name
+#include "formats/elf/elfloader.h"
 #include <stdbool.h>
+
+
+typedef enum ProcessFileType
+{
+    FILE_TYPE_BINARY,
+    FILE_TYPE_ELF
+} processfiletype_t;
 
 struct interrupt_frame;
 struct process
@@ -13,9 +22,16 @@ struct process
     // Each process has a task for its self
     struct task* task;
 
-    // The physical pointer to the process memory
-    void *ptr;
+    processfiletype_t filetype;
 
+    union
+    {
+        // The physical pointer to the process memory, if this is a raw binary file
+        void *ptr;
+        // A pointer to the elf file, if this is an elf file. You can find the loaded elf sections here and their addresses
+        struct elf_file* elf_file;
+    };
+    
     // The physical pointer to the stack memory
     void *stack;
 

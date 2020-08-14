@@ -14,6 +14,7 @@
 #include "video/video.h"
 #include "keyboard/keyboard.h"
 #include "keyboard/listener.h"
+#include "formats/elf/elfloader.h"
 #include "task/task.h"
 #include "task/tss.h"
 #include "task/process.h"
@@ -150,10 +151,9 @@ void kernel_main(void)
 	disk_search_and_init();
 
 	print("Kernel initialized\n");
-
-
+	
 	// Load the start program
-	int res = process_load_start("0:/start.r");
+	int res = process_load_start("0:/start.b");
 	if (res < 0)
 	{
 		panic("Failed to load the start program!\n");

@@ -7,6 +7,8 @@
 #include "string/string.h"
 #include "video/video.h"
 #include "memory/idt/idt.h"
+#include "formats/elf/elfloader.h"
+
 #include "task.h"
 #include "kernel.h"
 
@@ -37,14 +39,14 @@ bool process_running()
     return process_is_running;
 }
 
-void process_save(struct process* process)
+void process_save(struct process *process)
 {
     // Save the video memory back into our processes video memory, so when we switch back
     // we can carry on where we left off
     video_save(process->video);
 }
 
-void process_restore(struct process* process)
+void process_restore(struct process *process)
 {
     if (current_process != 0)
     {
@@ -65,7 +67,6 @@ void process_restore(struct process* process)
     task_unmap_video_memory(process->task);
 }
 
-
 int process_switch(struct process *process)
 {
     if (current_process != 0)
@@ -73,7 +74,6 @@ int process_switch(struct process *process)
         // We must save the old process state
         process_save(current_process);
     }
-    
 
     // Restore the given process
     process_restore(process);
@@ -94,7 +94,6 @@ int process_load_start(const char *path)
     res = process_start(process);
     return res;
 }
-
 
 int process_start(struct process *process)
 {
@@ -129,17 +128,9 @@ struct process *process_get(int index)
     return processes[index];
 }
 
-int process_load_for_slot(const char *filename, struct process **process, int process_slot)
+static int process_load_binary_data(const char *filename, struct process *process)
 {
     int res = 0;
-
-    // A process with the given id is already taken
-    if (process_get(process_slot) != 0)
-    {
-        res = -EISTKN;
-        goto out;
-    }
-
     int fd = fopen(filename, "r");
     if (!fd)
     {
@@ -169,11 +160,130 @@ int process_load_for_slot(const char *filename, struct process **process, int pr
         goto out;
     }
 
-    // Let's now create a 16K stack
-    void *program_stack_ptr = kzalloc(COS32_USER_PROGRAM_STACK_SIZE);
-    if (!program_stack_ptr)
+    process->filetype = FILE_TYPE_BINARY;
+    process->ptr = program_data_ptr;
+    process->size = stat.filesize;
+
+    fclose(fd);
+
+out:
+    return res;
+}
+
+
+static int process_load_elf(const char* filename, struct process* process)
+{
+    int res = 0;
+    struct elf_file* elf_file = 0;
+    res = elf_load(filename, &elf_file);
+    if (ISERR(res))
     {
-        res = -ENOMEM;
+        goto out;
+    }
+
+
+    if (elf_file->header.e_entry != COS32_PROGRAM_VIRTUAL_ADDRESS)
+    {
+        res = -EINFORMAT;
+        goto out;
+    }
+
+    process->filetype = FILE_TYPE_ELF;
+    process->elf_file = elf_file;
+
+out:
+    if (ISERR(res))
+    {
+        elf_close(elf_file);
+    }
+    return res;
+}
+
+static int process_load_data(const char *filename, struct process *process)
+{
+    int res = 0;
+    res = process_load_elf(filename, process);
+    if (res == -EINFORMAT)
+    {
+        res = process_load_binary_data(filename, process);
+    }
+    return res;
+}
+
+int process_map_binary(struct process *process)
+{
+    int res = 0;
+    if (process->filetype != FILE_TYPE_BINARY)
+    {
+        res = -EINVARG;
+        goto out;
+    }
+    ASSERT(paging_map_to(process->task->page_directory->directory_entry, (void *)COS32_PROGRAM_VIRTUAL_ADDRESS, process->ptr, paging_align_address(process->ptr + process->size), PAGING_PAGE_PRESENT | PAGING_ACCESS_FROM_ALL | PAGING_PAGE_WRITEABLE) == 0);
+out:
+    return res;
+}
+
+int process_map_elf(struct process *process)
+{
+    int res = 0;
+
+    if (process->filetype != FILE_TYPE_ELF)
+    {
+        res = -EINVARG;
+        goto out;
+    }
+
+    struct elf_file *elf_file = process->elf_file;
+    struct elf_loaded_section *current = elf_first_section(elf_file);
+    while (current)
+    {
+        void *virt_addr = elf_virtual_address(current);
+        void *phys_addr = elf_phys_address(current);
+        void *phys_end_addr = elf_phys_end_address(current);
+
+        int flags = PAGING_ACCESS_FROM_ALL | PAGING_PAGE_PRESENT;
+        if (current->flags & PF_W)
+        {
+            flags |= PAGING_PAGE_WRITEABLE;
+        }
+
+        // Assert for now, could error handle this if needed at another time....
+        ASSERT(paging_map_to(process->task->page_directory->directory_entry, virt_addr, phys_addr, phys_end_addr, flags) == 0);
+        current = elf_next_section(current);
+    }
+out:
+    return res;
+}
+int process_map_memory(struct process *process)
+{
+    int res = 0;
+
+    if (process->filetype == FILE_TYPE_BINARY)
+    {
+        res = process_map_binary(process);
+    }
+    else if (process->filetype == FILE_TYPE_ELF)
+    {
+        res = process_map_elf(process);
+    }
+
+    if (!ISERR(res))
+    {
+        // Map the stack if we have no problems so far
+        ASSERT(paging_map_to(process->task->page_directory->directory_entry, (void *)COS32_PROGRAM_VIRTUAL_STACK_ADDRESS_END, process->stack, paging_align_address(process->stack + COS32_USER_PROGRAM_STACK_SIZE), PAGING_ACCESS_FROM_ALL | PAGING_PAGE_PRESENT | PAGING_PAGE_WRITEABLE) == 0);
+    }
+
+    return res;
+}
+
+int process_load_for_slot(const char *filename, struct process **process, int process_slot)
+{
+    int res = 0;
+
+    // A process with the given id is already taken
+    if (process_get(process_slot) != 0)
+    {
+        res = -EISTKN;
         goto out;
     }
 
@@ -185,13 +295,25 @@ int process_load_for_slot(const char *filename, struct process **process, int pr
     }
 
     process_init(_process);
+    res = process_load_data(filename, _process);
+    if (res < 0)
+    {
+        goto out;
+    }
+
+    // Let's now create a 16K stack
+    void *program_stack_ptr = kzalloc(COS32_USER_PROGRAM_STACK_SIZE);
+    if (!program_stack_ptr)
+    {
+        res = -ENOMEM;
+        goto out;
+    }
+
     strncpy(_process->filename, filename, sizeof(_process->filename));
-    _process->ptr = program_data_ptr;
     _process->stack = program_stack_ptr;
-    _process->size = stat.filesize;
     _process->video = video_new();
-    
-    struct task* task = task_new(_process);
+
+    struct task *task = task_new(_process);
     if (ERROR_I(task) <= 0)
     {
         res = ERROR_I(task);
@@ -200,8 +322,11 @@ int process_load_for_slot(const char *filename, struct process **process, int pr
 
     _process->task = task;
     // We now need to map the process memory into real memory
-    ASSERT(paging_map_to(_process->task->page_directory->directory_entry, (void*) COS32_PROGRAM_VIRTUAL_ADDRESS, _process->ptr, paging_align_address(_process->ptr + _process->size), PAGING_PAGE_PRESENT | PAGING_ACCESS_FROM_ALL | PAGING_PAGE_WRITEABLE) == 0);
-    ASSERT(paging_map_to(_process->task->page_directory->directory_entry, (void*) COS32_PROGRAM_VIRTUAL_STACK_ADDRESS_END, _process->stack, paging_align_address(_process->stack + COS32_USER_PROGRAM_STACK_SIZE), PAGING_ACCESS_FROM_ALL | PAGING_PAGE_PRESENT | PAGING_PAGE_WRITEABLE) == 0);
+    res = process_map_memory(_process);
+    if (res < 0)
+    {
+        goto out;
+    }
 
     // We have the program loaded :o
     *process = _process;
@@ -210,6 +335,11 @@ int process_load_for_slot(const char *filename, struct process **process, int pr
     processes[process_slot] = _process;
 
 out:
+    if (res < 0)
+    {
+        // Free the task here
+        // Free the process data here
+    }
     return res;
 }
 

@@ -1,4 +1,4 @@
-FILES = ./build/kernel.asm.o  ./build/keyboard/listener.o ./build/keyboard/listeners/fkeylistener.o ./build/keyboard/keyboard.o ./build/keyboard/classic.o ./build/task/task.o ./build/task/process.o ./build/kernel.o ./build/task/tss.asm.o ./build/gdt/gdt.asm.o ./build/gdt/gdt.o ./build/task/task.asm.o ./build/memory/paging/paging.o ./build/memory/paging/paging.asm.o ./build/memory/idt/idt.asm.o ./build/memory/idt/idt.o ./build/io/io.o  ./build/disk/disk.o ./build/fs/file.o ./build/fs/fat/fat16.o ./build/video/video.o ./build/memory/memory.o ./build/string/string.o ./build/memory/heap.o ./build/memory/kheap.o 
+FILES = ./build/kernel.asm.o  ./build/keyboard/listener.o ./build/keyboard/listeners/fkeylistener.o ./build/keyboard/keyboard.o ./build/keyboard/classic.o ./build/task/task.o ./build/task/process.o ./build/kernel.o ./build/task/tss.asm.o ./build/gdt/gdt.asm.o ./build/gdt/gdt.o ./build/task/task.asm.o ./build/memory/paging/paging.o ./build/memory/paging/paging.asm.o ./build/memory/idt/idt.asm.o ./build/memory/idt/idt.o ./build/io/io.o  ./build/disk/disk.o ./build/fs/file.o ./build/fs/fat/fat16.o ./build/video/video.o ./build/memory/memory.o ./build/string/string.o ./build/formats/elf/elf.o ./build/formats/elf/elfloader.o ./build/memory/heap.o ./build/memory/kheap.o 
 FLAGS = --freestanding -falign-jumps -falign-functions -falign-labels -falign-loops  -fstrength-reduce -fomit-frame-pointer -finline-functions -Wno-unused-function -fno-builtin -Werror -Wno-unused-label -Wno-cpp -Wno-unused-parameter -nostdlib -nostartfiles -nodefaultlibs -Wall -O0 -Iinc
 
 INCLUDES = -I./src
@@ -8,7 +8,7 @@ all: ./bin/kernel.bin ./bin/boot.bin ${FILES} programs
 	dd if=./bin/kernel.bin >> ./bin/os.bin
 	dd if=/dev/zero bs=1048576 count=16 >> ./bin/os.bin
 	sudo mount -t vfat ./bin/os.bin /mnt/d
-	sudo cp ./src/programs/helloworld/helloworld.bin /mnt/d/start.r
+	sudo cp ./src/programs/helloworld/helloworld.elf /mnt/d/hello.e
 	sudo cp ./src/programs/helloworld/helloworld2.bin /mnt/d/start.b
 
 	sudo umount /mnt/d
@@ -95,6 +95,14 @@ all: ./bin/kernel.bin ./bin/boot.bin ${FILES} programs
 
 ./build/fs/fat/fat16.o: ./src/fs/fat/fat16.c ./src/fs/fat/fat16.h
 	i686-elf-gcc $(INCLUDES) -I./src/fs/fat ${FLAGS} -c ./src/fs/fat/fat16.c -o ./build/fs/fat/fat16.o -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g
+
+
+./build/formats/elf/elf.o: ./src/formats/elf/elf.c ./src/formats/elf/elf.h
+	i686-elf-gcc $(INCLUDES) -I./src/formats/elf ${FLAGS} -c ./src/formats/elf/elf.c -o ./build/formats/elf/elf.o -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g
+
+
+./build/formats/elf/elfloader.o: ./src/formats/elf/elfloader.c ./src/formats/elf/elfloader.h
+	i686-elf-gcc $(INCLUDES) -I./src/formats/elf ${FLAGS} -c ./src/formats/elf/elfloader.c -o ./build/formats/elf/elfloader.o -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g
 
 ./build/kernel.o: ./src/kernel.c ./src/kernel.h
 	i686-elf-gcc $(INCLUDES) ${FLAGS} -c ./src/kernel.c -o ./build/kernel.o -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g

@@ -140,6 +140,11 @@ void paging_switch(uint32_t *directory)
     current_directory = directory;
 }
 
+bool paging_is_address_aligned(void* ptr)
+{
+    return ((uint32_t)ptr % COS32_PAGE_SIZE) == 0;
+}
+
 void *paging_align_address(void *ptr)
 {
     if ((uint32_t)ptr % COS32_PAGE_SIZE)

@@ -12,4 +12,6 @@
 #define EUNIMP 8
 // Error the entity is taken
 #define EISTKN 9
+// Invalid format
+#define EINFORMAT 10
 #endif
