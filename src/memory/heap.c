@@ -1,177 +1,180 @@
 #include "heap.h"
 #include "memory.h"
 #include "kernel.h"
+#include "config.h"
+#include "status.h"
+#include "paging/paging.h"
 
-
-static void heap_mark_blocks_taken(HEAP_BLOCK_TABLE_ENTRY *ptr, int total)
+static int heap_table_entry_type(HEAP_BLOCK_TABLE_ENTRY entry)
 {
-    int i = 0;
-    for (i = 0; i < total; i++)
-    {
-        ptr[i] = ptr[i] | HEAP_BLOCK_TABLE_ENTRY_TAKEN;
-    }
+    // Lower 4 bits are the entry type
+    return entry & 0x0f;
 }
 
-static int heap_is_entry_free(struct heap_entry *entry)
+static int heap_table_validate(void *ptr, void *end, struct heap_table *table)
 {
-    return entry->blocks.ptr == 0;
-}
-
-static struct heap_entry *heap_find_free_heap_entry(struct heap *heap)
-{
-    int i = 0;
-    for (i = 0; i < COS32_MAX_HEAP_ALLOCATIONS; i++)
+    int res = 0;
+    // Let's ensure that the provided start and end pointers match up with the table provided
+    size_t table_size = (size_t)(end - ptr);
+    size_t total_pages = table_size / COS32_PAGE_SIZE;
+    if (table->total != total_pages)
     {
-        if (heap_is_entry_free(&heap->entries[i]))
-            return &heap->entries[i];
+        res = -EINVARG;
+        goto out;
     }
 
-    return 0;
+out:
+    return res;
 }
 
-/**
- * Returns the total free blocks in a row.
- * \warning You must ensure that the pointer and total provided will not overflow the buffer, this function will not check for this
- */
-static int heap_count_free_blocks_in_row(HEAP_BLOCK_TABLE_ENTRY *ptr, int total)
+int heap_create(struct heap *heap, void *ptr, void *end, struct heap_table *table)
 {
-    int i = 0;
-    int total_free = 0;
-    for (i = 0; i < total; i++)
+    int res = 0;
+
+    // Heap must always be aligned to the page size
+    if (!paging_is_address_aligned(ptr) || !paging_is_address_aligned(end))
     {
-        if (ptr[i] == 0)
+        res = -EINVARG;
+        goto out;
+    }
+    memset(heap, 0, sizeof(struct heap));
+    heap->saddr = ptr;
+    heap->table = table;
+
+    res = heap_table_validate(ptr, end, table);
+    if (ISERR(res))
+    {
+        goto out;
+    }
+
+    // Let's initialize the table entires to free blocks!
+    size_t table_size = sizeof(HEAP_BLOCK_TABLE_ENTRY) * table->total;
+    memset(table->entries, HEAP_BLOCK_TABLE_ENTRY_FREE, table_size);
+
+    // We don't care about the "end" address at this point, we don't need it we have the valid table now
+    // We just needed it for validation of the table
+out:
+    return res;
+}
+
+int heap_get_start_block(struct heap *heap, int total_blocks)
+{
+    struct heap_table *table = heap->table;
+    int bc = 0;
+    int bs = -1;
+    for (size_t i = 0; i < table->total; i++)
+    {
+        if (heap_table_entry_type(table->entries[i]) != HEAP_BLOCK_TABLE_ENTRY_FREE)
         {
-            total_free++;
+            bc = 0;
+            bs = -1;
             continue;
         }
-
-        break;
+        //  If this is the first block thats free then set the block start
+        if (bs == -1)
+        {
+            bs = i;
+        }
+        bc++;
+        if (bc == total_blocks)
+        {
+            break;
+        }
     }
 
-    return total_free;
+    if (bs == -1)
+    {
+        return -ENOMEM;
+    }
+
+    return bs;
+}
+
+int heap_address_to_block(struct heap* heap, void* address)
+{
+    return ((int)(address - heap->saddr)) / COS32_PAGE_SIZE;
+}
+
+void *heap_block_to_address(struct heap *heap, int block)
+{
+    return heap->saddr + (block * COS32_PAGE_SIZE);
+}
+
+static void heap_ensure_block_bounds(struct heap_table *table, int start_block, int end_block)
+{
+    ASSERT(start_block >= 0 && start_block < (int)table->total && end_block < (int)table->total && start_block <= end_block);
+}
+
+void heap_mark_blocks_taken(struct heap *heap, int start_block, int total_blocks)
+{
+    int end_block = (start_block + total_blocks) - 1;
+    heap_ensure_block_bounds(heap->table, start_block, end_block);
+
+    // The first block for this entry is taken and is the first block
+    HEAP_BLOCK_TABLE_ENTRY entry = HEAP_BLOCK_TABLE_ENTRY_TAKEN | HEAP_BLOCK_IS_FIRST;
+    if (total_blocks > 1)
+    {
+        // We have more than one entry in the block so set the has next flag
+        entry |= HEAP_BLOCK_HAS_NEXT;
+    }
+
+    for (int i = start_block; i <= end_block; i++)
+    {
+        heap->table->entries[i] = entry;
+        entry = HEAP_BLOCK_TABLE_ENTRY_TAKEN;
+        if (i != end_block - 1)
+        {
+            entry |= HEAP_BLOCK_HAS_NEXT;
+        }
+    }
 }
 
 /**
- * Gets the data pointer for a given heap entry
+ * Marks all the blocks that are a part of the starting block as free.
+ * Stops when the next block does not have a HEAP_BLOCK_HAS_NEXT flag
  */
-static void* heap_entry_get_data(struct heap* heap, struct heap_entry* entry)
+void heap_mark_blocks_free(struct heap *heap, int starting_block)
 {
-   return &heap->data[entry->blocks.sindex * COS32_MEMORY_BLOCK_SIZE];
-}
-
-
-static struct heap_entry *heap_allocate_blocks(struct heap *heap, int total)
-{
-    int i = 0;
-    // Subtract total to ensure we never overflow
-    for (i = 0; i <= COS32_MAX_HEAP_ALLOCATIONS - total; i++)
+    struct heap_table *table = heap->table;
+    ASSERT(starting_block < (int)table->total);
+    ASSERT(table->entries[starting_block] & HEAP_BLOCK_IS_FIRST);
+    for (int i = starting_block; i < (int)table->total; i++)
     {
-        HEAP_BLOCK_TABLE_ENTRY* table_entry = &heap->table.entry[i];
-        if (heap_count_free_blocks_in_row(table_entry, total) == total)
+        HEAP_BLOCK_TABLE_ENTRY entry = table->entries[i];
+        // Mark the block entry as free
+        table->entries[i] = HEAP_BLOCK_TABLE_ENTRY_FREE;
+        if (!(entry & HEAP_BLOCK_HAS_NEXT))
         {
-            // Free block found
-            struct heap_entry *entry = heap_find_free_heap_entry(heap);
-            if (!entry)
-                return 0;
-
-            entry->blocks.ptr = table_entry;
-            entry->blocks.total = total;
-            entry->blocks.sindex = i;
-            entry->data_ptr = heap_entry_get_data(heap, entry);
-            heap_mark_blocks_taken(table_entry, total);
-
-            return entry;
+            // No more block entries to free for this block? Then we need to break
+            break;
         }
     }
-
-    return 0;
 }
 
-
-void heap_mark_blocks_available(struct heap_blocks* blocks)
+void *heap_malloc_blocks(struct heap *heap, int total_blocks)
 {
-    int i = 0;
-    for (i = 0; i < blocks->total; i++)
+    void *address = 0;
+    int start_block = heap_get_start_block(heap, total_blocks);
+    if (ISERR(start_block))
     {
-        blocks->ptr[i] = 0;
+        goto out;
     }
+    //Now that we have our start block lets calculate the address
+    address = heap_block_to_address(heap, start_block);
+    heap_mark_blocks_taken(heap, start_block, total_blocks);
+out:
+    return address;
 }
 
-
-static void heap_mark_entry_available(struct heap_entry* entry)
+void *heap_malloc(struct heap *heap, size_t size)
 {
-    heap_mark_blocks_available(&entry->blocks);
-    memset(entry, 0, sizeof(struct heap_entry));
-}
-
-static struct heap_entry* heap_get_entry_for_data_ptr(struct heap* heap, void* ptr)
-{
-    /*int index = 0;
-    unsigned int heap_data_val = heap->data;
-    unsigned int rel_offset = (unsigned int)ptr - heap_data_val;
-    if (rel_offset > 0)
-    {
-        index = rel_offset / COS32_MEMORY_BLOCK_SIZE;
-    }
-
-
-    return &heap->entries[index];*/
-    int i = 0;
-    for (i = 0; i < COS32_MAX_HEAP_ALLOCATIONS; i++)
-    {
-        if (heap->entries[i].data_ptr == ptr)
-        {
-            return &heap->entries[i];
-        }
-    }
-
-    
-
-
-    return 0;
-}
-
-
-
-struct heap *heap_create(void *ptr)
-{
-    struct heap *heap = ptr;
-    #if COS32_FORCE_MEMORY_ALIGNMENT == 1
-    if (((unsigned int)ptr % COS32_PAGE_SIZE) != 0)
-    {
-        panic("heap_create(): Expecting pointer to be able to divide into COS32_MAX_HEAP_ALLOCATIONS");
-    }
-    #endif
-
-    ASSERT(COS32_MAX_HEAP_SIZE >= sizeof(struct heap));
-    memset(heap, 0, sizeof(struct heap));
-    return heap;
-}
-
-void *heap_malloc(struct heap *heap, int total)
-{
-    struct heap_entry *entry;
-    int total_blocks = total / COS32_MEMORY_BLOCK_SIZE;
-    if (total % COS32_MEMORY_BLOCK_SIZE)
-    {
-        total_blocks += 1;
-    }
-
-    entry = heap_allocate_blocks(heap, total_blocks);
-    if (!entry)
-    {
-        return 0;
-    }
-
-    return entry->data_ptr;
+    int total_blocks = paging_align_value_to_upper_page(size) / COS32_PAGE_SIZE;
+    return heap_malloc_blocks(heap, total_blocks);
 }
 
 void heap_free(struct heap *heap, void *ptr)
 {
-    struct heap_entry* entry = heap_get_entry_for_data_ptr(heap, ptr);
-    if (!entry)
-    {
-        panic("Heap entry not found for given pointer\r\n");
-    }
-    heap_mark_entry_available(entry);
+    // Let's assert no one is passing us garbage...
+    ASSERT(ptr >= heap->saddr && paging_is_address_aligned(ptr));
+    heap_mark_blocks_free(heap, heap_address_to_block(heap, ptr));
 }

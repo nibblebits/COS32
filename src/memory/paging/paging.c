@@ -8,10 +8,12 @@
 #include "string/string.h"
 #include "kernel.h"
 
+void paging_load_directory(uint32_t *directory);
 
-void paging_load_directory(uint32_t* directory);
+static uint32_t *current_directory = 0;
 
-static uint32_t* current_directory = 0;
+// FIx the magic numbers.....
+
 struct paging_4gb_chunk *paging_new_4gb(uint8_t flags)
 {
     uint32_t *directory = kzalloc(sizeof(uint32_t) * 1024);
@@ -33,13 +35,14 @@ struct paging_4gb_chunk *paging_new_4gb(uint8_t flags)
     return chunk_4gb;
 }
 
-uint32_t* paging_current_directory()
+uint32_t *paging_current_directory()
 {
     return current_directory;
 }
 
 void paging_unmap_all(struct paging_4gb_chunk *chunk)
 {
+    // Get rid of magic numbers, at some point.
     for (int i = 0; i < 1024; i++)
     {
         uint32_t entry = chunk->directory_entry[i];
@@ -79,7 +82,30 @@ int paging_get_indexes(__attribute__((unused)) uint32_t *directory, void *virt, 
     return 0;
 }
 
-uint32_t paging_round_to_lower_page(void *virt)
+uint32_t paging_round_value_to_lower_page(uint32_t val)
+{
+    val -= (val % COS32_PAGE_SIZE);
+    return val;
+}
+
+uint32_t paging_align_value_to_upper_page(uint32_t val)
+{
+    if ((val % COS32_PAGE_SIZE) == 0)
+    {
+        return val;
+    }
+    
+    // First we round it to the lower page, we know its misaligned...
+    uint32_t new_val = paging_round_value_to_lower_page(val);
+    // Since we are sure  the original value is misaligned we need to add on a new page
+    // If we don't add the new page on we actually lose information, we have to add a new page
+    // Now we know new_val is aligned to the lower page, lets add a new page, alignment will maintain
+    new_val += COS32_PAGE_SIZE;
+    
+    return new_val;
+}
+
+uint32_t paging_align_to_lower_page(void *virt)
 {
     uint32_t addr = (uint32_t)virt;
     addr -= (addr % COS32_PAGE_SIZE);
@@ -140,7 +166,7 @@ void paging_switch(uint32_t *directory)
     current_directory = directory;
 }
 
-bool paging_is_address_aligned(void* ptr)
+bool paging_is_address_aligned(void *ptr)
 {
     return ((uint32_t)ptr % COS32_PAGE_SIZE) == 0;
 }
@@ -150,7 +176,7 @@ void *paging_align_address(void *ptr)
     if ((uint32_t)ptr % COS32_PAGE_SIZE)
     {
         // Not aligned lets align it
-        return (void*) ((uint32_t)ptr + COS32_PAGE_SIZE - ((uint32_t)ptr % COS32_PAGE_SIZE));
+        return (void *)((uint32_t)ptr + COS32_PAGE_SIZE - ((uint32_t)ptr % COS32_PAGE_SIZE));
     }
 
     // It's aligned lets return the same pointer provided
@@ -169,6 +195,14 @@ int paging_map_to(uint32_t *directory, void *virt, void *phys, void *phys_end, i
     return paging_map_range(directory, virt, phys, total_pages, flags);
 }
 
-void paging_free_4gb(__attribute__((unused)) struct paging_4gb_chunk *chunk)
+void paging_free_4gb(struct paging_4gb_chunk *chunk)
 {
+    for (int i = 0; i < 1024; i++)
+    {
+        uint32_t entry = chunk->directory_entry[i];
+        uint32_t *table = (uint32_t *)(entry & 0xfffff000);
+        kfree(table);
+    }
+
+    kfree(chunk->directory_entry);
 }

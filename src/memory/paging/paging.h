@@ -45,7 +45,11 @@ void *paging_align_address(void *ptr);
  */
 int paging_map_to(uint32_t *directory, void *virt, void *phys, void *phys_end, int flags);
 
+/**
+ * Frees the given 4GB paging chunk
+ */
 void paging_free_4gb(struct paging_4gb_chunk *chunk);
+
 /**
  * Switches the processor to page with the provided directory
  */
@@ -61,6 +65,20 @@ uint32_t* paging_current_directory();
 
 int paging_get_indexes(uint32_t *directory, void *virt, uint32_t *directory_index_out, uint32_t *table_index_out);
 
+
+
+/**
+ * 
+ * Aligns the given valueto the nearest upper page returning a page aligned address to 4096
+ * If address is already aligned we do nothing.
+ */
+
+uint32_t paging_align_value_to_lower_page(uint32_t val);
+
+/**
+ * Aligns the given value to the nearest lower page returning a page aligned address to 4096
+ */
+uint32_t paging_align_value_to_upper_page(uint32_t val);
 
 /**
  * Rounds the given virtual address to the nearest lower page returning a page aligned address to 4096
@@ -82,6 +100,8 @@ uint32_t paging_get(uint32_t *directory, void *virt);
  * Returns true if the given address is page aligned
  */
 bool paging_is_address_aligned(void* ptr);
+
+
 
 extern void enable_paging();
 

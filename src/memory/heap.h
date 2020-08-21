@@ -1,46 +1,45 @@
 #ifndef HEAP_H
 #define HEAP_H
 #include "config.h"
+#include <stdint.h>
+#include <stddef.h>
 
 #define HEAP_BLOCK_TABLE_ENTRY_TAKEN 0x01
+#define HEAP_BLOCK_TABLE_ENTRY_FREE 0x00
+
+#define HEAP_BLOCK_HAS_NEXT 0b10000000
+#define HEAP_BLOCK_IS_FIRST 0b01000000
 
 // Entries are one byte in length and are bitmasks
+// Lower 4 bits are the entry type
+// Upper 4 bits are flags for this heap block entry
 typedef unsigned char HEAP_BLOCK_TABLE_ENTRY;
-struct heap_block_table
-{
-    HEAP_BLOCK_TABLE_ENTRY entry[COS32_MAX_HEAP_ALLOCATIONS];
-};
 
-struct heap_blocks
+struct heap_table
 {
-    // Pointer to the first block entry in the heap_block_table
-    HEAP_BLOCK_TABLE_ENTRY *ptr;
-    int total;
-
-    // The index of the first block in the heap blocks table
-    int sindex;
-};
-
-struct heap_entry
-{
-    struct heap_blocks blocks;
-    void* data_ptr;
+    HEAP_BLOCK_TABLE_ENTRY *entries;
+    size_t total;
 };
 
 struct heap
 {
-    struct heap_block_table table;
-    struct heap_entry entries[COS32_MAX_HEAP_ALLOCATIONS];
-
-    // Actual data for our heap
-    char data[COS32_MAX_HEAP_ALLOCATIONS * COS32_MEMORY_BLOCK_SIZE] __attribute__((aligned(COS32_MEMORY_BLOCK_SIZE)));
+    // This is the heap table where memories of the allocations are stored
+    // e.g which blocks are taken
+    struct heap_table* table;
+    // The start address for this heap
+    void *saddr;
 };
 
 /**
- * Creates a heap at the given "ptr". We require at least 28952 bytes of memory available for the "ptr" provided
+ * Creates a heap starting at the provided address and ending at the provided end address
+ * Caller also has to pass the table which must be valid for the given start and end addresses.
+ * 
+ * The heap pointer provided is the one thats initialized
+ * 
+ * Return 0 on success
  */
-struct heap *heap_create(void *ptr);
-void *heap_malloc(struct heap *heap, int total);
+int heap_create(struct heap *heap, void *ptr, void *end, struct heap_table *table);
+void *heap_malloc(struct heap *heap, size_t size);
 void heap_free(struct heap *heap, void *ptr);
 
 #endif

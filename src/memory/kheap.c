@@ -3,32 +3,47 @@
 #include "memory/memory.h"
 #include "kernel.h"
 
-static struct heap* kheap;
+struct heap kernel_heap;
+
+// 2560 4096-blocks for 100MB of ram
+// Table is used to determine how much available memory is left in this heap
+
+struct heap_table kernel_heap_table;
 
 void kheap_init()
 {
-    kheap = heap_create((void*) COS32_KERNEL_HEAP_ADDRESS);   
+    // We want a kernel heap that has 100MB of storage
+    int total_table_entires = COS32_100MB / COS32_PAGE_SIZE;
+    kernel_heap_table.total = total_table_entires;
+    // At this given heap table address we have around 700 Kilobytes to play with for this table
+    // If we overflow we corrupt reserved memory so becareful.
+    kernel_heap_table.entries = (HEAP_BLOCK_TABLE_ENTRY*) COS32_KERNAL_HEAP_TABLE_ADDRESS;
+
+    void *end = (void *)(COS32_KERNEL_HEAP_ADDRESS + COS32_100MB);
+    int res = heap_create(&kernel_heap, (void *)COS32_KERNEL_HEAP_ADDRESS, end, &kernel_heap_table);
+    if (ISERR(res))
+    {
+        panic("Problem creating the kernel heap of 100MB\n");
+    }
 }
 
-void* kmalloc(int size)
+void *kmalloc(int size)
 {
-    void* ptr = heap_malloc(kheap, size);
-    // While assertions are enabled if we fail to allocate we should panic the kernel
-    ASSERT((ptr >= (void*)kheap));
+    void *ptr = heap_malloc(&kernel_heap, size);
     return ptr;
 }
 
-void* kzalloc(int size)
+void *kzalloc(int size)
 {
-    void* ptr = kmalloc(size);
+    void *ptr = kmalloc(size);
     memset(ptr, 0, size);
     return ptr;
 }
 
-void kfree(void* ptr)
+void kfree(void *ptr)
 {
     if (!ptr)
         return;
-        
-    return heap_free(kheap, ptr);
+
+    return heap_free(&kernel_heap, ptr);
 }

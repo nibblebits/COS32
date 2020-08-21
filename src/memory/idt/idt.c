@@ -23,8 +23,8 @@ void isr_page_fault_wrapper();
 extern void *interrupt_pointer_table[COS32_MAX_INTERRUPTS];
 static INTERRUPT_CALLBACK_FUNCTION interrupt_callbacks[COS32_MAX_INTERRUPTS];
 
-// Our kernel interrupt and divide by zero exception are reserved and cannot be registered by external resources
-static int reserved_interrupts[] = {0x80, 0x00};
+// Our kernel interrupt is reserved and cannot be registered by external resources
+static int reserved_interrupts[] = {0x80};
 
 struct isr80h_function1_print
 {
@@ -97,8 +97,21 @@ out:
 }
 
 void idt_general_protection_fault(int interrupt)
-{
-    panic("General Protection Fault!\n");
+{    
+    // Free the current process
+    int id = process_current()->id;
+    process_free(process_current());
+    
+    // Load the killed program so the user knows this process was killed
+    struct process* new_process = 0;
+    int res = process_load_for_slot("0:/killed.e", &new_process, id);
+    if (res == 0)
+    {
+     //   process_start(new_process);
+    }
+
+    task_next();
+
 }
 
 void *isr80h_command1_print(struct interrupt_frame *frame)
@@ -216,8 +229,11 @@ void idt_init()
     idt_set(0x80, isr80h_wrapper);
 
     // Setup the general protection fault interrupt
-    idt_register_interrupt_callback(0x0D, idt_general_protection_fault);
-
+    for (int i = 0; i < 0x20; i++)
+    {
+       idt_register_interrupt_callback(i, idt_general_protection_fault);
+    }
+    
     // Setup the timer interrupt
     idt_register_interrupt_callback(0x20, isr_timer);
     
