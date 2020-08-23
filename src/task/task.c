@@ -31,6 +31,10 @@ void task_current_save_state(struct interrupt_frame *frame)
 
 int task_switch(struct task *task)
 {
+    if (task->page_directory == 0)
+    {
+        panic("???");
+    }
     ASSERT(task->page_directory);
     current_task = task;
 
@@ -150,24 +154,65 @@ void task_run_first_ever_task()
     task_return(&task_head->registers);
 }
 
+static struct task *task_get_next()
+{
+    struct task *t = current_task;
+    if (t == 0)
+    {
+        t = task_head;
+        return t;
+    }
+
+    t = t->next;
+    if (t == 0)
+    {
+        t = task_head;
+    }
+
+    ASSERT(t != 0);
+    return t;
+}
+
 /**
  * Switches to the next task, used for multi-tasking purposes, flips back around when it reaches
  * the end of the task queue. No priority is currently implemented
  */
 void task_next()
 {
-    ASSERT(current_task);
 
-    struct task *task = current_task->next;
-    // No more tasks? loop back to the head!
+    struct task *task = task_get_next();
+    // Do we have no available task? We can't do anything right now then
     if (!task)
     {
-        task = task_head;
+        return;
     }
 
     // Switch the current task and get straight back into user land
     task_switch(task);
     task_return(&task->registers);
+}
+
+static void task_list_remove(struct task *task)
+{
+    if (task->prev)
+    {
+        task->prev->next = task->next;
+    }
+
+    if (task == task_head)
+    {
+        task_head = task->next;
+    }
+
+    if (task == task_tail)
+    {
+        task_tail = task->prev;
+    }
+
+    if (task == current_task)
+    {
+        current_task = task_get_next();
+    }
 }
 
 void task_print(const char *message)
@@ -183,10 +228,16 @@ struct task *task_new(struct process *process)
 {
     int res = 0;
     struct task *task = kzalloc(sizeof(struct task));
+    if (!task)
+    {
+        res = -ENOMEM;
+        goto out;
+    }
+
     res = task_init(task, process);
     if (res != COS32_ALL_OK)
     {
-        goto err;
+        goto out;
     }
 
     if (task_head == 0)
@@ -197,13 +248,17 @@ struct task *task_new(struct process *process)
     }
 
     task_tail->next = task;
+    task->prev = task_tail;
     task_tail = task;
-out:
-    return task;
 
-err:
-    kfree(task);
-    return ERROR(res);
+out:
+    if (ISERR(res))
+    {
+        task_free(task);
+        return ERROR(res);
+    }
+
+    return task;
 }
 
 int task_map_video_memory(struct task *task)
@@ -222,7 +277,7 @@ int task_unmap_video_memory(struct task *task)
 int task_init(struct task *task, struct process *process)
 {
     ASSERT(process->video);
-    
+
     memset(task, 0, sizeof(struct task));
     // Maps the entire 4GB address space to its self
     task->page_directory = paging_new_4gb(PAGING_ACCESS_FROM_ALL | PAGING_PAGE_PRESENT);
@@ -252,4 +307,41 @@ int task_init(struct task *task, struct process *process)
     // A MALICIOUS PROGRAM COULD INSPECT MEMORY AND READ WHAT IT SHOULDNT BE READING
 
     return 0;
+}
+
+static int task_free_allocations(struct task *task)
+{
+    for (int i = 0; i < COS32_MAX_PROGRAM_ALLOCATIONS; i++)
+    {
+        if (task->allocations[i] != 0)
+        {
+            kfree(task->allocations[i]);
+        }
+    }
+
+    return 0;
+}
+
+int task_free(struct task *task)
+{
+    ASSERT(is_kernel_page());
+
+    int res = 0;
+    res = task_free_allocations(task);
+    if (ISERR(res))
+    {
+        goto out;
+    }
+
+    // Free the paging directory
+    paging_free_4gb(task->page_directory);
+
+    // Remove our task from the list
+    task_list_remove(task);
+
+    // Finally delete the task memory
+    kfree(task);
+
+out:
+    return res;
 }

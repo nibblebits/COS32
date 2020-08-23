@@ -18,6 +18,9 @@ typedef enum ProcessFileType
 struct interrupt_frame;
 struct process
 {
+    // The id of this process
+    uint8_t id;
+
     char filename[COS32_MAX_PATH];
     // Each process has a task for its self
     struct task* task;
@@ -67,6 +70,11 @@ struct process *process_get(int index);
 bool process_running();
 void process_mark_running(bool running);
 struct process *process_current();
+
+/**
+ * Frees and unloads the given process
+ */
+void process_free(struct process* process);
 
 
 

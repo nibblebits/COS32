@@ -24,6 +24,8 @@ struct process;
 struct task
 {
     // These are all the heap allocations that this process has, if its not NULL then its allocated
+    // Limiting the user process to maximum allocations is not the best idea
+    // maybe switch to linked list..
     void *allocations[COS32_MAX_PROGRAM_ALLOCATIONS];
 
     // The page directory for this task. Upon running this task at any moment this page directory should be enabled for paging
@@ -41,6 +43,9 @@ struct task
 
     // The next task in the linked list
     struct task* next;
+
+    // The previous task in the linked list
+    struct task* prev;
     
 };  
 
@@ -124,5 +129,10 @@ int task_map_video_memory(struct task *task);
 int task_unmap_video_memory(struct task* task);
 
 void user_registers();
+
+/**
+ * Frees the task provided
+ */
+int task_free(struct task* task);
 
 #endif

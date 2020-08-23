@@ -8,7 +8,7 @@ nop
 OEMIdentifier   db 'COS32   '
 BytesPerSector 		dw 0x200	; 512 bytes per sector
 SectorsPerCluster	db 0x80		;
-ReservedSectors 	dw 120		; Reserved sectors before FAT (TODO: is this BOOT?)
+ReservedSectors 	dw 200		; Reserved sectors before FAT (TODO: is this BOOT?)
 FATCopies		db 0x02		  ; Often this value is 2.
 RootDirEntries 		dw 0x40 	; 64 Root directory entries
 NumSectors		dw 0x0000	;  If this value is 0, it means there are more than 65535 sectors in the volume

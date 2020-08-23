@@ -256,6 +256,7 @@ int elf_close(struct elf_file *file)
     while (section)
     {
         struct elf_loaded_section *nxt_section = elf_next_section(section);
+        kfree(section->phys_addr);
         kfree(section);
         section = nxt_section;
     }
@@ -266,8 +267,9 @@ int elf_load(const char *filename, struct elf_file **file_out)
 {
     struct elf_file *elf_file = kzalloc(sizeof(struct elf_file));
     int res = fopen(filename, "r");
-    if (res < 0)
+    if (res <= 0)
     {
+        res = -EIO;
         goto out;
     }
 

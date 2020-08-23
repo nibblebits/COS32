@@ -170,17 +170,15 @@ out:
     return res;
 }
 
-
-static int process_load_elf(const char* filename, struct process* process)
+static int process_load_elf(const char *filename, struct process *process)
 {
     int res = 0;
-    struct elf_file* elf_file = 0;
+    struct elf_file *elf_file = 0;
     res = elf_load(filename, &elf_file);
     if (ISERR(res))
     {
         goto out;
     }
-
 
     if (elf_file->header.e_entry != COS32_PROGRAM_VIRTUAL_ADDRESS)
     {
@@ -328,6 +326,9 @@ int process_load_for_slot(const char *filename, struct process **process, int pr
         goto out;
     }
 
+    // Set the process ID so we can reference it later.
+    _process->id = process_slot;
+
     // We have the program loaded :o
     *process = _process;
 
@@ -335,12 +336,97 @@ int process_load_for_slot(const char *filename, struct process **process, int pr
     processes[process_slot] = _process;
 
 out:
-    if (res < 0)
+    if (ISERR(res))
     {
         // Free the task here
+        if (_process->task)
+        {
+            task_free(_process->task);
+        }
         // Free the process data here
     }
     return res;
+}
+
+static struct process *process_get_first_ignore(struct process *process)
+{
+    for (int i = 0; i < COS32_MAX_PROCESSES; i++)
+    {
+        if (processes[i] != 0 && processes[i] != process)
+        {
+            return processes[i];
+        }
+    }
+
+    return NULL;
+}
+
+static struct process *process_get_first()
+{
+    return process_get_first_ignore(NULL);
+}
+
+void process_free_binary_data(struct process *process)
+{
+    // Free the binary data
+    kfree(process->ptr);
+}
+
+void process_free_elf_data(struct process *process)
+{
+    // Close the elf file
+    elf_close(process->elf_file);
+}
+
+void process_free_data(struct process *process)
+{
+    switch (process->filetype)
+    {
+    case FILE_TYPE_BINARY:
+        process_free_binary_data(process);
+        break;
+
+    case FILE_TYPE_ELF:
+        process_free_elf_data(process);
+        break;
+
+    default:
+        panic("Unknown process file type, cannot free!\n");
+    }
+}
+
+void process_free(struct process *process)
+{
+    /**
+    * In the event the system runs out of running processes, unsure how to respond
+    * maybe we start a new process or just panic the system like this....
+    */
+    struct process *next_process = process_get_first_ignore(process);
+    if (!next_process)
+    {
+        panic("No more processes available to switch to\n");
+    }
+
+    // If we are the current process we need to swap it as we are about to delete ourselves
+    if (process_current() == process)
+    {
+        process_switch(next_process);
+    }
+
+    // Delete the task in question
+    task_free(process->task);
+
+    // Let's delete the process data
+    process_free_data(process);
+
+    // Free the video memory
+    video_free(process->video);
+
+    // Delete the process memory
+    kfree(process);
+
+    // Let's free up the process slot
+    processes[process->id] = 0;
 }
 
 int process_load(const char *filename, struct process **process)

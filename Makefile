@@ -109,9 +109,11 @@ all: ./bin/kernel.bin ./bin/boot.bin ${FILES} programs
 
 programs:
 	cd ./src/programs/helloworld && $(MAKE) all
+	cd ./src/programs/killed && $(MAKE) all
 
 programs_clean:
 	cd ./src/programs/helloworld && $(MAKE) clean
+	cd ./src/programs/killed && $(MAKE) clean
 
 clean: programs_clean
 	rm -rf ${FILES}
