@@ -30,7 +30,7 @@ static bool elf_valid_encoding(struct elf_header *header)
 
 static bool elf_is_executable(struct elf_header *header)
 {
-    return header->e_type == ET_EXEC && header->e_entry == COS32_PROGRAM_VIRTUAL_ADDRESS;
+    return header->e_type == ET_EXEC && header->e_entry >= COS32_PROGRAM_VIRTUAL_ADDRESS;
 }
 
 static bool elf_has_program_header(struct elf_header *header)

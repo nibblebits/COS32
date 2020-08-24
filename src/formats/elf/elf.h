@@ -83,4 +83,7 @@ struct elf_header
     elf32_half e_shstrndx;
 };
 
+
+void* elf_get_entry_ptr(struct elf_header* elf_header);
+uint32_t elf_get_entry(struct elf_header* elf_header);
 #endif
