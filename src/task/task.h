@@ -63,6 +63,17 @@ void restore_general_purpose_registers(struct registers* regs);
 
 
 /**
+ * Copies the provided integer to the task's virtual address provided
+ */
+int copy_integer_to_task(struct task* task, void* address, int val);
+
+/**
+ * Copys the string to the given task's virtual address
+ */
+int copy_string_to_task(struct task* task, void* virtual_address, const char* val, int max);
+
+
+/**
  * Copies the string located at the virtual address provided for the user process into the physical address provided.
  * If "max" is reached then copying of the string stops.
  * Returns 0 on success, below zero is an error

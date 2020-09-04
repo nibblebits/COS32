@@ -20,6 +20,12 @@ void isr_no_interrupt_wrapper();
 void isr_segment_not_present_wrapper();
 void isr_page_fault_wrapper();
 
+// These symbols are added during linking process automatically with "ld" command
+// Note we get the address of these symbols they are the value its self
+// DO not try to access the values directly.
+extern void* __BUILD_DATE;
+extern void* __BUILD_NUMBER;
+
 extern void *interrupt_pointer_table[COS32_MAX_INTERRUPTS];
 static INTERRUPT_CALLBACK_FUNCTION interrupt_callbacks[COS32_MAX_INTERRUPTS];
 
@@ -43,12 +49,10 @@ bool idt_is_reserved(int interrupt)
     return false;
 }
 
-
-#warning TIMING BUG, IF WE HOLD FUNCTION KEYS ALL WORKS FINE OTHERWISE THEIRS A PROBLEM
-void interrupt_handler(int interrupt, struct interrupt_frame* frame)
+void interrupt_handler(int interrupt, struct interrupt_frame *frame)
 {
     if (interrupt_callbacks[interrupt] != 0)
-    {    
+    {
         kernel_page();
         process_mark_running(false);
         task_current_save_state(frame);
@@ -58,9 +62,8 @@ void interrupt_handler(int interrupt, struct interrupt_frame* frame)
     }
 
 out:
-     // Acknowledge the interrupt
+    // Acknowledge the interrupt
     outb(PIC1, PIC_EOI);
-        
 }
 
 int idt_function_is_valid(int interrupt, INTERRUPT_CALLBACK_FUNCTION interrupt_callback)
@@ -97,13 +100,13 @@ out:
 }
 
 void idt_general_protection_fault(int interrupt)
-{    
+{
     // Free the current process
     int id = process_current()->id;
     process_free(process_current());
-    
+
     // Load the killed program so the user knows this process was killed
-    struct process* new_process = 0;
+    struct process *new_process = 0;
     int res = process_load_for_slot("0:/killed.e", &new_process, id);
     if (res == 0)
     {
@@ -111,7 +114,6 @@ void idt_general_protection_fault(int interrupt)
     }
 
     task_next();
-
 }
 
 void *isr80h_command1_print(struct interrupt_frame *frame)
@@ -127,7 +129,16 @@ void *isr80h_command1_print(struct interrupt_frame *frame)
 void *isr80h_command2_get_key(struct interrupt_frame *frame)
 {
     char key = keyboard_pop();
-    return (void*)((int)key);
+    return (void *)((int)key);
+}
+
+void *isr80h_command3_get_kernel_info(struct interrupt_frame *frame)
+{
+    struct kernel_info *kernel_info_struct_user_space_addr = task_current_get_stack_item(0);
+    copy_integer_to_task(task_current(), (void *)&kernel_info_struct_user_space_addr->build_no, (int)&__BUILD_NUMBER);
+    copy_integer_to_task(task_current(), (void *)&kernel_info_struct_user_space_addr->date, (int)&__BUILD_DATE);
+
+    return 0;
 }
 
 void *isr80h_handle_command(int command, struct interrupt_frame *frame)
@@ -141,6 +152,10 @@ void *isr80h_handle_command(int command, struct interrupt_frame *frame)
 
     case SYSTEM_COMMAND_GET_KEY:
         result = isr80h_command2_get_key(frame);
+        break;
+
+    case SYSTEM_COMMAND_GET_KERNEL_INFO:
+        result = isr80h_command3_get_kernel_info(frame);
         break;
     };
 
@@ -207,9 +222,9 @@ void idt_set(int i, void *address)
 
 void isr_timer(int interrupt)
 {
-     // Acknowledge the interrupt
+    // Acknowledge the interrupt
     outb(PIC1, PIC_EOI);
-    task_next();    
+    task_next();
 }
 
 void idt_init()
@@ -231,11 +246,11 @@ void idt_init()
     // Setup the general protection fault interrupt
     for (int i = 0; i < 0x20; i++)
     {
-       idt_register_interrupt_callback(i, idt_general_protection_fault);
+        idt_register_interrupt_callback(i, idt_general_protection_fault);
     }
-    
+
     // Setup the timer interrupt
     idt_register_interrupt_callback(0x20, isr_timer);
-    
+
     idt_load(&idtr_desc);
 }

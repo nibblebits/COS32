@@ -54,6 +54,50 @@ int task_page()
     return 0;
 }
 
+int copy_integer_to_task(struct task* task, void* address, int val)
+{
+    int res = 0;
+    // Switch to the process page
+    paging_switch(task->page_directory->directory_entry);
+    *((int*)address) = val;
+    // Switch to the kernel page
+    kernel_page();
+
+    return res;
+}
+
+int copy_string_to_task(struct task* task, void* virtual_address, const char* val, int max)
+{
+    int res = 0;
+
+    // We only allow strings that are no larger than a page
+    if (max >= COS32_PAGE_SIZE)
+    {
+        return -EINVARG;
+    }
+
+    uint32_t* task_directory = task->page_directory->directory_entry;
+    char* tmp = kzalloc(max);
+    strncpy(tmp, val, max);
+
+    uint32_t old_paging_entry = paging_get(task_directory, tmp);
+    paging_map(task_directory, tmp, tmp, PAGING_PAGE_WRITEABLE | PAGING_PAGE_PRESENT | PAGING_CACHE_DISABLED | PAGING_ACCESS_FROM_ALL);
+
+
+    // Switch to the process page
+    paging_switch(task->page_directory->directory_entry);
+    // Now we copy the mapped "tmp" variable into the virtual address provided to us
+    strncpy(virtual_address, tmp, max);
+    
+    kernel_page();
+    
+    // Change the process page directory entry back to what it was
+    paging_map(task_directory, tmp, tmp, old_paging_entry);
+
+
+    return res;
+}
+
 int copy_string_from_task(struct task *task, void *virtual, void *phys, int max)
 {
 
