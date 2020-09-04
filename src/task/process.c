@@ -180,12 +180,6 @@ static int process_load_elf(const char *filename, struct process *process)
         goto out;
     }
 
-    if (elf_file->header.e_entry != COS32_PROGRAM_VIRTUAL_ADDRESS)
-    {
-        res = -EINFORMAT;
-        goto out;
-    }
-
     process->filetype = FILE_TYPE_ELF;
     process->elf_file = elf_file;
 
@@ -238,6 +232,13 @@ int process_map_elf(struct process *process)
         void *virt_addr = elf_virtual_address(current);
         void *phys_addr = elf_phys_address(current);
         void *phys_end_addr = elf_phys_end_address(current);
+
+        if (virt_addr == 0 || phys_addr == 0)
+        {
+            // We don't load null sections..
+            current = elf_next_section(current);
+            continue;
+        }
 
         int flags = PAGING_ACCESS_FROM_ALL | PAGING_PAGE_PRESENT;
         if (current->flags & PF_W)

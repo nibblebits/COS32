@@ -153,7 +153,7 @@ void kernel_main(void)
 	print("Kernel initialized\n");
 	
 	// Load the start program
-	int res = process_load_start("0:/hello.e");
+	int res = process_load_start("0:/start.e");
 	if (res < 0)
 	{
 		panic("Failed to load the start program!\n");

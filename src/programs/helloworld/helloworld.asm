@@ -42,3 +42,6 @@ read_string:
 
 section .data
 hello: db 'Hello', 0
+
+section .asm
+db 'Test assembly data', 0

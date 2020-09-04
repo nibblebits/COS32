@@ -8,8 +8,10 @@ all: ./bin/kernel.bin ./bin/boot.bin ${FILES} programs
 	dd if=./bin/kernel.bin >> ./bin/os.bin
 	dd if=/dev/zero bs=1048576 count=16 >> ./bin/os.bin
 	sudo mount -t vfat ./bin/os.bin /mnt/d
-	sudo cp ./src/programs/helloworld/helloworld.elf /mnt/d/hello.e
-	sudo cp ./src/programs/helloworld/helloworld2.bin /mnt/d/start.b
+#	sudo cp ./src/programs/helloworld/helloworld.elf /mnt/d/hello.e
+	#sudo cp ./src/programs/helloworld/helloworld2.bin /mnt/d/start.b
+	sudo cp ./src/programs/start/start.elf /mnt/d/start.e
+
 
 	sudo umount /mnt/d
 	sudo chmod 777 ./bin/os.bin
@@ -108,12 +110,17 @@ all: ./bin/kernel.bin ./bin/boot.bin ${FILES} programs
 	i686-elf-gcc $(INCLUDES) ${FLAGS} -c ./src/kernel.c -o ./build/kernel.o -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g
 
 programs:
+	cd ./src/programs/stdlib && $(MAKE) all
 	cd ./src/programs/helloworld && $(MAKE) all
 	cd ./src/programs/killed && $(MAKE) all
+	cd ./src/programs/start && $(MAKE) all
+
 
 programs_clean:
+	cd ./src/programs/stdlib && $(MAKE) clean
 	cd ./src/programs/helloworld && $(MAKE) clean
 	cd ./src/programs/killed && $(MAKE) clean
+	cd ./src/programs/start && $(MAKE) clean
 
 clean: programs_clean
 	rm -rf ${FILES}

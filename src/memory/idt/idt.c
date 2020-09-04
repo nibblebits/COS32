@@ -107,7 +107,7 @@ void idt_general_protection_fault(int interrupt)
     int res = process_load_for_slot("0:/killed.e", &new_process, id);
     if (res == 0)
     {
-     //   process_start(new_process);
+        process_start(new_process);
     }
 
     task_next();

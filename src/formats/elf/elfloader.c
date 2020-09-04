@@ -73,7 +73,14 @@ static int elf_load_section(int fp, struct elf32_phdr *phdr, struct elf_header *
         goto out;
     }
 
-    void *data_ptr = kzalloc(phdr->p_filesz);
+    void *data_ptr = 0;
+    if (phdr->p_filesz == 0)
+    {
+        // We don't load sections with no data... needs a little cleaning... get a new function here
+        goto set_section;
+    }
+
+    data_ptr = kzalloc(phdr->p_filesz);
     if (!data_ptr)
     {
         res = -ENOMEM;
@@ -95,6 +102,8 @@ static int elf_load_section(int fp, struct elf32_phdr *phdr, struct elf_header *
         goto out;
     }
 
+
+set_section:
     section->phys_addr = (void *)data_ptr;
     section->virt_addr = (void *)phdr->p_vaddr;
     // We end at the end of the page regardless of section size.
@@ -191,7 +200,7 @@ int elf_load_sections(int fp, struct elf_header *header, struct elf_file *elf_fi
         {
             goto out;
         }
-
+        
         res = elf_load_section(fp, &elf_program_header, header, current_section);
         if (res < 0)
         {

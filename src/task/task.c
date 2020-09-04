@@ -287,7 +287,13 @@ int task_init(struct task *task, struct process *process)
     }
 
     // Let's setup some register defaults
+
     task->registers.ip = COS32_PROGRAM_VIRTUAL_ADDRESS;
+    if (process->filetype == FILE_TYPE_ELF)
+    {
+        task->registers.ip = elf_get_entry(&process->elf_file->header);
+    }
+
     task->registers.ss = USER_DATA_SEGMENT;
     task->registers.cs = USER_CODE_SEGMENT;
     task->registers.esp = COS32_PROGRAM_VIRTUAL_STACK_ADDRESS_START;
