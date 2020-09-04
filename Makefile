@@ -1,8 +1,11 @@
+
+
 FILES = ./build/kernel.asm.o  ./build/keyboard/listener.o ./build/keyboard/listeners/fkeylistener.o ./build/keyboard/keyboard.o ./build/keyboard/classic.o ./build/task/task.o ./build/task/process.o ./build/kernel.o ./build/task/tss.asm.o ./build/gdt/gdt.asm.o ./build/gdt/gdt.o ./build/task/task.asm.o ./build/memory/paging/paging.o ./build/memory/paging/paging.asm.o ./build/memory/idt/idt.asm.o ./build/memory/idt/idt.o ./build/io/io.o  ./build/disk/disk.o ./build/fs/file.o ./build/fs/fat/fat16.o ./build/video/video.o ./build/memory/memory.o ./build/string/string.o ./build/formats/elf/elf.o ./build/formats/elf/elfloader.o ./build/memory/heap.o ./build/memory/kheap.o 
 FLAGS = --freestanding -falign-jumps -falign-functions -falign-labels -falign-loops  -fstrength-reduce -fomit-frame-pointer -finline-functions -Wno-unused-function -fno-builtin -Werror -Wno-unused-label -Wno-cpp -Wno-unused-parameter -nostdlib -nostartfiles -nodefaultlibs -Wall -O0 -Iinc
+BUILD_NUMBER_FILE=build-number.txt
 
 INCLUDES = -I./src
-all: ./bin/kernel.bin ./bin/boot.bin ${FILES} programs
+all: ./bin/kernel.bin ./bin/boot.bin ${FILES} programs 
 	rm -f ./bin/os.bin
 	dd if=./bin/boot.bin >> ./bin/os.bin
 	dd if=./bin/kernel.bin >> ./bin/os.bin
@@ -19,9 +22,9 @@ all: ./bin/kernel.bin ./bin/boot.bin ${FILES} programs
 ./bin/boot.bin: ./src/boot/boot.asm
 	nasm -f bin ./src/boot/boot.asm -o ./bin/boot.bin
 
-./bin/kernel.bin: ${FILES}
+./bin/kernel.bin: ${FILES}  $(BUILD_NUMBER_FILE) 
 	i686-elf-ld  -m elf_i386 -relocatable ${FILES} -o ./build/kernelfull.o
-	i686-elf-gcc $(FLAGS) -T ./src/linker.ld -o ./bin/kernel.bin -ffreestanding -O0 -nostdlib -fpic  -g ./build/kernelfull.o
+	i686-elf-gcc $(FLAGS)  $(BUILD_NUMBER_LDFLAGS)  -T ./src/linker.ld -o ./bin/kernel.bin -ffreestanding -O0 -nostdlib -fpic  -g ./build/kernelfull.o
 
 ./build/gdt/gdt.o: ./src/gdt/gdt.c ./src/gdt/gdt.h
 	i686-elf-gcc $(INCLUDES) -I./src/gdt ${FLAGS} -c ./src/gdt/gdt.c -o ./build/gdt/gdt.o -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g
@@ -127,3 +130,17 @@ clean: programs_clean
 	rm -rf ./bin/boot.bin
 	rm -rf ./bin/kernel.bin
 	rm -rf ./build/kernelfull.o
+
+
+# Below is used to create an automated build number so that everytime we rebuild a new build number is generated
+# Create an auto-incrementing build number.
+
+BUILD_NUMBER_LDFLAGS  = -Xlinker --defsym -Xlinker __BUILD_DATE=$$(date +'%Y%m%d')
+BUILD_NUMBER_LDFLAGS += -Xlinker --defsym -Xlinker __BUILD_NUMBER=$$(cat $(BUILD_NUMBER_FILE))
+
+# Build number file.  Increment if any object file changes.
+$(BUILD_NUMBER_FILE): $(OBJECTS)
+	@if ! test -f $(BUILD_NUMBER_FILE); then echo 0 > $(BUILD_NUMBER_FILE); fi
+	@echo $$(($$(cat $(BUILD_NUMBER_FILE)) + 1)) > $(BUILD_NUMBER_FILE)
+
+
