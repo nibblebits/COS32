@@ -80,6 +80,12 @@ int copy_string_to_task(struct task* task, void* virtual_address, const char* va
  */
 int copy_string_from_task(struct task *task, void *virtual, void *phys, int max);
 
+
+/**
+ * Returns the given stack item as an unsigned integer
+ */
+uint32_t task_current_get_stack_item_uint(int index);
+
 /**
  * Returns the given stack item from the tasks stack for the given index
  */
@@ -125,6 +131,11 @@ void task_resume(struct task* task);
  * Prints to video memory for the current task
  */
 void task_print(const char* message);
+
+/**
+ * Puts one character to the video output buffer for the given task
+ */
+void task_putchar(char c);
 
 /**
  * Maps the video memory to the given task, when ever page tables are set to this task

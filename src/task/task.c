@@ -54,19 +54,19 @@ int task_page()
     return 0;
 }
 
-int copy_integer_to_task(struct task* task, void* address, int val)
+int copy_integer_to_task(struct task *task, void *address, int val)
 {
     int res = 0;
     // Switch to the process page
     paging_switch(task->page_directory->directory_entry);
-    *((int*)address) = val;
+    *((int *)address) = val;
     // Switch to the kernel page
     kernel_page();
 
     return res;
 }
 
-int copy_string_to_task(struct task* task, void* virtual_address, const char* val, int max)
+int copy_string_to_task(struct task *task, void *virtual_address, const char *val, int max)
 {
     int res = 0;
 
@@ -76,24 +76,22 @@ int copy_string_to_task(struct task* task, void* virtual_address, const char* va
         return -EINVARG;
     }
 
-    uint32_t* task_directory = task->page_directory->directory_entry;
-    char* tmp = kzalloc(max);
+    uint32_t *task_directory = task->page_directory->directory_entry;
+    char *tmp = kzalloc(max);
     strncpy(tmp, val, max);
 
     uint32_t old_paging_entry = paging_get(task_directory, tmp);
     paging_map(task_directory, tmp, tmp, PAGING_PAGE_WRITEABLE | PAGING_PAGE_PRESENT | PAGING_CACHE_DISABLED | PAGING_ACCESS_FROM_ALL);
 
-
     // Switch to the process page
     paging_switch(task->page_directory->directory_entry);
     // Now we copy the mapped "tmp" variable into the virtual address provided to us
     strncpy(virtual_address, tmp, max);
-    
+
     kernel_page();
-    
+
     // Change the process page directory entry back to what it was
     paging_map(task_directory, tmp, tmp, old_paging_entry);
-
 
     return res;
 }
@@ -141,6 +139,11 @@ out_free:
     kfree(tmp);
 out:
     return 0;
+}
+
+uint32_t task_current_get_stack_item_uint(int index)
+{
+    return (uint32_t)task_current_get_stack_item(index);
 }
 
 void *task_current_get_stack_item(int index)
@@ -265,6 +268,15 @@ void task_print(const char *message)
     // if I change this in the future
     task_page();
     video_terminal_writestring(&current_task->process->video->properties, message);
+    kernel_page();
+}
+
+void task_putchar(char c)
+{
+    // This only works because the task can see the entire kernel address space, bare in mind problems will happen
+    // if I change this in the future
+    task_page();
+    video_terminal_putchar(&current_task->process->video->properties, c);
     kernel_page();
 }
 

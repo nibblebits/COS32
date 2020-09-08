@@ -2,6 +2,7 @@
 
 global print
 global kernel_information
+global cos32_putchar
 
 print:
     push ebp
@@ -19,6 +20,17 @@ kernel_information:
     mov ebp, esp
     mov eax, 3 ; Command 3 = Kernel information
     mov ebx, [ebp+8] ; The "struct kern_info" structure
+    push dword ebx
+    int 0x80
+    add esp, 4
+    pop ebp
+    ret
+
+cos32_putchar:
+    push ebp
+    mov ebp, esp
+    mov eax, 4 ; Command 4 = putchar write to stdout
+    mov ebx, [ebp+8] 
     push dword ebx
     int 0x80
     add esp, 4

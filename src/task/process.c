@@ -240,8 +240,13 @@ int process_map_elf(struct process *process)
             continue;
         }
 
-        int flags = PAGING_ACCESS_FROM_ALL | PAGING_PAGE_PRESENT;
-        if (current->flags & PF_W)
+        int flags = PAGING_PAGE_PRESENT | PAGING_ACCESS_FROM_ALL | PAGING_PAGE_WRITEABLE;
+
+        // Due to weird issue with modifyable array data being in text section
+        // for programs, we should make the .text section writeable by default
+        // We will assume its the first section.
+        // This solution is bad, we should figure out why GCC is doing this and change it..
+        if ((current->flags & PF_W))
         {
             flags |= PAGING_PAGE_WRITEABLE;
         }

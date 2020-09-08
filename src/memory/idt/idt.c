@@ -141,6 +141,13 @@ void *isr80h_command3_get_kernel_info(struct interrupt_frame *frame)
     return 0;
 }
 
+void* isr80h_command4_putchar(struct interrupt_frame* frame)
+{
+    char c = (char) task_current_get_stack_item_uint(0);
+    task_putchar(c);
+    return 0;
+}
+
 void *isr80h_handle_command(int command, struct interrupt_frame *frame)
 {
     void *result = 0;
@@ -156,6 +163,10 @@ void *isr80h_handle_command(int command, struct interrupt_frame *frame)
 
     case SYSTEM_COMMAND_GET_KERNEL_INFO:
         result = isr80h_command3_get_kernel_info(frame);
+        break;
+
+    case SYSTEM_COMMAND_PUTCHAR:
+        result = isr80h_command4_putchar(frame);
         break;
     };
 

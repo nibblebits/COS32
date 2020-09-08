@@ -21,14 +21,10 @@ SECTIONS
 	{
 		*(.data)
 		*(.rodata)
-	}
- 
-	/* Read-write data (uninitialized) and stack */
-	.bss : ALIGN(4096)
-	{
 		*(COMMON)
 		*(.bss)
 	}
+ 
 	
 
 	.asm : ALIGN(4096)

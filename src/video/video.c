@@ -105,6 +105,11 @@ void terminal_write(struct terminal_properties* properties, const char *data, si
 		terminal_putchar(properties, data[i]);
 }
 
+void video_terminal_putchar(struct terminal_properties* properties, char c)
+{
+	terminal_putchar(properties, c);
+}
+
 void video_terminal_writestring(struct terminal_properties* properties, const char *data)
 {
 	terminal_write(properties, data, strlen(data));

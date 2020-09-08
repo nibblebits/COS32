@@ -69,6 +69,7 @@ void print(const char *message);
  * Writes a string to the terminal using the terminal properties provided
  */
 void video_terminal_writestring(struct terminal_properties* properties, const char *data);
+void video_terminal_putchar(struct terminal_properties* properties, char c);
 
 void kernel_terminal_initialize(void);
 #endif
