@@ -5,6 +5,7 @@
 #include "config.h"
 #include "io/io.h"
 struct disk disk;
+
 int disk_read_sector(int lba, int total, void *buf)
 {
     outb(0x1F6, (lba >> 24) | 0xE0);
@@ -13,6 +14,9 @@ int disk_read_sector(int lba, int total, void *buf)
     outb(0x1F4, (unsigned char)(lba >> 8));
     outb(0x1F5, (unsigned char)(lba >> 16));
     outb(0x1F7, 0x20);
+
+
+    unsigned short* ptr = (unsigned short*) buf;
     for (int b = 0; b < total; b++)
     {
 
@@ -24,15 +28,13 @@ int disk_read_sector(int lba, int total, void *buf)
         }
 
         // Copy from hard disk to memory two bytes at a time
-        unsigned short* tmp = (unsigned short*) buf;
-        unsigned short *ptr = &tmp[b * COS32_SECTOR_SIZE];
         for (int i = 0; i < 256; i++)
         {
             *ptr = insw(0x1F0);
             ptr++;
         }
     }
-    
+
     return 0;
 }
 
