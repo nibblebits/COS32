@@ -23,8 +23,8 @@ void isr_page_fault_wrapper();
 // These symbols are added during linking process automatically with "ld" command
 // Note we get the address of these symbols they are the value its self
 // DO not try to access the values directly.
-extern void* __BUILD_DATE;
-extern void* __BUILD_NUMBER;
+extern void *__BUILD_DATE;
+extern void *__BUILD_NUMBER;
 
 extern void *interrupt_pointer_table[COS32_MAX_INTERRUPTS];
 static INTERRUPT_CALLBACK_FUNCTION interrupt_callbacks[COS32_MAX_INTERRUPTS];
@@ -51,15 +51,15 @@ bool idt_is_reserved(int interrupt)
 
 void interrupt_handler(int interrupt, struct interrupt_frame *frame)
 {
+    kernel_page();
     if (interrupt_callbacks[interrupt] != 0)
     {
-        kernel_page();
         process_mark_running(false);
         task_current_save_state(frame);
         interrupt_callbacks[interrupt]();
         process_mark_running(true);
-        task_page();
     }
+    task_page();
 
 out:
     // Acknowledge the interrupt
@@ -116,6 +116,8 @@ void idt_general_protection_fault(int interrupt)
     task_next();
 }
 
+
+#warning "Abstract these functions out the ISR is getting cluttered..."
 void *isr80h_command1_print(struct interrupt_frame *frame)
 {
     // The message to print is the first element on the user stack
@@ -141,11 +143,17 @@ void *isr80h_command3_get_kernel_info(struct interrupt_frame *frame)
     return 0;
 }
 
-void* isr80h_command4_putchar(struct interrupt_frame* frame)
+void *isr80h_command4_putchar(struct interrupt_frame *frame)
 {
-    char c = (char) task_current_get_stack_item_uint(0);
+    char c = (char)task_current_get_stack_item_uint(0);
     task_putchar(c);
     return 0;
+}
+
+void* isr80h_command5_malloc(struct interrupt_frame* frame)
+{
+    int size = task_current_get_stack_item_uint(0);
+    return process_malloc(process_current(), size);
 }
 
 void *isr80h_handle_command(int command, struct interrupt_frame *frame)
@@ -167,6 +175,10 @@ void *isr80h_handle_command(int command, struct interrupt_frame *frame)
 
     case SYSTEM_COMMAND_PUTCHAR:
         result = isr80h_command4_putchar(frame);
+        break;
+
+    case SYSTEM_COMMAND_MALLOC:
+        result = isr80h_command5_malloc(frame);
         break;
     };
 

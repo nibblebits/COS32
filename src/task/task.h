@@ -23,10 +23,6 @@ struct registers
 struct process;
 struct task
 {
-    // These are all the heap allocations that this process has, if its not NULL then its allocated
-    // Limiting the user process to maximum allocations is not the best idea
-    // maybe switch to linked list..
-    void *allocations[COS32_MAX_PROGRAM_ALLOCATIONS];
 
     // The page directory for this task. Upon running this task at any moment this page directory should be enabled for paging
     // When we switch to another task this should not be enabled

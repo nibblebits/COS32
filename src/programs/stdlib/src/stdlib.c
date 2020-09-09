@@ -1,4 +1,5 @@
 #include "stdlib.h"
+#include "cos32.h"
 char *itoa(int i)
 {
 	static char text[12];
@@ -20,4 +21,10 @@ char *itoa(int i)
 	if (neg)
 		text[--loc] = '-';
 	return &text[loc];
+}
+
+
+void* malloc(int size)
+{
+	return cos32_malloc(size);
 }

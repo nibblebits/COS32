@@ -367,6 +367,58 @@ static struct process *process_get_first_ignore(struct process *process)
     return NULL;
 }
 
+void **process_get_free_heap_allocation_slot(struct process *process)
+{
+    for (int i = 0; i < COS32_MAX_PROGRAM_ALLOCATIONS; i++)
+    {
+        if (process->allocations[i] == 0)
+            return &process->allocations[i];
+    }
+
+    return 0;
+}
+
+int process_paging_map_to(struct process* process, void *virt, void *phys, void *phys_end, int flags)
+{
+    // Currently only one task per process exists 
+    return paging_map_to(process->task->page_directory->directory_entry, virt, phys, phys_end, flags);
+}
+
+void *process_malloc(struct process *process, int size)
+{
+    int res = 0;
+    void* ptr = 0;
+    void **allocation_slot = process_get_free_heap_allocation_slot(process);
+    if (!allocation_slot)
+    {
+        goto out;
+    }
+
+    ptr = kmalloc(size);
+    if (!ptr)
+    {
+        goto out;
+    }
+
+    *allocation_slot = ptr;
+
+    // Now we must map the page for the data, mapping is essential because the current page will be supervisor only
+    res = process_paging_map_to(process, ptr, ptr, paging_align_address(ptr+size), PAGING_ACCESS_FROM_ALL | PAGING_PAGE_WRITEABLE | PAGING_PAGE_PRESENT);
+    if (res < 0)
+    {
+        goto out;
+    }
+
+
+out:
+    if (ISERR(res))
+    {
+        kfree(ptr);
+    }
+    return ptr;
+
+}
+
 static struct process *process_get_first()
 {
     return process_get_first_ignore(NULL);
@@ -401,6 +453,17 @@ void process_free_data(struct process *process)
     }
 }
 
+static void process_free_allocations(struct process *process)
+{
+    for (int i = 0; i < COS32_MAX_PROGRAM_ALLOCATIONS; i++)
+    {
+        if (process->allocations[i] != 0)
+        {
+            kfree(process->allocations[i]);
+        }
+    }
+}
+
 void process_free(struct process *process)
 {
     /**
@@ -418,6 +481,9 @@ void process_free(struct process *process)
     {
         process_switch(next_process);
     }
+
+    // Delete the process allocations
+    process_free_allocations(process);
 
     // Delete the task in question
     task_free(process->task);

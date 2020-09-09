@@ -133,6 +133,11 @@ char keyboard_pop()
 
     int real_index = process->keyboard.head % sizeof(process->keyboard.buffer);
     char c = process->keyboard.buffer[real_index];
+    if (c == 0x00)
+    {
+        // Nothing to pop? Then no need to increase the head
+        return 0;
+    }
     process->keyboard.buffer[real_index] = 0;
     process->keyboard.head++;
     return c;

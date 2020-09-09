@@ -2,6 +2,14 @@
 #include "stdlib.h"
 #include "cos32.h"
 
+
+int getchar(void)
+{
+    char c = 0;
+    cos32_getkey(&c);
+    return c;
+}
+
 void putchar(char c)
 {
     cos32_putchar(c);

@@ -29,6 +29,11 @@ void task_current_save_state(struct interrupt_frame *frame)
     ASSERT(task_save_state(task, frame) == 0);
 }
 
+void* task_malloc(struct task* task, int size)
+{
+    return process_malloc(task->process, size);
+}
+
 int task_switch(struct task *task)
 {
     if (task->page_directory == 0)
@@ -371,29 +376,10 @@ int task_init(struct task *task, struct process *process)
     return 0;
 }
 
-static int task_free_allocations(struct task *task)
-{
-    for (int i = 0; i < COS32_MAX_PROGRAM_ALLOCATIONS; i++)
-    {
-        if (task->allocations[i] != 0)
-        {
-            kfree(task->allocations[i]);
-        }
-    }
-
-    return 0;
-}
 
 int task_free(struct task *task)
 {
     ASSERT(is_kernel_page());
-
-    int res = 0;
-    res = task_free_allocations(task);
-    if (ISERR(res))
-    {
-        goto out;
-    }
 
     // Free the paging directory
     paging_free_4gb(task->page_directory);
@@ -404,6 +390,5 @@ int task_free(struct task *task)
     // Finally delete the task memory
     kfree(task);
 
-out:
-    return res;
+    return 0;
 }

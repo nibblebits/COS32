@@ -25,6 +25,11 @@ struct process
     // Each process has a task for its self
     struct task* task;
 
+    // These are all the heap allocations that this process has, if its not NULL then its allocated
+    // Limiting the user process to maximum allocations is not the best idea
+    // maybe switch to linked list..
+    void *allocations[COS32_MAX_PROGRAM_ALLOCATIONS];
+
     processfiletype_t filetype;
 
     union
@@ -72,10 +77,29 @@ void process_mark_running(bool running);
 struct process *process_current();
 
 /**
+ * Allocates memory for the given process
+ */
+void *process_malloc(struct process *process, int size);
+
+/**
  * Frees and unloads the given process
  */
 void process_free(struct process* process);
 
+/**
+ * Maps pages into memory starting at the physical address until the physical end address is reached.
+ * Pages are mapped into the address starting at "virt"
+ * 
+ * All tasks for the process are mapped 
+ * 
+ * All provided addresses must divide into a page and if they do not the system will panic
+ * 
+ * /param process The process to map the memory for
+ * /param virt The virtual address to start mapping these pages to
+ * /param phys The start physical address so map (must divide into a page)
+ * /param phys_end The end physical address to map (must divide into a page)
+ */
+int process_paging_map_to(struct process* process, void *virt, void *phys, void *phys_end, int flags);
 
 
 #endif
