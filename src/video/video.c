@@ -10,7 +10,6 @@
 
 void *video_default = 0;
 
-
 /* Hardware text mode color constants. */
 enum vga_color
 {
@@ -42,13 +41,13 @@ static inline uint16_t vga_entry(unsigned char uc, uint8_t color)
 	return (uint16_t)uc | (uint16_t)color << 8;
 }
 
-
-
 static const size_t VGA_WIDTH = 80;
 static const size_t VGA_HEIGHT = 25;
 
 struct terminal_properties kernel_terminal_properties;
 uint16_t *terminal_buffer;
+
+void terminal_putchar(struct terminal_properties *properties, char c);
 
 void kernel_terminal_initialize(void)
 {
@@ -66,23 +65,45 @@ void kernel_terminal_initialize(void)
 	}
 }
 
-
-void terminal_putentryat(uint16_t* terminal_buffer, char c, uint8_t color, size_t x, size_t y)
+void terminal_putentryat(uint16_t *terminal_buffer, char c, uint8_t color, size_t x, size_t y)
 {
 	const size_t index = y * VGA_WIDTH + x;
 	terminal_buffer[index] = vga_entry(c, color);
 }
 
-void terminal_putchar(struct terminal_properties* properties, char c)
+void terminal_backspace(struct terminal_properties *properties)
+{
+
+	// We can't go back anymore
+	if (properties->terminal_row == 0x00 && properties->terminal_col == 0x00)
+		return;
+
+	if (properties->terminal_col == 0x00)
+	{
+		properties->terminal_row -=1;
+		properties->terminal_col = VGA_WIDTH;
+	}
+	
+	properties->terminal_col -= 1;
+	terminal_putchar(properties, ' ');
+	properties->terminal_col -= 1;
+}
+void terminal_putchar(struct terminal_properties *properties, char c)
 {
 	if (c == '\n')
 	{
 		properties->terminal_col = 0;
-		properties->terminal_row  += 1;
+		properties->terminal_row += 1;
+		return;
+	}
+	// Backspace
+	if (c == 0x08)
+	{
+		terminal_backspace(properties);
 		return;
 	}
 
-    /**
+	/**
      * Notice we actually write directly to video memory and don't expect a videos buffer,
      * this was no accident, each task has the real video memory paged to point to its own video memory.
      * This makes more sense than setting the video memory of the video structure as we need to remember
@@ -99,18 +120,18 @@ void terminal_putchar(struct terminal_properties* properties, char c)
 	}
 }
 
-void terminal_write(struct terminal_properties* properties, const char *data, size_t size)
+void terminal_write(struct terminal_properties *properties, const char *data, size_t size)
 {
 	for (size_t i = 0; i < size; i++)
 		terminal_putchar(properties, data[i]);
 }
 
-void video_terminal_putchar(struct terminal_properties* properties, char c)
+void video_terminal_putchar(struct terminal_properties *properties, char c)
 {
 	terminal_putchar(properties, c);
 }
 
-void video_terminal_writestring(struct terminal_properties* properties, const char *data)
+void video_terminal_writestring(struct terminal_properties *properties, const char *data)
 {
 	terminal_write(properties, data, strlen(data));
 }
@@ -122,44 +143,44 @@ void print(const char *message)
 
 void video_init()
 {
-    kernel_terminal_initialize();
+	kernel_terminal_initialize();
 
-    video_default = kzalloc(COS32_VIDEO_MEMORY_SIZE);
-    // Let's copy in the real video memory now so we have a default to work with
-    memcpy(video_default, (void *)COS32_VIDEO_MEMORY_ADDRESS_START, COS32_VIDEO_MEMORY_SIZE);
+	video_default = kzalloc(COS32_VIDEO_MEMORY_SIZE);
+	// Let's copy in the real video memory now so we have a default to work with
+	memcpy(video_default, (void *)COS32_VIDEO_MEMORY_ADDRESS_START, COS32_VIDEO_MEMORY_SIZE);
 }
 
 struct video *video_new()
 {
-    void *video_ptr = kmalloc(COS32_VIDEO_MEMORY_SIZE);
-    memcpy(video_ptr, video_default, COS32_VIDEO_MEMORY_SIZE);
+	void *video_ptr = kmalloc(COS32_VIDEO_MEMORY_SIZE);
+	memcpy(video_ptr, video_default, COS32_VIDEO_MEMORY_SIZE);
 
-    struct video *video = kzalloc(sizeof(struct video));
-    video->properties.terminal_row = 0;
-    video->properties.terminal_col = 0;
+	struct video *video = kzalloc(sizeof(struct video));
+	video->properties.terminal_row = 0;
+	video->properties.terminal_col = 0;
 	video->properties.terminal_color = vga_entry_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
-    
-    video->ptr = video_ptr;
 
-    return video;
+	video->ptr = video_ptr;
+
+	return video;
 }
 
-void video_free(struct video* video)
+void video_free(struct video *video)
 {
-    kfree(video->ptr);
-    kfree(video);
+	kfree(video->ptr);
+	kfree(video);
 }
 
 /**
  * Saves the current video  memory state into the provided video pointer
  * so that it can be restored at a later time
  */
-void video_save(struct video* video)
+void video_save(struct video *video)
 {
-    memcpy(video->ptr, (void *)COS32_VIDEO_MEMORY_ADDRESS_START, COS32_VIDEO_MEMORY_SIZE);
+	memcpy(video->ptr, (void *)COS32_VIDEO_MEMORY_ADDRESS_START, COS32_VIDEO_MEMORY_SIZE);
 }
 
-void video_restore(struct video* video)
+void video_restore(struct video *video)
 {
-    memcpy((void *)COS32_VIDEO_MEMORY_ADDRESS_START, video->ptr, COS32_VIDEO_MEMORY_SIZE);
+	memcpy((void *)COS32_VIDEO_MEMORY_ADDRESS_START, video->ptr, COS32_VIDEO_MEMORY_SIZE);
 }

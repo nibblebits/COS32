@@ -98,11 +98,26 @@ void keyboard_special_off(enum SpecialKeys c)
         // It's already off so we don't need to do anything else here, no point alerting the listeners again either
         return;
     }
-    
+
     special_keys[c] = false;
     // Let all the special keyboard listeners know
     keyboard_listener_keyspecial(c);
 }
+
+static int keyboard_get_tail_index(struct process *process)
+{
+    return process->keyboard.tail % sizeof(process->keyboard.buffer);
+    
+}
+
+
+static void keyboard_backspace(struct process* process)
+{
+    process->keyboard.tail -= 1;
+    int real_index = keyboard_get_tail_index(process);
+    process->keyboard.buffer[real_index] = 0x00;
+}
+
 
 void keyboard_push(char c)
 {
@@ -112,8 +127,10 @@ void keyboard_push(char c)
     {
         return;
     }
+
+
     // Will wrap around, the power of remainder ;)
-    int real_index = process->keyboard.tail % sizeof(process->keyboard.buffer);
+    int real_index = keyboard_get_tail_index(process);
     process->keyboard.buffer[real_index] = c;
     process->keyboard.tail++;
 
