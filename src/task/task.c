@@ -341,7 +341,7 @@ int task_init(struct task *task, struct process *process)
 
     memset(task, 0, sizeof(struct task));
     // Maps the entire 4GB address space to its self
-    task->page_directory = paging_new_4gb(PAGING_ACCESS_FROM_ALL | PAGING_PAGE_PRESENT);
+    task->page_directory = paging_new_4gb(PAGING_PAGE_PRESENT);
     if (task->page_directory == 0)
     {
         return -EIO;

@@ -1,7 +1,6 @@
 #include "cos32.h"
 
-
-void cos32_run_command(const char* command, int max)
+void cos32_run_command(const char *command, int max)
 {
     // Do nothing for now...
 }
@@ -21,6 +20,15 @@ void cos32_terminal_readline(char *out, int max, bool output_while_typing)
         if (output_while_typing)
         {
             cos32_putchar(key);
+        }
+
+        // Backspace
+        if (key == 0x08 && i >= 1)
+        {
+            out[i - 1] = 0x00;
+            // -2 because we will +1 when we go onto next continue
+            i -= 2;
+            continue;
         }
         out[i] = key;
     }

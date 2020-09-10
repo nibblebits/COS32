@@ -5,12 +5,7 @@
 global _start
 extern main
 
-test:
-    dd 0x00
-
 _start:
-    mov eax, 0xfffff
-    mov [test], eax
     ; Push argc and argv, currently this thing doesnt even exist so we just push nothing...
     push dword 0
     push dword 0

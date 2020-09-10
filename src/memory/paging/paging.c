@@ -27,7 +27,7 @@ struct paging_4gb_chunk *paging_new_4gb(uint8_t flags)
             entry[b] = (offset + (b * COS32_PAGE_SIZE)) | flags;
         }
         offset += (1024 * COS32_PAGE_SIZE);
-        directory[i] = (uint32_t)entry | flags | PAGING_PAGE_WRITEABLE;
+        directory[i] = (uint32_t)entry | flags | PAGING_PAGE_WRITEABLE | PAGING_ACCESS_FROM_ALL;
     }
 
     struct paging_4gb_chunk *chunk_4gb = kzalloc(sizeof(struct paging_4gb_chunk));
