@@ -6,6 +6,7 @@ global kernel_information
 global cos32_putchar
 global cos32_getkeyblock
 global cos32_malloc
+global cos32_invoke_command
 
 print:
     push ebp
@@ -71,3 +72,15 @@ cos32_malloc:
     add esp, 4
     pop ebp
     ret
+
+cos32_invoke_command:
+    push ebp
+    mov ebp, esp
+    mov eax, 6 ; Command 6 = Invoke command. SYSTEM command essentially
+    mov ebx, [ebp+8] ; The pointer to the "command_argument" structure
+    push dword ebx
+    int 0x80
+    add esp, 4
+    pop ebp
+    ret
+    

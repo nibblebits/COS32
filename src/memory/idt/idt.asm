@@ -19,7 +19,6 @@ extern isr_no_interrupt
 extern isr80h_handler
 extern isr_invalid_tss_handler
 extern isr_segment_not_present_handler
-extern isr_page_fault_handler
 
 idt_load:
     push ebp
@@ -60,7 +59,6 @@ disable_interrupts:
         pop eax
         pop ebx
         popad
-        sti
         iretd
 %endmacro
 
@@ -72,7 +70,6 @@ disable_interrupts:
 
 
 
-
 isr0_wrapper:
     cld
     call isr0_handler
@@ -80,7 +77,7 @@ isr0_wrapper:
 
 
 isr80h_wrapper:
-    cli
+cli
     ; INTERRUPT FRAME START
     ; ALREADY PUSHED TO US IS THE USER LAND STACK INFORMATION
     ; uint32_t ip;
@@ -108,7 +105,6 @@ isr80h_wrapper:
     ; Set the EAX register to the return result stored in tmp_res
     mov eax, [tmp_res]
     
-    sti
     iretd
 
 
@@ -117,20 +113,13 @@ isr_invalid_tss_wrapper:
     call isr_invalid_tss_handler
     iret
 
-isr_page_fault_wrapper:
-    cld
-    call isr_page_fault_handler
-    iret
-
 isr_segment_not_present_wrapper:
     cld
     call isr_segment_not_present_handler
     iret
 
 isr_no_interrupt_wrapper:
-    cli
     call isr_no_interrupt
-    sti
     iretd
 
 ; We need to make a pointer table for all the interrupt entries, these will point to the associated wrappers

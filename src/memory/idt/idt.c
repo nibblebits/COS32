@@ -8,6 +8,8 @@
 #include "task/task.h"
 #include "string/string.h"
 #include "keyboard/keyboard.h"
+#include "memory/registers.h"
+#include "memory/paging/paging.h"
 #include "status.h"
 struct idt_desc idt_desc[COS32_MAX_INTERRUPTS];
 struct idtr_desc idtr_desc;
@@ -61,7 +63,6 @@ void interrupt_handler(int interrupt, struct interrupt_frame *frame)
     }
     task_page();
 
-out:
     // Acknowledge the interrupt
     outb(PIC1, PIC_EOI);
 }
@@ -116,6 +117,88 @@ void idt_general_protection_fault(int interrupt)
     task_next();
 }
 
+void print_page_fault(uint32_t bad_address)
+{
+    bool was_kernel_page = is_kernel_page();
+    uint32_t *faulting_page_directory = paging_current_directory();
+    if (faulting_page_directory)
+    {
+    }
+    // SO we don't write to process memory we must switch to the kernel page
+
+    kernel_page();
+    print("\n");
+    print("ADDRESS: ");
+    print(itoa(bad_address));
+    print("\n");
+
+    void *bad_page_address = (void *)paging_align_to_lower_page((void *)bad_address);
+    uint32_t page_entry = paging_get(task_current()->page_directory->directory_entry, bad_page_address);
+    print("Page entry: ");
+    print(itoa(page_entry));
+    print("\n");
+
+    if (page_entry & PAGING_ACCESS_FROM_ALL)
+    {
+        print("Access from user space: allowed\n");
+    }
+    else
+    {
+        print("Access from user space disallowed\n");
+    }
+
+    if (page_entry & PAGING_CACHE_DISABLED)
+    {
+        print("Cache disabled\n");
+    }
+    else
+    {
+        print("Cache enabled\n");
+    }
+
+    if (page_entry & PAGING_PAGE_WRITEABLE)
+    {
+        print("Page is writeable\n");
+    }
+    else
+    {
+        print("Page is not writeable\n");
+    }
+
+    if (page_entry & PAGING_PAGE_PRESENT)
+    {
+        print("Page is present\n");
+    }
+    else
+    {
+        print("Page is not present\n");
+    }
+
+    uint32_t directory_index = 0;
+    uint32_t table_index = 0;
+    paging_get_indexes(bad_page_address, &directory_index, &table_index);
+    print("Directory index:");
+    print(itoa(directory_index));
+    print("\n");
+    print("Table index: ");
+    print(itoa(table_index));
+    print("\n");
+
+    if (was_kernel_page)
+    {
+        print("Fault happend on the kernel page\n");
+    }
+}
+void idt_page_fault(struct interrupt_frame frame)
+{
+    uint32_t bad_address = registers_cr2();
+    print("Unhandled Page Fault\n");
+    if (bad_address)
+    {
+        print_page_fault(bad_address);
+    }
+    panic("Kernel Terminated Due To Page Fault\n");
+}
 
 #warning "Abstract these functions out the ISR is getting cluttered..."
 void *isr80h_command1_print(struct interrupt_frame *frame)
@@ -139,7 +222,6 @@ void *isr80h_command3_get_kernel_info(struct interrupt_frame *frame)
     struct kernel_info *kernel_info_struct_user_space_addr = task_current_get_stack_item(0);
     copy_integer_to_task(task_current(), (void *)&kernel_info_struct_user_space_addr->build_no, (int)&__BUILD_NUMBER);
     copy_integer_to_task(task_current(), (void *)&kernel_info_struct_user_space_addr->date, (int)&__BUILD_DATE);
-
     return 0;
 }
 
@@ -150,10 +232,16 @@ void *isr80h_command4_putchar(struct interrupt_frame *frame)
     return 0;
 }
 
-void* isr80h_command5_malloc(struct interrupt_frame* frame)
+void *isr80h_command5_malloc(struct interrupt_frame *frame)
 {
     int size = task_current_get_stack_item_uint(0);
-    return process_malloc(process_current(), size);
+    return task_malloc(task_current(), size);
+}
+
+void *isr80h_command6_invoke(struct interrupt_frame *frame)
+{
+    struct command_argument *root_command_argument = task_current_get_stack_item(0);
+    return (void *)process_run_for_argument(root_command_argument);
 }
 
 void *isr80h_handle_command(int command, struct interrupt_frame *frame)
@@ -179,6 +267,10 @@ void *isr80h_handle_command(int command, struct interrupt_frame *frame)
 
     case SYSTEM_COMMAND_MALLOC:
         result = isr80h_command5_malloc(frame);
+        break;
+
+    case SYSTEM_COMMAND_INVOKE_COMMAND:
+        result = isr80h_command6_invoke(frame);
         break;
     };
 
@@ -213,11 +305,6 @@ void isr0_handler(struct interrupt_frame frame)
     panic("Divide by zero in kernel");
 }
 
-void isr_page_fault_handler(struct interrupt_frame frame)
-{
-    panic("Unhandled Page Fault\n");
-}
-
 void isr_segment_not_present_handler(struct interrupt_frame frame)
 {
     panic("Invalid Segment, Segment not present.\n");
@@ -225,11 +312,6 @@ void isr_segment_not_present_handler(struct interrupt_frame frame)
 void isr_invalid_tss_handler(struct interrupt_frame frame)
 {
     panic("Bad TSS\n");
-}
-
-void idt_page_fault()
-{
-    panic("Page Fault: Unable to handle because no interrupt handler for page faults exists\n");
 }
 
 void idt_set(int i, void *address)
@@ -274,6 +356,9 @@ void idt_init()
 
     // Setup the timer interrupt
     idt_register_interrupt_callback(0x20, isr_timer);
+
+    // Setup page fault handler
+    idt_set(0x0e, idt_page_fault);
 
     idt_load(&idtr_desc);
 }

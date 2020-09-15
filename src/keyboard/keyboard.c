@@ -107,7 +107,6 @@ void keyboard_special_off(enum SpecialKeys c)
 static int keyboard_get_tail_index(struct process *process)
 {
     return process->keyboard.tail % sizeof(process->keyboard.buffer);
-    
 }
 
 

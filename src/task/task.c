@@ -124,7 +124,7 @@ int copy_string_from_task(struct task *task, void *virtual, void *phys, int max)
     uint32_t *task_directory = task->page_directory->directory_entry;
     // We must map "tmp" into process memory but first lets remember the old value for later
     uint32_t old_entry = paging_get(task_directory, tmp);
-    paging_map(task_directory, tmp, tmp, PAGING_PAGE_WRITEABLE | PAGING_PAGE_PRESENT | PAGING_CACHE_DISABLED | PAGING_ACCESS_FROM_ALL);
+    paging_map(task_directory, tmp, tmp, PAGING_PAGE_WRITEABLE | PAGING_PAGE_PRESENT | PAGING_ACCESS_FROM_ALL);
     paging_switch(task_directory);
     // Now we have switched to the page of the process we can now access the user process address, lets copy it over to the kernel buffer
     strncpy(tmp, virtual, max);
@@ -341,7 +341,7 @@ int task_init(struct task *task, struct process *process)
 
     memset(task, 0, sizeof(struct task));
     // Maps the entire 4GB address space to its self
-    task->page_directory = paging_new_4gb(PAGING_PAGE_PRESENT);
+    task->page_directory = paging_new_4gb(PAGING_PAGE_PRESENT | PAGING_ACCESS_FROM_ALL);
     if (task->page_directory == 0)
     {
         return -EIO;

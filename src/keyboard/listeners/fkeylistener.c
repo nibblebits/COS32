@@ -39,7 +39,7 @@ void fkeylistener_special(enum SpecialKeys key)
     int res = 0;
     if (is_released)
     {
-        res = process_load_for_slot("0:/start.b", &process, key);
+        res = process_load_for_slot("0:/start.e", &process, key);
         if (res == -EISTKN)
         {
             process = process_get(key);

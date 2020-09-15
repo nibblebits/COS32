@@ -9,6 +9,13 @@
 #include <stdbool.h>
 
 
+struct command_argument
+{
+    char argument[512];
+    struct command_argument* next;
+};
+
+
 typedef enum ProcessFileType
 {
     FILE_TYPE_BINARY,
@@ -69,6 +76,12 @@ struct process
 int process_load(const char *filename, struct process **process);
 int process_switch(struct process *process);
 int process_start(struct process *process);
+
+/**
+ * Loads and starts the process with the given arguments
+ * argv[0] is the process to load
+ */
+int process_run_for_argument(struct command_argument* root_argument);
 int process_load_start(const char* path);
 int process_load_for_slot(const char* filename, struct process** process, int process_slot);
 struct process *process_get(int index);

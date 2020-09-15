@@ -2,20 +2,59 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-int strlen(const char *str)
+char *strcpy(char *dest, const char *src)
 {
     int i = 0;
-    while (1)
+    for(i = 0; ; i++)
     {
-        if (str[i] == 0)
-        {
+        if (src[i] == 0)
             break;
-        }
-        i++;
+
+        dest[i] = src[i];
+    }
+
+    dest[i] = 0x00;
+    return dest;
+}
+
+char *strncpy(char *dest, const char *src, int n)
+{
+    int i = 0;
+    for (i = 0; i < n && src[i] != '\0'; i++)
+        dest[i] = src[i];
+    for (; i < n; i++)
+        dest[i] = '\0';
+
+    return dest;
+}
+
+
+size_t strlen(const char *str)
+{
+	size_t len = 0;
+	while (str[len])
+		len++;
+	return len;
+}
+
+
+int strnlen(const char *str, int max)
+{
+    int i = 0;
+    for (i = 0; i < max; i++)
+    {
+        if (str[i] == '\0')
+            break;
     }
 
     return i;
 }
+
+int isdigit(char c)
+{
+    return c >= 48 && c <= 57;
+}
+
 char *sp = NULL; /* the start position of the string */
 char *strtok(char *str, const char *delimiters)
 {

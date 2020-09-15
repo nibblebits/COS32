@@ -1,8 +1,83 @@
 #include "cos32.h"
+#include "string.h"
+#include "stdio.h"
 
-void cos32_run_command(const char *command, int max)
+struct command_argument *cos32_parse_command(const char *command, int max)
 {
-    // Do nothing for now...
+    struct command_argument *root_command = 0;
+    char scommand[1024];
+    if (max >= (int)sizeof(scommand))
+    {
+        return 0;
+    }
+
+    strncpy(scommand, command, sizeof(scommand));
+    char *token = strtok(scommand, " ");
+    if (!token)
+    {
+        goto out;
+    }
+
+    root_command = cos32_malloc(sizeof(struct command_argument));
+    if (!root_command)
+    {
+        printf("Out of memory!\n");
+        goto out;
+    }
+
+    strncpy(root_command->argument, token, sizeof(root_command->argument));
+    root_command->next = 0;
+
+    struct command_argument *current = root_command;
+    token = strtok(NULL, " ");
+    while (token != 0)
+    {
+        struct command_argument *new_command = cos32_malloc(sizeof(struct command_argument));
+        if (!new_command)
+        {
+            printf("Out of memory!\n");
+            goto out;
+        }
+        strncpy(new_command->argument, token, sizeof(new_command->argument));
+        new_command->next = 0;
+        current->next = new_command;
+        current = new_command;
+        token = strtok(NULL, " ");
+    };
+
+out:
+    return root_command;
+}
+
+void cos32_free_commands(struct command_argument *commands)
+{
+    struct command_argument *current = commands;
+    while (current)
+    {
+        struct command_argument *next = current->next;
+        // cos32_free(current);
+        current = next;
+    }
+}
+
+bool cos32_run_command(const char *command, int max)
+{
+    struct command_argument *commands = cos32_parse_command(command, max);
+    if (!commands)
+    {
+        goto out;
+    }
+
+    int res = cos32_invoke_command(commands);
+    if (res < 0)
+    {
+        goto out;
+    }
+out:
+    cos32_free_commands(commands);
+
+    // res should equal to zero if all is fine
+    return 0;
 }
 
 void cos32_terminal_readline(char *out, int max, bool output_while_typing)

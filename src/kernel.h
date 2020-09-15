@@ -11,6 +11,7 @@ struct kernel_info
     unsigned int build_no;
 };
 
+
 void print(const char* message);
 void panic(char* message);
 void print_number(int number);

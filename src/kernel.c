@@ -11,6 +11,7 @@
 #include "kernel.h"
 #include "memory/paging/paging.h"
 #include "memory/memory.h"
+#include "memory/registers.h"
 #include "video/video.h"
 #include "keyboard/keyboard.h"
 #include "keyboard/listener.h"
@@ -20,7 +21,6 @@
 #include "task/process.h"
 #include "gdt/gdt.h"
 #include "config.h"
-
 void kernel_registers();
 
 /* Check if the compiler thinks you are targeting the wrong operating system. */
@@ -103,9 +103,6 @@ bool is_kernel_page()
 
 void kernel_main(void)
 {
-	// Interrupts should start disabled, we only want them to work while a program runs
-	disable_interrupts();
-
 	/* Initialize terminal interface */
 	kernel_terminal_initialize();
 
@@ -139,10 +136,9 @@ void kernel_main(void)
 	keyboard_listener_init();
 
 	// Initialize paging
-	kernel_paging_chunk = paging_new_4gb(PAGING_ACCESS_FROM_ALL | PAGING_PAGE_PRESENT | PAGING_PAGE_WRITEABLE);
+	kernel_paging_chunk = paging_new_4gb(PAGING_ACCESS_FROM_ALL | PAGING_PAGE_PRESENT | PAGING_CACHE_DISABLED | PAGING_PAGE_WRITEABLE);
 	kernel_page();
 	enable_paging();
-
 
 	// Initialize filesystems
 	fs_init();
@@ -151,6 +147,7 @@ void kernel_main(void)
 	disk_search_and_init();
 
 	print("Kernel initialized\n");
+
 	
 	// Load the start program
 	int res = process_load_start("0:/start.e");

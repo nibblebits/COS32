@@ -27,7 +27,7 @@ struct paging_4gb_chunk *paging_new_4gb(uint8_t flags)
             entry[b] = (offset + (b * COS32_PAGE_SIZE)) | flags;
         }
         offset += (1024 * COS32_PAGE_SIZE);
-        directory[i] = (uint32_t)entry | flags | PAGING_PAGE_WRITEABLE | PAGING_ACCESS_FROM_ALL;
+        directory[i] = (uint32_t)entry | flags | PAGING_PAGE_WRITEABLE | PAGING_ACCESS_FROM_ALL | PAGING_CACHE_DISABLED | PAGING_PAGE_PRESENT;
     }
 
     struct paging_4gb_chunk *chunk_4gb = kzalloc(sizeof(struct paging_4gb_chunk));
@@ -69,7 +69,7 @@ int paging_map_range(uint32_t *directory, void *virt, void *phys, int count, int
     return res;
 }
 
-int paging_get_indexes(__attribute__((unused)) uint32_t *directory, void *virt, uint32_t *directory_index_out, uint32_t *table_index_out)
+int paging_get_indexes(void *virt, uint32_t *directory_index_out, uint32_t *table_index_out)
 {
     // Addresses must be 4096 aligned
     if ((unsigned int)virt % COS32_PAGE_SIZE)
@@ -119,7 +119,7 @@ uint32_t paging_get(uint32_t *directory, void *virt)
 
     uint32_t directory_index = 0;
     uint32_t table_index = 0;
-    int res = paging_get_indexes(directory, virt, &directory_index, &table_index);
+    int res = paging_get_indexes(virt, &directory_index, &table_index);
     ASSERT(res >= 0);
 
     uint32_t entry = directory[directory_index];
@@ -136,7 +136,7 @@ int paging_set(uint32_t *directory, void *virt, uint32_t val)
     }
     uint32_t directory_index = 0;
     uint32_t table_index = 0;
-    int res = paging_get_indexes(directory, virt, &directory_index, &table_index);
+    int res = paging_get_indexes(virt, &directory_index, &table_index);
     if (res < 0)
     {
         return res;
@@ -183,6 +183,11 @@ void *paging_align_address(void *ptr)
     return ptr;
 }
 
+int paging_get_flags(uint32_t* directory, void* virt)
+{
+    return paging_get(directory, virt) & 0xfff;
+}
+
 int paging_map_to(uint32_t *directory, void *virt, void *phys, void *phys_end, int flags)
 {
     ASSERT(((uint32_t)virt % COS32_PAGE_SIZE) == 0);
@@ -190,7 +195,7 @@ int paging_map_to(uint32_t *directory, void *virt, void *phys, void *phys_end, i
     ASSERT(((uint32_t)phys_end % COS32_PAGE_SIZE) == 0);
     ASSERT((uint32_t)phys_end > (uint32_t)phys);
 
-    int total_bytes = phys_end - phys;
+    uint32_t total_bytes = phys_end - phys;
     int total_pages = total_bytes / COS32_PAGE_SIZE;
     return paging_map_range(directory, virt, phys, total_pages, flags);
 }

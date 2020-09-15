@@ -104,6 +104,7 @@ int process_start(struct process *process)
 
     // As we have started a process we should switch to it
     process_switch(process);
+
     return 0;
 }
 
@@ -258,6 +259,22 @@ int process_map_elf(struct process *process)
 out:
     return res;
 }
+
+int process_run_for_argument(struct command_argument *root_argument)
+{
+    if (root_argument == 0)
+    {
+        return -EINVARG;
+    }
+
+    const char *program_name = root_argument->argument;
+    // This could be better in future we should take a name and try to get a realpath()
+    char path[COS32_MAX_PATH];
+    strncpy(path, "0:/", sizeof(path));
+    strncpy(path + 3, program_name, sizeof(path));
+    return process_load_start(path);
+}
+
 int process_map_memory(struct process *process)
 {
     int res = 0;
@@ -283,6 +300,9 @@ int process_map_memory(struct process *process)
 int process_load_for_slot(const char *filename, struct process **process, int process_slot)
 {
     int res = 0;
+    struct task *task = 0;
+    struct process *_process = 0;
+    void *program_stack_ptr = 0;
 
     // A process with the given id is already taken
     if (process_get(process_slot) != 0)
@@ -291,7 +311,7 @@ int process_load_for_slot(const char *filename, struct process **process, int pr
         goto out;
     }
 
-    struct process *_process = kzalloc(sizeof(struct process));
+    _process = kzalloc(sizeof(struct process));
     if (!_process)
     {
         res = -ENOMEM;
@@ -306,7 +326,7 @@ int process_load_for_slot(const char *filename, struct process **process, int pr
     }
 
     // Let's now create a 16K stack
-    void *program_stack_ptr = kzalloc(COS32_USER_PROGRAM_STACK_SIZE);
+    program_stack_ptr = kzalloc(COS32_USER_PROGRAM_STACK_SIZE);
     if (!program_stack_ptr)
     {
         res = -ENOMEM;
@@ -317,7 +337,7 @@ int process_load_for_slot(const char *filename, struct process **process, int pr
     _process->stack = program_stack_ptr;
     _process->video = video_new();
 
-    struct task *task = task_new(_process);
+    task = task_new(_process);
     if (ERROR_I(task) <= 0)
     {
         res = ERROR_I(task);
@@ -345,7 +365,7 @@ out:
     if (ISERR(res))
     {
         // Free the task here
-        if (_process->task)
+        if (_process && _process->task)
         {
             task_free(_process->task);
         }
@@ -378,16 +398,19 @@ void **process_get_free_heap_allocation_slot(struct process *process)
     return 0;
 }
 
-int process_paging_map_to(struct process* process, void *virt, void *phys, void *phys_end, int flags)
+int process_paging_map_to(struct process *process, void *virt, void *phys, void *phys_end, int flags)
 {
-    // Currently only one task per process exists 
+    // Currently only one task per process exists
     return paging_map_to(process->task->page_directory->directory_entry, virt, phys, phys_end, flags);
 }
 
 void *process_malloc(struct process *process, int size)
 {
+
+    ASSERT(is_kernel_page());
+
     int res = 0;
-    void* ptr = 0;
+    void *ptr = 0;
     void **allocation_slot = process_get_free_heap_allocation_slot(process);
     if (!allocation_slot)
     {
@@ -401,14 +424,13 @@ void *process_malloc(struct process *process, int size)
     }
 
     *allocation_slot = ptr;
-
     // Now we must map the page for the data, mapping is essential because the current page will be supervisor only
-    res = process_paging_map_to(process, ptr, ptr, paging_align_address(ptr+size), PAGING_ACCESS_FROM_ALL | PAGING_PAGE_WRITEABLE | PAGING_PAGE_PRESENT);
+    res = process_paging_map_to(process, ptr, ptr, paging_align_address(ptr + size), PAGING_ACCESS_FROM_ALL | PAGING_CACHE_DISABLED | PAGING_PAGE_WRITEABLE | PAGING_PAGE_PRESENT);
     if (res < 0)
     {
+        panic("Mapping of process memory failed\n");
         goto out;
     }
-
 
 out:
     if (ISERR(res))
@@ -416,7 +438,6 @@ out:
         kfree(ptr);
     }
     return ptr;
-
 }
 
 static struct process *process_get_first()

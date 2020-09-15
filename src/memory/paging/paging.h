@@ -63,8 +63,12 @@ void paging_unmap_all(struct paging_4gb_chunk *chunk);
 uint32_t* paging_current_directory();
 
 
-int paging_get_indexes(uint32_t *directory, void *virt, uint32_t *directory_index_out, uint32_t *table_index_out);
+int paging_get_indexes(void *virt, uint32_t *directory_index_out, uint32_t *table_index_out);
 
+/**
+ * Gets the paging flags for given virtual address
+ */
+int paging_get_flags(uint32_t* directory, void* virt);
 
 
 /**
@@ -83,7 +87,7 @@ uint32_t paging_align_value_to_upper_page(uint32_t val);
 /**
  * Rounds the given virtual address to the nearest lower page returning a page aligned address to 4096
  */
-uint32_t paging_round_to_lower_page(void* virt);
+uint32_t paging_align_to_lower_page(void* virt);
 
 /**
  * Sets the virtual address to the given value, the value expected should be the physical address

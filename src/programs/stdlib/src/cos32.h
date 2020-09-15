@@ -9,17 +9,23 @@ struct kernel_info
     unsigned int build_no;
 };
 
+struct command_argument
+{
+    char argument[512];
+    struct command_argument* next;
+};
+
 /*
  * Executes the given shell command, provided "max" should be equal to the total buffer size
  */
-void cos32_run_command(const char* command, int max);
+bool cos32_run_command(const char *command, int max);
+int cos32_invoke_command(struct command_argument* root_command);
 void cos32_putchar(char c);
 char cos32_getkey();
 char cos32_getkeyblock();
 void print(const char* message);
 void kernel_information(struct kernel_info* info);
 void* cos32_malloc(int size);
-
 /**
  * Reads a line from the terminal, if you pass output_while_typing as true then
  * each individual character will be outputted to the terminal as they type.

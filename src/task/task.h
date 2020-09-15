@@ -148,6 +148,13 @@ int task_unmap_video_memory(struct task* task);
 
 void user_registers();
 
+
+/**
+ * Allocates some memory for the given task. Shares the memory with the process and all associated tasks
+ */
+void* task_malloc(struct task* task, int size);
+
+
 /**
  * Frees the task provided
  */
