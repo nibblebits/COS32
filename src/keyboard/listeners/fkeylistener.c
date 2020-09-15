@@ -25,7 +25,6 @@ void fkeylistener_keypress(__attribute__((unused)) char c)
     // We don't handle normal keypresses
 }
 
-
 void fkeylistener_special(enum SpecialKeys key)
 {
     bool is_released = !keyboard_is_special_on(key);
@@ -45,7 +44,7 @@ void fkeylistener_special(enum SpecialKeys key)
             process = process_get(key);
             process_switch(process);
             return;
-        }   
+        }
 
         if (res < 0)
         {

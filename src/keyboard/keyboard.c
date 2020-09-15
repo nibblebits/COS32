@@ -140,7 +140,7 @@ void keyboard_push(char c)
 char keyboard_pop()
 {
     // Will wrap around, the power of remainder ;)
-    struct process *process = process_current();
+    struct process *process = task_current()->process;
     // We don't allow keyboard access when no process is running
     if (!process)
     {

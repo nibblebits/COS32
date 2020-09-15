@@ -4,6 +4,7 @@
 #include "io/io.h"
 #include "status.h"
 #include "kernel.h"
+#include "task/task.h"
 
 
 int classic_keyboard_init();
@@ -170,6 +171,7 @@ uint8_t classic_keyboard_scancode_to_char(uint8_t scancode)
  */
 void classic_keyboard_handle_interrupt()
 {
+    kernel_page();
     uint8_t scancode = 0;
     scancode = insb(KEYBOARD_INPUT_PORT);
     // Sometimes we have a rouge IRQ, osdev says to do a dummy read
@@ -202,6 +204,8 @@ void classic_keyboard_handle_interrupt()
     {
         keyboard_push(c);
     }
+
+    task_page();
 }
 
 int classic_keyboard_init()

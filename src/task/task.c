@@ -314,20 +314,7 @@ static struct task *task_get_next()
 void task_next()
 {
 
-    struct task *task = 0;
-    do
-    {
-        task = task_get_next();
-        // Do we have no available task? Then let's wait until we do
-        // Note that no interrupts can happen while we are in this routine
-        // So we will call task_process which will see if we can wake any tasks up
-        // This will result in an infinite loop if no more tasks are available
-        if (!task)
-        {
-            task_process();
-        }
-
-    } while (!task);
+    struct task *task = task_get_next();
 
     // Switch the current task and get straight back into user land
     task_switch(task);
