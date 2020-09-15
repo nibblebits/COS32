@@ -7,7 +7,7 @@
 #include "disk/disk.h"
 #include "fs/fat/fat16.h"
 #include "io/io.h"
-#include "memory/idt/idt.h"
+#include "idt/idt.h"
 #include "kernel.h"
 #include "memory/paging/paging.h"
 #include "memory/memory.h"
@@ -135,16 +135,20 @@ void kernel_main(void)
 	// Initialize all the default keyboard listeners
 	keyboard_listener_init();
 
-	// Initialize paging
-	kernel_paging_chunk = paging_new_4gb(PAGING_ACCESS_FROM_ALL | PAGING_PAGE_PRESENT | PAGING_CACHE_DISABLED | PAGING_PAGE_WRITEABLE);
-	kernel_page();
-	enable_paging();
-
 	// Initialize filesystems
 	fs_init();
 
 	// Find the disks
 	disk_search_and_init();
+
+	// Enable IDT
+	idt_load_now();
+
+	// Initialize paging
+	kernel_paging_chunk = paging_new_4gb(PAGING_ACCESS_FROM_ALL | PAGING_PAGE_PRESENT | PAGING_CACHE_DISABLED | PAGING_PAGE_WRITEABLE);
+	kernel_page();
+	enable_paging();
+
 
 	print("Kernel initialized\n");
 

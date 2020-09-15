@@ -3,7 +3,7 @@
 #include "keyboard/keyboard.h"
 #include "task/process.h"
 #include "io/io.h"
-#include "memory/idt/idt.h"
+#include "idt/idt.h"
 #include "config.h"
 #include "status.h"
 #include "kernel.h"

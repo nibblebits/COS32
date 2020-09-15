@@ -6,7 +6,7 @@
 #include "memory/memory.h"
 #include "string/string.h"
 #include "video/video.h"
-#include "memory/idt/idt.h"
+#include "idt/idt.h"
 #include "formats/elf/elfloader.h"
 
 #include "task.h"

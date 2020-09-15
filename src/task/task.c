@@ -5,7 +5,8 @@
 #include "memory/memory.h"
 #include "string/string.h"
 #include "video/video.h"
-#include "memory/idt/idt.h"
+#include "timer/pit.h"
+#include "idt/idt.h"
 #include "process.h"
 #include "status.h"
 #include "config.h"
@@ -29,9 +30,51 @@ void task_current_save_state(struct interrupt_frame *frame)
     ASSERT(task_save_state(task, frame) == 0);
 }
 
-void* task_malloc(struct task* task, int size)
+void *task_malloc(struct task *task, int size)
 {
     return process_malloc(task->process, size);
+}
+
+void task_usleep(struct task *task, uint32_t millis)
+{
+    task->awake = false;
+    task->awake_at = pit_get_millis() + millis;
+
+    // Let's switch to the next task if the current task is us as we are sleeping now and should not return
+    if (task == task_current())
+    {
+        task_next();
+    }
+}
+
+void task_wake(struct task *task)
+{
+    task->awake = true;
+    task->awake_at = -1;
+}
+
+void task_wake_tasks()
+{
+    struct task *current = task_head;
+    while (current != 0)
+    {
+        if (current->awake || current->awake_at == -1)
+        {
+            goto next;
+        }
+
+        if (pit_get_millis() > current->awake_at)
+        {
+            task_wake(current);
+        }
+    next:
+        current = current->next;
+    }
+}
+
+void task_process()
+{
+    task_wake_tasks();
 }
 
 int task_switch(struct task *task)
@@ -206,23 +249,62 @@ void task_run_first_ever_task()
     task_return(&task_head->registers);
 }
 
+static struct task *task_get_next_to(struct task *task)
+{
+    if (!task->next)
+    {
+        return task_head;
+    }
+
+    return task->next;
+}
+
+int task_get_count()
+{
+    int i = 0;
+    struct task *task = task_head;
+    while (task != 0)
+    {
+        i++;
+        task = task->next;
+    }
+    return i;
+}
+
+int task_get_awake_count()
+{
+    int i = 0;
+    struct task *task = task_head;
+    while (task != 0 && task->awake)
+    {
+        i++;
+        task = task->next;
+    }
+    return i;
+}
+
+static struct task *task_get_next_active_task(struct task *task)
+{
+    struct task *next_task = task_get_next_to(task);
+    if (task_get_awake_count() == 0)
+    {
+        // At least one task always needs to be awake in our implementation
+        // This means we need to forcefully awaken one of the tasks, in the future maybe we can combat this issue
+        task_wake(next_task);
+    }
+
+    if (!next_task->awake)
+    {
+        next_task = task_get_next_active_task(next_task);
+    }
+
+    return next_task;
+}
+
 static struct task *task_get_next()
 {
-    struct task *t = current_task;
-    if (t == 0)
-    {
-        t = task_head;
-        return t;
-    }
-
-    t = t->next;
-    if (t == 0)
-    {
-        t = task_head;
-    }
-
-    ASSERT(t != 0);
-    return t;
+    struct task *task = task_get_next_active_task(current_task);
+    return task;
 }
 
 /**
@@ -232,12 +314,20 @@ static struct task *task_get_next()
 void task_next()
 {
 
-    struct task *task = task_get_next();
-    // Do we have no available task? We can't do anything right now then
-    if (!task)
+    struct task *task = 0;
+    do
     {
-        return;
-    }
+        task = task_get_next();
+        // Do we have no available task? Then let's wait until we do
+        // Note that no interrupts can happen while we are in this routine
+        // So we will call task_process which will see if we can wake any tasks up
+        // This will result in an infinite loop if no more tasks are available
+        if (!task)
+        {
+            task_process();
+        }
+
+    } while (!task);
 
     // Switch the current task and get straight back into user land
     task_switch(task);
@@ -375,7 +465,6 @@ int task_init(struct task *task, struct process *process)
 
     return 0;
 }
-
 
 int task_free(struct task *task)
 {

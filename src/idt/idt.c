@@ -10,6 +10,7 @@
 #include "keyboard/keyboard.h"
 #include "memory/registers.h"
 #include "memory/paging/paging.h"
+#include "timer/pit.h"
 #include "status.h"
 struct idt_desc idt_desc[COS32_MAX_INTERRUPTS];
 struct idtr_desc idtr_desc;
@@ -244,6 +245,13 @@ void *isr80h_command6_invoke(struct interrupt_frame *frame)
     return (void *)process_run_for_argument(root_command_argument);
 }
 
+void* isr80h_command7_sleep(struct interrupt_frame* frame)
+{
+    uint32_t sleep_seconds = task_current_get_stack_item_uint(0);
+    task_usleep(task_current(), sleep_seconds * 1000);
+    return (void*) 0x00;
+}
+
 void *isr80h_handle_command(int command, struct interrupt_frame *frame)
 {
     void *result = 0;
@@ -271,6 +279,10 @@ void *isr80h_handle_command(int command, struct interrupt_frame *frame)
 
     case SYSTEM_COMMAND_INVOKE_COMMAND:
         result = isr80h_command6_invoke(frame);
+        break;
+
+    case SYSTEM_COMMAND_SLEEP:
+        result = isr80h_command7_sleep(frame);
         break;
     };
 
@@ -325,12 +337,6 @@ void idt_set(int i, void *address)
     ptr->offset_2 = (uint32_t)address >> 16;
 }
 
-void isr_timer(int interrupt)
-{
-    // Acknowledge the interrupt
-    outb(PIC1, PIC_EOI);
-    task_next();
-}
 
 void idt_init()
 {
@@ -354,11 +360,14 @@ void idt_init()
         idt_register_interrupt_callback(i, idt_general_protection_fault);
     }
 
-    // Setup the timer interrupt
-    idt_register_interrupt_callback(0x20, isr_timer);
-
     // Setup page fault handler
     idt_set(0x0e, idt_page_fault);
 
+    // Initialize the PIT timer
+    pit_init();
+}
+
+void idt_load_now()
+{
     idt_load(&idtr_desc);
 }

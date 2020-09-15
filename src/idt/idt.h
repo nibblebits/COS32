@@ -20,6 +20,8 @@ typedef void(*INTERRUPT_CALLBACK_FUNCTION)();
 #define IDT_INTERRUPT_GATE 0x8E
 #define IDT_TRAP_GATE 0x8F
 
+#define ISR_TIMER_INTERRUPT 0x20
+
 
 enum SystemCommands
 {
@@ -29,7 +31,8 @@ enum SystemCommands
     SYSTEM_COMMAND_GET_KERNEL_INFO,
     SYSTEM_COMMAND_PUTCHAR,
     SYSTEM_COMMAND_MALLOC,
-    SYSTEM_COMMAND_INVOKE_COMMAND
+    SYSTEM_COMMAND_INVOKE_COMMAND,
+    SYSTEM_COMMAND_SLEEP
 };
 
 struct idt_desc
@@ -68,6 +71,7 @@ struct interrupt_frame
 
 void idt_init();
 void idt_load(struct idtr_desc* desc);
+void idt_load_now();
 void enable_interrupts();
 void disable_interrupts();
 

@@ -1,6 +1,6 @@
 
 
-FILES = ./build/kernel.asm.o  ./build/keyboard/listener.o ./build/keyboard/listeners/fkeylistener.o ./build/keyboard/keyboard.o ./build/keyboard/classic.o ./build/task/task.o ./build/task/process.o ./build/kernel.o ./build/task/tss.asm.o ./build/gdt/gdt.asm.o ./build/gdt/gdt.o ./build/task/task.asm.o ./build/memory/paging/paging.o ./build/memory/paging/paging.asm.o ./build/memory/idt/idt.asm.o ./build/memory/idt/idt.o ./build/io/io.o  ./build/disk/disk.o ./build/fs/file.o ./build/fs/fat/fat16.o ./build/video/video.o ./build/memory/memory.o ./build/string/string.o ./build/formats/elf/elf.o ./build/formats/elf/elfloader.o ./build/memory/registers.asm.o ./build/memory/heap.o ./build/memory/kheap.o  
+FILES = ./build/kernel.asm.o  ./build/keyboard/listener.o ./build/keyboard/listeners/fkeylistener.o ./build/keyboard/keyboard.o ./build/keyboard/classic.o ./build/timer/pit.o ./build/task/task.o ./build/task/process.o ./build/kernel.o ./build/task/tss.asm.o ./build/gdt/gdt.asm.o ./build/gdt/gdt.o ./build/task/task.asm.o ./build/memory/paging/paging.o ./build/memory/paging/paging.asm.o ./build/idt/idt.asm.o ./build/idt/idt.o ./build/io/io.o  ./build/disk/disk.o ./build/fs/file.o ./build/fs/fat/fat16.o ./build/video/video.o ./build/memory/memory.o ./build/string/string.o ./build/formats/elf/elf.o ./build/formats/elf/elfloader.o ./build/memory/registers.asm.o ./build/memory/heap.o ./build/memory/kheap.o  
 FLAGS =  --freestanding -falign-jumps -falign-functions -falign-labels -falign-loops  -fstrength-reduce -fomit-frame-pointer -finline-functions -Wno-unused-function -fno-builtin -Werror -Wno-unused-label -Wno-cpp -Wno-unused-parameter -nostdlib -nostartfiles -nodefaultlibs -Wall -O0 -Iinc
 BUILD_NUMBER_FILE=build-number.txt
 
@@ -42,6 +42,9 @@ all: ./bin/kernel.bin ./bin/boot.bin ${FILES} programs
 ./build/video/video.o: ./src/video/video.c ./src/video/video.h 
 	i686-elf-gcc  $(INCLUDES) -I./src/video ${FLAGS} -c ./src/video/video.c -o ./build/video/video.o -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g
 
+./build/timer/pit.o: ./src/timer/pit.c ./src/timer/pit.h
+	i686-elf-gcc  $(INCLUDES) -I./src/timer ${FLAGS} -c ./src/timer/pit.c -o ./build/timer/pit.o -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g
+
 ./build/task/task.o: ./src/task/task.c ./src/task/task.h
 	i686-elf-gcc $(INCLUDES) -I./src/task ${FLAGS} -c ./src/task/task.c -o ./build/task/task.o -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g
 
@@ -54,11 +57,11 @@ all: ./bin/kernel.bin ./bin/boot.bin ${FILES} programs
 ./build/memory/registers.asm.o: ./src/memory/registers.asm ./src/memory/registers.h
 	nasm -f elf -g ./src/memory/registers.asm -o ./build/memory/registers.asm.o
 
-./build/memory/idt/idt.asm.o: ./src/memory/idt/idt.asm ./src/memory/idt/idt.h
-	nasm -f elf -g ./src/memory/idt/idt.asm -o ./build/memory/idt/idt.asm.o
+./build/idt/idt.asm.o: ./src/idt/idt.asm ./src/idt/idt.h
+	nasm -f elf -g ./src/idt/idt.asm -o ./build/idt/idt.asm.o
 
-./build/memory/idt/idt.o: ./src/memory/idt/idt.c ./src/memory/idt/idt.h
-	i686-elf-gcc $(INCLUDES) -I./src/memory/idt ${FLAGS} -c ./src/memory/idt/idt.c -o ./build/memory/idt/idt.o -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g
+./build/idt/idt.o: ./src/idt/idt.c ./src/idt/idt.h
+	i686-elf-gcc $(INCLUDES) -I./src/memory/idt ${FLAGS} -c ./src/idt/idt.c -o ./build/idt/idt.o -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g
 
 ./build/keyboard/keyboard.o: ./src/keyboard/keyboard.c ./src/keyboard/keyboard.h
 	i686-elf-gcc $(INCLUDES) -I./src/keyboard  ${FLAGS} -c ./src/keyboard/keyboard.c -o ./build/keyboard/keyboard.o -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g

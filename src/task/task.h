@@ -34,6 +34,9 @@ struct task
     // True if this task is currently running, if its false then its in a paused state
     bool awake;
 
+    // Timestamp of when this task should awake again. Set to zero and awake to false for a permenant sleep that needs manual interruption.
+    long awake_at;
+
     // The process associated with this task
     struct process* process;
 
@@ -48,6 +51,17 @@ struct task
 
 struct interrupt_frame;
 
+
+/**
+ * Called frequently by the PIT timer. Should process anything important relating to the task mechnism
+ * such as wakeing up processes for example
+ */
+void task_process();
+
+/**
+ * Wakes the given task allowing it to run once again
+ */
+void task_wake(struct task* task);
 
 /**
  * Returns to the given task based on the registers provided.
@@ -154,6 +168,11 @@ void user_registers();
  */
 void* task_malloc(struct task* task, int size);
 
+
+/**
+ * Put's the task to sleep for the provided amount of miliseconds
+ */
+void task_usleep(struct task* task, uint32_t milis);
 
 /**
  * Frees the task provided

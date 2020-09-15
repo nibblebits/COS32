@@ -26,6 +26,12 @@ char cos32_getkeyblock();
 void print(const char* message);
 void kernel_information(struct kernel_info* info);
 void* cos32_malloc(int size);
+
+/**
+ * Puts the task to sleep for the given number of miliseconds
+ */
+void cos32_sleep(int millis);
+
 /**
  * Reads a line from the terminal, if you pass output_while_typing as true then
  * each individual character will be outputted to the terminal as they type.

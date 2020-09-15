@@ -48,7 +48,6 @@ struct command_argument *cos32_parse_command(const char *command, int max)
 out:
     return root_command;
 }
-
 void cos32_free_commands(struct command_argument *commands)
 {
     struct command_argument *current = commands;

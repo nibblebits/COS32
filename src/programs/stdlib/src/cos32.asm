@@ -7,6 +7,7 @@ global cos32_putchar
 global cos32_getkeyblock
 global cos32_malloc
 global cos32_invoke_command
+global cos32_sleep
 
 print:
     push ebp
@@ -83,4 +84,14 @@ cos32_invoke_command:
     add esp, 4
     pop ebp
     ret
-    
+
+cos32_sleep:
+    push ebp
+    mov ebp, esp
+    mov eax, 7 ; Command 7 = Task sleep. The task is put to sleep
+    mov ebx, [ebp+8] ; Total milli seconds to sleep for
+    push dword ebx
+    int 0x80
+    add esp, 4
+    pop ebp
+    ret

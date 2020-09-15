@@ -21,5 +21,9 @@ int main(int argc, char **argv)
     {
       printf("\nThe command \"%s\" is invalid.\n", shell_buf);
     }
+
+    cos32_sleep(5);
+    print("Now it works\n");
+
   }
 }
