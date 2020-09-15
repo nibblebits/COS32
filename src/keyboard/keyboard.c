@@ -109,14 +109,12 @@ static int keyboard_get_tail_index(struct process *process)
     return process->keyboard.tail % sizeof(process->keyboard.buffer);
 }
 
-
-static void keyboard_backspace(struct process* process)
+static void keyboard_backspace(struct process *process)
 {
     process->keyboard.tail -= 1;
     int real_index = keyboard_get_tail_index(process);
     process->keyboard.buffer[real_index] = 0x00;
 }
-
 
 void keyboard_push(char c)
 {
@@ -126,7 +124,6 @@ void keyboard_push(char c)
     {
         return;
     }
-
 
     // Will wrap around, the power of remainder ;)
     int real_index = keyboard_get_tail_index(process);
@@ -139,14 +136,14 @@ void keyboard_push(char c)
 
 char keyboard_pop()
 {
-    // Will wrap around, the power of remainder ;)
-    struct process *process = task_current()->process;
-    // We don't allow keyboard access when no process is running
-    if (!process)
+    // We don't allow keyboard access when no task is running
+    if (!task_current() == 0)
     {
         return 0;
     }
 
+    // Will wrap around, the power of remainder ;)
+    struct process *process = task_current()->process;
     int real_index = process->keyboard.head % sizeof(process->keyboard.buffer);
     char c = process->keyboard.buffer[real_index];
     if (c == 0x00)
