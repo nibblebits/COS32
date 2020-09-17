@@ -102,7 +102,7 @@ void pathparser_free(struct path_root* root)
     while(part)
     {
         struct path_part* next_part = part->next;
-        kfree(part->part);
+        kfree((void*)part->part);
         kfree(part);
         part = next_part;
     }
