@@ -137,7 +137,7 @@ void keyboard_push(char c)
 char keyboard_pop()
 {
     // We don't allow keyboard access when no task is running
-    if (!task_current() == 0)
+    if (!task_current())
     {
         return 0;
     }
