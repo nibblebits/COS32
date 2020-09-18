@@ -80,11 +80,11 @@ int process_switch(struct process *process)
     return 0;
 }
 
-int process_load_start(const char *path)
+int process_load_start(const char *path, struct process *parent, PROCESS_FLAGS flags)
 {
     int res = 0;
     struct process *process = 0x00;
-    res = process_load(path, &process);
+    res = process_load(path, &process, parent, flags);
     if (res < 0)
     {
         return res;
@@ -260,7 +260,7 @@ out:
     return res;
 }
 
-int process_run_for_argument(struct command_argument *root_argument)
+int process_run_for_argument(struct command_argument *root_argument, struct process *parent, PROCESS_FLAGS flags)
 {
     if (root_argument == 0)
     {
@@ -272,7 +272,7 @@ int process_run_for_argument(struct command_argument *root_argument)
     char path[COS32_MAX_PATH];
     strncpy(path, "0:/", sizeof(path));
     strncpy(path + 3, program_name, sizeof(path));
-    return process_load_start(path);
+    return process_load_start(path, parent, flags);
 }
 
 int process_map_memory(struct process *process)
@@ -297,12 +297,28 @@ int process_map_memory(struct process *process)
     return res;
 }
 
-int process_load_for_slot(const char *filename, struct process **process, int process_slot)
+/**
+ * Returns the video memory this process should be using based on the flags provided.
+ * This function may create new video memory
+ */
+static struct video *process_get_video(PROCESS_FLAGS flags, struct process *parent)
+{
+    return flags & PROCESS_USE_PARENT_VIDEO_MEMORY ? parent->video : video_new();
+}
+
+int process_load_for_slot(const char *filename, struct process **process, int process_slot, struct process *parent, PROCESS_FLAGS flags)
 {
     int res = 0;
     struct task *task = 0;
     struct process *_process = 0;
     void *program_stack_ptr = 0;
+
+    // Flag to use parent video memory provided but NULL parent?
+    if ((flags & PROCESS_USE_PARENT_VIDEO_MEMORY) && !parent)
+    {
+        res = -EINVARG;
+        goto out;
+    }
 
     // A process with the given id is already taken
     if (process_get(process_slot) != 0)
@@ -334,8 +350,11 @@ int process_load_for_slot(const char *filename, struct process **process, int pr
     }
 
     strncpy(_process->filename, filename, sizeof(_process->filename));
+    _process->parent = parent;
+    _process->flags = flags;
     _process->stack = program_stack_ptr;
-    _process->video = video_new();
+
+    _process->video = process_get_video(flags, parent);
 
     task = task_new(_process);
     if (ERROR_I(task) <= 0)
@@ -485,6 +504,32 @@ static void process_free_allocations(struct process *process)
     }
 }
 
+void process_terminate_subprocesses(struct process *process)
+{
+    // We must loop through all the processes and if their parent is the one provided we must terminate them
+    for (int i = 0; i < COS32_MAX_PROCESSES; i++)
+    {
+        if (processes[i] != 0 && processes[i]->parent == process)
+        {
+            process_free(processes[i]);
+        }
+    }
+}
+
+void process_wake(struct process* process)
+{
+    process->awake = true;
+    // Awake the main process task
+    task_wake(process->task);
+}
+
+void process_pause(struct process* process)
+{
+    process->awake = false;
+    // Pause the main process task
+    task_pause(process->task);
+}
+
 void process_free(struct process *process)
 {
     /**
@@ -503,6 +548,9 @@ void process_free(struct process *process)
         process_switch(next_process);
     }
 
+    // We must first terminate all subprocesses
+    process_terminate_subprocesses(process);
+
     // Delete the process allocations
     process_free_allocations(process);
 
@@ -512,9 +560,16 @@ void process_free(struct process *process)
     // Let's delete the process data
     process_free_data(process);
 
-    // Free the video memory
-    video_free(process->video);
+    // Free the video memory, only if we are the ones responsible for it
+    if (!(process->flags & PROCESS_USE_PARENT_VIDEO_MEMORY))
+    {
+        video_free(process->video);
+    }
 
+    if (process->flags & PROCESS_UNPAUSE_PARENT_ON_DEATH)
+    {
+        process_wake(process->parent);
+    }
     // Delete the process memory
     kfree(process);
 
@@ -522,7 +577,7 @@ void process_free(struct process *process)
     processes[process->id] = 0;
 }
 
-int process_load(const char *filename, struct process **process)
+int process_load(const char *filename, struct process **process, struct process *parent, PROCESS_FLAGS flags)
 {
     int res = 0;
     int process_slot = process_get_free_slot();
@@ -532,7 +587,7 @@ int process_load(const char *filename, struct process **process)
         goto out;
     }
 
-    res = process_load_for_slot(filename, process, process_slot);
+    res = process_load_for_slot(filename, process, process_slot, parent, flags);
 out:
     return res;
 }

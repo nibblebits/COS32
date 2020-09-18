@@ -453,6 +453,12 @@ int task_init(struct task *task, struct process *process)
     return 0;
 }
 
+void task_pause(struct task* task)
+{
+    task->awake = false;
+    task->awake_at = -1;
+}
+
 int task_free(struct task *task)
 {
     ASSERT(is_kernel_page());

@@ -22,12 +22,18 @@ typedef enum ProcessFileType
     FILE_TYPE_ELF
 } processfiletype_t;
 
+typedef unsigned char PROCESS_FLAGS;
+
+#define PROCESS_USE_PARENT_VIDEO_MEMORY 0b00000001
+#define PROCESS_UNPAUSE_PARENT_ON_DEATH 0b00000010
+
 struct interrupt_frame;
 struct process
 {
     // The id of this process
     uint8_t id;
 
+    
     char filename[COS32_MAX_PATH];
     // Each process has a task for its self
     struct task* task;
@@ -39,6 +45,12 @@ struct process
 
     processfiletype_t filetype;
 
+    // FLags relating to this process
+    PROCESS_FLAGS flags;
+
+    // The parent process, otherwise NULL
+    struct process* parent;
+    
     union
     {
         // The physical pointer to the process memory, if this is a raw binary file
@@ -59,6 +71,9 @@ struct process
     // True if this process is currently awake
     bool awake;
 
+    // True if this is a subprocess
+    bool subprocess;
+
     // This is the keyboard buffer for this process, any keyboard interrupts that happen will write to the buffer of the current process
     struct keyboard_buffer
     {
@@ -73,17 +88,21 @@ struct process
     struct video* video;
 };
 
-int process_load(const char *filename, struct process **process);
+int process_load(const char *filename, struct process **process, struct process* parent, PROCESS_FLAGS flags);
 int process_switch(struct process *process);
 int process_start(struct process *process);
+
+void process_wake(struct process* process);
+void process_pause(struct process* process);
+
 
 /**
  * Loads and starts the process with the given arguments
  * argv[0] is the process to load
  */
-int process_run_for_argument(struct command_argument* root_argument);
-int process_load_start(const char* path);
-int process_load_for_slot(const char* filename, struct process** process, int process_slot);
+int process_run_for_argument(struct command_argument *root_argument, struct process* parent, PROCESS_FLAGS flags);
+int process_load_start(const char *path, struct process* parent, PROCESS_FLAGS flags);
+int process_load_for_slot(const char *filename, struct process **process, int process_slot, struct process* parent, PROCESS_FLAGS flags);
 struct process *process_get(int index);
 bool process_running();
 void process_mark_running(bool running);

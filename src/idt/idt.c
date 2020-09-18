@@ -109,7 +109,7 @@ void idt_general_protection_fault(int interrupt)
 
     // Load the killed program so the user knows this process was killed
     struct process *new_process = 0;
-    int res = process_load_for_slot("0:/killed.e", &new_process, id);
+    int res = process_load_for_slot("0:/killed.e", &new_process, id, 0, 0);
     if (res == 0)
     {
         process_start(new_process);
@@ -242,14 +242,15 @@ void *isr80h_command5_malloc(struct interrupt_frame *frame)
 void *isr80h_command6_invoke(struct interrupt_frame *frame)
 {
     struct command_argument *root_command_argument = task_current_get_stack_item(0);
-    return (void *)process_run_for_argument(root_command_argument);
+    void *result = (void *)process_run_for_argument(root_command_argument, task_current()->process, PROCESS_USE_PARENT_VIDEO_MEMORY);
+    return result;
 }
 
-void* isr80h_command7_sleep(struct interrupt_frame* frame)
+void *isr80h_command7_sleep(struct interrupt_frame *frame)
 {
     uint32_t sleep_seconds = task_current_get_stack_item_uint(0);
     task_usleep(task_current(), sleep_seconds * 1000);
-    return (void*) 0x00;
+    return (void *)0x00;
 }
 
 void *isr80h_handle_command(int command, struct interrupt_frame *frame)
@@ -296,6 +297,15 @@ void *isr80h_handler(int command, struct interrupt_frame *frame)
     kernel_page();
     task_current_save_state(frame);
     res = isr80h_handle_command(command, frame);
+
+    // If the task is now in a paused state we should switch to the next task
+    if(!task_current()->awake)
+    {
+        task_next();
+        // We can never execute past this line, execution is chagned with task_next
+    }
+
+
     task_page();
     return res;
 }
@@ -336,7 +346,6 @@ void idt_set(int i, void *address)
     ptr->type_attr = 0xEE;
     ptr->offset_2 = (uint32_t)address >> 16;
 }
-
 
 void idt_init()
 {

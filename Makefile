@@ -1,6 +1,6 @@
 
 
-FILES = ./build/kernel.asm.o  ./build/keyboard/listener.o ./build/keyboard/listeners/fkeylistener.o ./build/keyboard/keyboard.o ./build/keyboard/classic.o ./build/timer/pit.o ./build/task/task.o ./build/task/process.o ./build/kernel.o ./build/task/tss.asm.o ./build/gdt/gdt.asm.o ./build/gdt/gdt.o ./build/task/task.asm.o ./build/memory/paging/paging.o ./build/memory/paging/paging.asm.o ./build/idt/idt.asm.o ./build/idt/idt.o ./build/io/io.o  ./build/disk/disk.o ./build/fs/file.o ./build/fs/fat/fat16.o ./build/video/video.o ./build/memory/memory.o ./build/string/string.o ./build/formats/elf/elf.o ./build/formats/elf/elfloader.o ./build/memory/registers.asm.o ./build/memory/heap.o ./build/memory/kheap.o  
+FILES = ./build/kernel.asm.o  ./build/keyboard/listener.o ./build/keyboard/listeners/fkeylistener.o ./build/keyboard/keyboard.o ./build/keyboard/classic.o ./build/timer/pit.o ./build/task/task.o ./build/task/process.o ./build/kernel.o ./build/task/tss.asm.o ./build/gdt/gdt.asm.o ./build/gdt/gdt.o ./build/task/task.asm.o ./build/memory/paging/paging.o ./build/memory/paging/paging.asm.o ./build/idt/idt.asm.o ./build/idt/idt.o ./build/io/io.o  ./build/disk/disk.o ./build/fs/pparser.o ./build/fs/file.o ./build/fs/fat/fat16.o ./build/video/video.o ./build/memory/memory.o ./build/string/string.o ./build/formats/elf/elf.o ./build/formats/elf/elfloader.o ./build/memory/registers.asm.o ./build/memory/heap.o ./build/memory/kheap.o  
 FLAGS =  --freestanding -falign-jumps -falign-functions -falign-labels -falign-loops  -fstrength-reduce -fomit-frame-pointer -finline-functions -Wno-unused-function -fno-builtin -Werror -Wno-unused-label -Wno-cpp -Wno-unused-parameter -nostdlib -nostartfiles -nodefaultlibs -Wall -O0 -Iinc
 BUILD_NUMBER_FILE=build-number.txt
 
@@ -11,7 +11,7 @@ all: ./bin/kernel.bin ./bin/boot.bin ${FILES} programs
 	dd if=./bin/kernel.bin >> ./bin/os.bin
 	dd if=/dev/zero bs=1048576 count=16 >> ./bin/os.bin
 	sudo mount -t vfat ./bin/os.bin /mnt/d
-#	sudo cp ./src/programs/helloworld/helloworld.elf /mnt/d/hello.e
+	sudo cp ./src/programs/helloworld/helloworld.elf /mnt/d/hello.e
 	#sudo cp ./src/programs/helloworld/helloworld2.bin /mnt/d/start.b
 	sudo cp ./src/programs/start/start.elf /mnt/d/start.e
 
@@ -103,6 +103,10 @@ all: ./bin/kernel.bin ./bin/boot.bin ${FILES} programs
 
 ./build/string/string.o: ./src/string/string.c ./src/string/string.h
 	i686-elf-gcc $(INCLUDES) -I./src/string ${FLAGS} -c ./src/string/string.c -o ./build/string/string.o -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g
+
+./build/fs/pparser.o: ./src/fs/pparser.c ./src/fs/pparser.h
+	i686-elf-gcc $(INCLUDES) -I./src/fs ${FLAGS} -c ./src/fs/pparser.c -o ./build/fs/pparser.o -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g
+
 
 ./build/fs/file.o: ./src/fs/file.c ./src/fs/file.h
 	i686-elf-gcc $(INCLUDES) -I./src/fs ${FLAGS} -c ./src/fs/file.c -o ./build/fs/file.o -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g

@@ -64,6 +64,11 @@ void task_process();
 void task_wake(struct task* task);
 
 /**
+ * Pauses the task until the task is unpaused by calling task_wake.
+ */
+void task_pause(struct task* task);
+
+/**
  * Returns to the given task based on the registers provided.
  * Note that if the registers are wrong the kernel will fault.
  * They must be initialized correctly!
