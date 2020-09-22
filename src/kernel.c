@@ -154,15 +154,6 @@ void kernel_main(void)
 
 	print("Kernel initialized\n");
 
-	struct disk_stream* stream = diskstreamer_new(0);
-	char hello[514];
-	diskstreamer_seek(stream, 0x7218);
-	diskstreamer_read(stream, hello, sizeof(hello));
-	while(1)
-	{
-
-	}
-
 	// Load the start program
 	int res = process_load_start("0:/start.e", 0, 0);
 	if (res < 0)

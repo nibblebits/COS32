@@ -11,11 +11,12 @@ all: ./bin/kernel.bin ./bin/boot.bin ${FILES} programs
 	dd if=./bin/kernel.bin >> ./bin/os.bin
 	dd if=/dev/zero bs=1048576 count=16 >> ./bin/os.bin
 	sudo mount -t vfat ./bin/os.bin /mnt/d
-	sudo cp ./src/programs/helloworld/helloworld.elf /mnt/d/hello.e
+	#sudo cp ./src/programs/helloworld/helloworld.elf /mnt/d/hello.e
 	#sudo cp ./src/programs/helloworld/helloworld2.bin /mnt/d/start.b
-	sudo cp ./src/programs/start/start.elf /mnt/d/start.e
-
-
+	#sudo cp ./src/programs/start/start.elf /mnt/d/start.e
+	#sudo mkdir /mnt/d/test
+	sudo cp ./src/test.txt /mnt/d/make.txt
+	
 	sudo umount /mnt/d
 	sudo chmod 777 ./bin/os.bin
 	# UPdate build number
