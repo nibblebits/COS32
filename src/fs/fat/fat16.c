@@ -113,7 +113,7 @@ int fat16_get_root_directory(struct disk *disk, struct fat_private *fat_private,
 int fat16_resolve(struct disk *disk);
 void *fat16_open(struct disk *disk, struct path_part *part, FILE_MODE mode);
 int fat16_close(void *private);
-int fat16_read(struct disk *disk, void *private, uint32_t size, uint32_t nmemb, char *out_ptr);
+int fat16_read(struct disk *disk, void *descriptor, uint32_t size, uint32_t nmemb, char *out_ptr);
 int fat16_seek(void *private, uint32_t offset, FILE_SEEK_MODE seek_mode);
 int fat16_stat(struct disk *disk, void *private, struct file_stat *stat);
 
@@ -143,6 +143,12 @@ static uint32_t fat16_get_first_cluster(struct fat_directory_item *item)
 
 void fat16_free_directory(struct fat_directory *directory)
 {
+    // Null directory? Nothing to free.
+    if (!directory)
+    {
+        return;
+    }
+
     if (directory->item)
     {
         kfree(directory->item);
@@ -293,7 +299,7 @@ out:
 static int fat16_read_internal_from_stream(struct disk *disk, struct disk_stream *stream, int cluster, int offset, int total, void *out)
 {
     int res = 0;
-    struct fat_private* private = disk->fs_private;
+    struct fat_private *private = disk->fs_private;
     int size_of_cluster_bytes = private->header.primary_header.sectors_per_cluster * COS32_SECTOR_SIZE;
     int cluster_to_use = fat16_get_cluster_for_offset(disk, cluster, offset);
     if (cluster_to_use < 0)
@@ -342,10 +348,28 @@ static int fat16_read_internal(struct disk *disk, int starting_cluster, int offs
     return res;
 }
 
-int fat16_read(struct disk *disk, void *private, uint32_t size, uint32_t nmemb, char *out_ptr)
+int fat16_read(struct disk *disk, void *descriptor, uint32_t size, uint32_t nmemb, char *out_ptr)
 {
-    // This is the start of the read operation, offset is zero
-    return -EUNIMP;
+    int res = 0;
+    struct fat_file_descriptor *fat_desc = descriptor;
+    struct fat_directory_item *item = fat_desc->item->item;
+    // This is the start of the read operation
+    int offset = fat_desc->pos;
+    for (uint32_t i = 0; i < nmemb; i++)
+    {
+        res = fat16_read_internal(disk, fat16_get_first_cluster(item), offset, size, out_ptr);
+        if (ISERR(res))
+        {
+            goto out;
+        }
+        out_ptr += size;
+        offset += size;
+    }
+
+    res = nmemb;
+
+out:
+    return res;
 }
 
 int fat16_seek(void *private, uint32_t offset, FILE_SEEK_MODE seek_mode)
@@ -517,26 +541,35 @@ out:
     return res;
 }
 
+void fat16_to_proper_string(char **out, const char *in)
+{
+    while (*in != 0x00 && *in != 0x20)
+    {
+        **out = *in;
+        *out += 1;
+        in += 1;
+    }
+
+    if (*in == 0x20)
+    {
+        **out = 0x00;
+    }
+}
+
 /**
  * Converts the filename and extension of the provided item into a full string. Outputted in the "out" variable
 
  */
 void fat16_get_full_relative_filename(struct fat_directory_item *item, char *out, int max_len)
 {
-    memset(out, 0, max_len);
-    strncpy(out, (char *)item->filename, sizeof(item->filename));
-
-    int filename_len = strnlen_terminator(out, max_len, 0x20);
-    if (item->ext[0] == 0x20 || item->ext[0] == 0x00)
+    memset(out, 0x00, max_len);
+    char *out_tmp = out;
+    fat16_to_proper_string(&out_tmp, (const char *)item->filename);
+    if (item->ext[0] != 0x00 && item->ext[0] != 0x20)
     {
-        // No extension available
-        out[filename_len] = 0x00;
-        return;
+        *out_tmp++ = '.';
+        fat16_to_proper_string(&out_tmp, (const char *)item->ext);
     }
-
-    // Add a decimal point to represent that file extension is coming next
-    out[filename_len] = '.';
-    strncpy(&out[filename_len + 1], (char *)item->ext, strnlen_terminator((char *)item->ext, sizeof(item->ext), 0x20));
 }
 
 /**
@@ -563,14 +596,15 @@ out:
 struct fat_directory *fat16_load_fat_directory(struct disk *disk, struct fat_directory_item *item)
 {
     int res = 0;
-    struct fat_private *fat_private = (struct fat_private *)disk->fs_private;
-    if (!(item->attribute & FAT_ITEM_TYPE_DIRECTORY))
+    struct fat_directory *directory = 0;
+    struct fat_private *fat_private = disk->fs_private;
+    if (!(item->attribute & FAT_FILE_SUBDIRECTORY))
     {
         res = -EINVARG;
         goto out;
     }
 
-    struct fat_directory *directory = kzalloc(sizeof(struct fat_directory));
+    directory = kzalloc(sizeof(struct fat_directory));
     if (!directory)
     {
         res = -ENOMEM;

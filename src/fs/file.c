@@ -64,7 +64,6 @@ void fs_init()
     fs_load();
 }
 
-
 static int file_new_descriptor(struct file_descriptor **desc_out)
 {
     int res = -ENOMEM;
@@ -139,11 +138,10 @@ FILE_MODE file_get_mode_by_string(const char *str)
     return mode;
 }
 
-
 int fopen(const char *filename, const char *mode_str)
 {
     int res = 0;
-    struct path_root* root_path = pathparser_parse(filename, NULL);
+    struct path_root *root_path = pathparser_parse(filename, NULL);
     if (!root_path)
     {
         res = -EINVARG;
@@ -177,18 +175,18 @@ int fopen(const char *filename, const char *mode_str)
         goto out;
     }
 
-    void *private_data = disk->filesystem->open(disk, root_path->first, mode);
+    void *descriptor_private_data = disk->filesystem->open(disk, root_path->first, mode);
 
     // Null returned? Seriously.
-    if (private_data == 0)
+    if (descriptor_private_data == 0)
     {
         res = -EIO;
         goto out;
     }
 
-    if (ISERR(private_data))
+    if (ISERR(descriptor_private_data))
     {
-        res = ERROR_I(private_data);
+        res = ERROR_I(descriptor_private_data);
         goto out;
     }
 
@@ -200,7 +198,7 @@ int fopen(const char *filename, const char *mode_str)
     }
 
     desc->filesystem = disk->filesystem;
-    desc->private = private_data;
+    desc->private = descriptor_private_data;
     desc->disk = disk;
     res = desc->index;
 out:
@@ -214,7 +212,7 @@ out:
 int fseek(int fd, int offset, FILE_SEEK_MODE whence)
 {
     int res = 0;
-    struct file_descriptor* desc = file_get_descriptor(fd);
+    struct file_descriptor *desc = file_get_descriptor(fd);
     if (!desc)
     {
         res = -EIO;
@@ -226,16 +224,16 @@ out:
     return res;
 }
 
-int fstat(int fd, struct file_stat* stat)
+int fstat(int fd, struct file_stat *stat)
 {
     int res = 0;
-    struct file_descriptor* desc = file_get_descriptor(fd);
+    struct file_descriptor *desc = file_get_descriptor(fd);
     if (!desc)
     {
         res = -EIO;
         goto out;
     }
-    
+
     res = desc->filesystem->stat(desc->disk, desc->private, stat);
 out:
     return res;
@@ -254,7 +252,6 @@ int fclose(int fd)
 out:
     return res;
 }
-
 
 struct filesystem *fs_resolve(struct disk *disk)
 {

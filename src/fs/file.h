@@ -42,7 +42,7 @@ typedef int (*FS_SEEK_FUNCTION)(void *private, uint32_t offset, FILE_SEEK_MODE s
 
 /**
  * 
- * Implementor should cast "private" to its own private data. The private data should represent a local file descriptor
+ * Implementor should cast "descriptor" to its own descriptor private data. The private data should represent a local file descriptor
  * for its own file in its own filesystem, use size and nmemb to know how many bytes to read back to us in pointer "out"
  */
 typedef int (*FS_READ_FUNCTION)(struct disk *disk, void *private, uint32_t size, uint32_t nmemb, char *out);
