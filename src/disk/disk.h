@@ -11,6 +11,7 @@ struct disk
 {
     COS32_DISK_TYPE type;
     struct filesystem *filesystem;
+    int id;
     int sector_size;
 
     // Private data for filesystem to manage, the filesystem can do what he wants with this pointer everyone else leave it alone

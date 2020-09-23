@@ -14,8 +14,8 @@ all: ./bin/kernel.bin ./bin/boot.bin ${FILES} programs
 	#sudo cp ./src/programs/helloworld/helloworld.elf /mnt/d/hello.e
 	#sudo cp ./src/programs/helloworld/helloworld2.bin /mnt/d/start.b
 	#sudo cp ./src/programs/start/start.elf /mnt/d/start.e
-	#sudo mkdir /mnt/d/test
-	sudo cp ./src/test.txt /mnt/d/make.txt
+	sudo mkdir /mnt/d/test
+	sudo cp ./src/test.txt /mnt/d/test/make.txt
 	
 	sudo umount /mnt/d
 	sudo chmod 777 ./bin/os.bin

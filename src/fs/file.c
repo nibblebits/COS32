@@ -5,6 +5,7 @@
 #include "fat/fat16.h"
 #include "disk/disk.h"
 #include "string/string.h"
+#include "disk/streamer.h"
 #include "status.h"
 #include "memory/kheap.h"
 
@@ -63,34 +64,6 @@ void fs_init()
     fs_load();
 }
 
-/**
- * 
- * Tests the given filename to see if the path is a valid format
- * \warning This function does not test if the path exists or not
- * Valid paths
- * 0:/
- * 0:/testing/abc
- * 1:/abc/testing
- * 
- * Invalid paths
- * A:/abc
- * B:/
- */
-static int fs_valid_path_format(const char *filename)
-{
-    int len = strnlen(filename, COS32_MAX_PATH);
-    return (len >= 3 && isdigit(filename[0])) && memcmp((void*)&filename[1], ":/", 2) == 0;
-}
-
-static int fs_get_drive_by_path(const char *filename)
-{
-    if (!fs_valid_path_format(filename))
-    {
-        return -EBADPATH;
-    }
-
-    return tonumericdigit(filename[0]);
-}
 
 static int file_new_descriptor(struct file_descriptor **desc_out)
 {
@@ -170,14 +143,21 @@ FILE_MODE file_get_mode_by_string(const char *str)
 int fopen(const char *filename, const char *mode_str)
 {
     int res = 0;
-    int drive_no = fs_get_drive_by_path(filename);
+    struct path_root* root_path = pathparser_parse(filename, NULL);
+    if (!root_path)
+    {
+        res = -EINVARG;
+        goto out;
+    }
 
-    char path[COS32_MAX_PATH];
-    memset(path, 0, sizeof(path));
-    strncpy(path, filename, sizeof(path));
-    char *start_of_relative_path = &path[2];
+    // We can't just read the root directory 0:/ what..... we are not linux
+    if (!root_path->first)
+    {
+        res = -EINVARG;
+        goto out;
+    }
 
-    struct disk *disk = disk_get(drive_no);
+    struct disk *disk = disk_get(root_path->drive_no);
     if (!disk)
     {
         res = -EINVARG;
@@ -197,7 +177,7 @@ int fopen(const char *filename, const char *mode_str)
         goto out;
     }
 
-    void *private_data = disk->filesystem->open(disk, start_of_relative_path, mode);
+    void *private_data = disk->filesystem->open(disk, root_path->first, mode);
 
     // Null returned? Seriously.
     if (private_data == 0)

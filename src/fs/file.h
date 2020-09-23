@@ -1,6 +1,7 @@
 #ifndef FILE_H
 #define FILE_H
 #include <stdint.h>
+#include "pparser.h"
 
 typedef unsigned int FILE_SEEK_MODE;
 enum
@@ -34,7 +35,7 @@ struct file_stat
 
 
 struct disk;
-typedef void *(*FS_OPEN_FUNCTION)(struct disk *disk, char *filename, FILE_MODE mode);
+typedef void *(*FS_OPEN_FUNCTION)(struct disk* disk, struct path_part* path, FILE_MODE mode);
 typedef int (*FS_RESOLVE_FUNCTION)(struct disk *disk);
 typedef int (*FS_CLOSE_FUNCTION)(void *private);
 typedef int (*FS_SEEK_FUNCTION)(void *private, uint32_t offset, FILE_SEEK_MODE seek_mode);

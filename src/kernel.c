@@ -154,6 +154,9 @@ void kernel_main(void)
 
 	print("Kernel initialized\n");
 
+	fopen("0:/test/make.txt", "r");
+
+	while(1) {}
 	// Load the start program
 	int res = process_load_start("0:/start.e", 0, 0);
 	if (res < 0)

@@ -7,4 +7,6 @@
 
 #define COS32_FAT16_BAD_SECTOR 0xFF7
 #define COS32_FAT16_UNUSED 0x00
+
+
 struct filesystem* fat16_init();
