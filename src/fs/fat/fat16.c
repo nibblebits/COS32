@@ -554,10 +554,22 @@ out:
     return item_copy;
 }
 
-struct fat_directory *fat16_new_fat_directory(struct disk *disk, struct fat_directory_item *item)
+/**
+ * Loads the fat directory entries of the given fat directory item but not the file contents just the directory
+ * item decriptors. "fat_directory_item"s of the directory provided.
+ * 
+ * You are required to free the fat_directory returned
+ */
+struct fat_directory *fat16_load_fat_directory(struct disk *disk, struct fat_directory_item *item)
 {
     int res = 0;
     struct fat_private *fat_private = (struct fat_private *)disk->fs_private;
+    if (!(item->attribute & FAT_ITEM_TYPE_DIRECTORY))
+    {
+        res = -EINVARG;
+        goto out;
+    }
+
     struct fat_directory *directory = kzalloc(sizeof(struct fat_directory));
     if (!directory)
     {
@@ -577,16 +589,9 @@ struct fat_directory *fat16_new_fat_directory(struct disk *disk, struct fat_dire
         goto out;
     }
 
-    struct disk_stream *stream = diskstreamer_new(disk->id);
-    if (diskstreamer_seek(stream, fat16_sector_to_absolute(cluster_sector)) != COS32_ALL_OK)
+    res = fat16_read_internal(disk, cluster, 0x00, directory_size, directory->item);
+    if (res != COS32_ALL_OK)
     {
-        res = -EIO;
-        goto out;
-    }
-
-    if (diskstreamer_read(stream, directory->item, directory_size) != COS32_ALL_OK)
-    {
-        res = -EIO;
         goto out;
     }
 
@@ -608,12 +613,14 @@ struct fat_item *fat16_new_fat_item_for_directory_item(struct disk *disk, struct
 
     if (item->attribute & FAT_FILE_SUBDIRECTORY)
     {
-        f_item->directory = fat16_new_fat_directory(disk, item);
+        f_item->directory = fat16_load_fat_directory(disk, item);
         f_item->type = FAT_ITEM_TYPE_DIRECTORY;
         return f_item;
     }
 
     f_item->type = FAT_ITEM_TYPE_FILE;
+    // We clone because we don't know who owns the directory item provided to us. We don't know
+    // If it will be freed when we still need it. So it makes sense to clone it
     f_item->item = fat16_clone_directory_item(item, sizeof(struct fat_directory_item));
     return f_item;
 }
