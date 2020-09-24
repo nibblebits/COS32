@@ -6,6 +6,7 @@
 #include "string/string.h"
 #include "fs/pparser.h"
 #include "disk/disk.h"
+#include "disk/streamer.h"
 #include "fs/fat/fat16.h"
 #include "io/io.h"
 #include "idt/idt.h"
@@ -152,7 +153,8 @@ void kernel_main(void)
 
 
 	print("Kernel initialized\n");
-	
+
+
 	// Load the start program
 	int res = process_load_start("0:/start.e", 0, 0);
 	if (res < 0)

@@ -1,6 +1,7 @@
 #ifndef FILE_H
 #define FILE_H
 #include <stdint.h>
+#include "pparser.h"
 
 typedef unsigned int FILE_SEEK_MODE;
 enum
@@ -34,14 +35,14 @@ struct file_stat
 
 
 struct disk;
-typedef void *(*FS_OPEN_FUNCTION)(struct disk *disk, char *filename, FILE_MODE mode);
+typedef void *(*FS_OPEN_FUNCTION)(struct disk* disk, struct path_part* path, FILE_MODE mode);
 typedef int (*FS_RESOLVE_FUNCTION)(struct disk *disk);
 typedef int (*FS_CLOSE_FUNCTION)(void *private);
 typedef int (*FS_SEEK_FUNCTION)(void *private, uint32_t offset, FILE_SEEK_MODE seek_mode);
 
 /**
  * 
- * Implementor should cast "private" to its own private data. The private data should represent a local file descriptor
+ * Implementor should cast "descriptor" to its own descriptor private data. The private data should represent a local file descriptor
  * for its own file in its own filesystem, use size and nmemb to know how many bytes to read back to us in pointer "out"
  */
 typedef int (*FS_READ_FUNCTION)(struct disk *disk, void *private, uint32_t size, uint32_t nmemb, char *out);

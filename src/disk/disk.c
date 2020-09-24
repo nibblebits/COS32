@@ -48,6 +48,7 @@ void disk_search_and_init()
     // This abstraction exists so later we can make a clean implementation when we come to implement multiple disks and possibly virtual disks
     memset(&disk, 0, sizeof(disk));
     disk.type = COS32_DISK_TYPE_REAL;
+    disk.id = 0;
     disk.sector_size = COS32_SECTOR_SIZE;
     disk.filesystem = fs_resolve(&disk);
 }
