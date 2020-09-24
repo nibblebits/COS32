@@ -107,6 +107,14 @@ struct fat_private
 {
     struct fat_h header;
     struct fat_directory root_directory;
+
+    // Used to stream data clusters
+    struct disk_stream* cluster_read_stream;
+    // Used to stream the file allocation table
+    struct disk_stream* fat_read_stream;
+
+    // Used in situations where we stream the directory
+    struct disk_stream* directory_stream;
 };
 
 int fat16_get_root_directory(struct disk *disk, struct fat_private *fat_private, struct fat_directory *directory);
@@ -174,7 +182,7 @@ void fat16_fat_item_free(struct fat_item *item)
     kfree(item);
 }
 
-static void fat16_free_private(struct fat_file_descriptor *private)
+static void fat16_free_file_descriptor(struct fat_file_descriptor *private)
 {
     fat16_fat_item_free(private->item);
     kfree(private);
@@ -203,7 +211,7 @@ out:
 
 int fat16_close(void *private)
 {
-    fat16_free_private((struct fat_file_descriptor *)private);
+    fat16_free_file_descriptor((struct fat_file_descriptor *)private);
     return 0;
 }
 
@@ -221,7 +229,7 @@ static int fat16_get_fat_entry(struct disk *disk, int cluster)
 {
     int res = -1;
     struct fat_private *private = disk->fs_private;
-    struct disk_stream *stream = diskstreamer_new(disk->id);
+    struct disk_stream *stream = private->fat_read_stream;
     if (!stream)
     {
         goto out;
@@ -241,7 +249,6 @@ static int fat16_get_fat_entry(struct disk *disk, int cluster)
     }
     res = result;
 out:
-    diskstreamer_close(stream);
     return res;
 }
 
@@ -342,9 +349,9 @@ out:
  */
 static int fat16_read_internal(struct disk *disk, int starting_cluster, int offset, int total, void *out)
 {
-    struct disk_stream *stream = diskstreamer_new(disk->id);
+    struct fat_private* fs_private = disk->fs_private;
+    struct disk_stream *stream = fs_private->cluster_read_stream;
     int res = fat16_read_internal_from_stream(disk, stream, starting_cluster, offset, total, out);
-    diskstreamer_close(stream);
     return res;
 }
 
@@ -415,14 +422,32 @@ out:
     return res;
 }
 
+static void fat16_init_private(struct disk* disk, struct fat_private* private)
+{
+    memset(private, 0, sizeof(struct fat_private));
+    private->cluster_read_stream = diskstreamer_new(disk->id);
+    private->fat_read_stream = diskstreamer_new(disk->id);
+    private->directory_stream = diskstreamer_new(disk->id);
+
+}
+
 int fat16_resolve(struct disk *disk)
 {
 
     int res = 0;
-    struct fat_private *fat_private = kzalloc(sizeof(struct fat_private));
-    if (disk_read_block(disk, 0, 1, &fat_private->header) != COS32_ALL_OK)
+    struct fat_private *fat_private = kmalloc(sizeof(struct fat_private));
+    fat16_init_private(disk, fat_private);
+    
+    struct disk_stream* stream = diskstreamer_new(disk->id);
+    if (!stream)
     {
-        res = -EFSNOTUS;
+        res = -ENOMEM;
+        goto out;
+    }
+
+    if(diskstreamer_read(stream, &fat_private->header, sizeof(fat_private->header)) != COS32_ALL_OK)
+    {
+        res = -EIO;
         goto out;
     }
 
@@ -438,10 +463,16 @@ int fat16_resolve(struct disk *disk)
         goto out;
     }
 
+
     disk->fs_private = fat_private;
     disk->filesystem = &fat16_fs;
 
 out:
+
+    if (stream)
+    {
+        diskstreamer_close(stream);
+    }
 
     if (res < 0)
     {
@@ -451,7 +482,11 @@ out:
     return res;
 }
 
-int fat16_get_total_items_for_directory(struct disk *disk, uint32_t directory_start_sector)
+/**
+ * Gets the total items for the directory.
+ * \warning Uses the directory_stream ensure if you use this streamer that you dont call this function after you seek
+ */
+int fat16_get_total_items_for_directory(struct fat_private *fat_private, uint32_t directory_start_sector)
 {
     struct fat_directory_item item;
     struct fat_directory_item empty_item;
@@ -460,7 +495,7 @@ int fat16_get_total_items_for_directory(struct disk *disk, uint32_t directory_st
     int i = 0;
     int directory_start_pos = directory_start_sector * COS32_SECTOR_SIZE;
 
-    struct disk_stream *stream = diskstreamer_new(disk->id);
+    struct disk_stream *stream = fat_private->directory_stream;
     diskstreamer_seek(stream, directory_start_pos);
     while (1)
     {
@@ -487,7 +522,6 @@ int fat16_get_total_items_for_directory(struct disk *disk, uint32_t directory_st
     }
     res = i;
 out:
-    diskstreamer_close(stream);
     return res;
 }
 
@@ -510,7 +544,7 @@ int fat16_get_root_directory(struct disk *disk, struct fat_private *fat_private,
         total_sectors += 1;
     }
 
-    int total_items = fat16_get_total_items_for_directory(disk, root_dir_sector_pos);
+    int total_items = fat16_get_total_items_for_directory(fat_private, root_dir_sector_pos);
 
     // We should load the entire root directory into memory, this is only FAT it's not going to kill us
     struct fat_directory_item *dir = kzalloc(root_dir_size);
@@ -520,7 +554,7 @@ int fat16_get_root_directory(struct disk *disk, struct fat_private *fat_private,
         goto out;
     }
 
-    struct disk_stream *stream = diskstreamer_new(disk->id);
+    struct disk_stream *stream = fat_private->directory_stream;
     if (diskstreamer_seek(stream, fat16_sector_to_absolute(root_dir_sector_pos)) != COS32_ALL_OK)
     {
         res = -EIO;
@@ -532,6 +566,7 @@ int fat16_get_root_directory(struct disk *disk, struct fat_private *fat_private,
         res = -EIO;
         goto out;
     }
+
 
     directory->item = dir;
     directory->total = total_items;
@@ -613,7 +648,7 @@ struct fat_directory *fat16_load_fat_directory(struct disk *disk, struct fat_dir
 
     int cluster = fat16_get_first_cluster(item);
     int cluster_sector = fat16_cluster_to_sector(fat_private, cluster);
-    int total_items = fat16_get_total_items_for_directory(disk, cluster_sector);
+    int total_items = fat16_get_total_items_for_directory(fat_private, cluster_sector);
     directory->total = total_items;
     int directory_size = directory->total * sizeof(struct fat_directory_item);
     directory->item = kzalloc(directory_size);
