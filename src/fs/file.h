@@ -64,6 +64,7 @@ struct filesystem
     FS_SEEK_FUNCTION seek;
     FS_STAT_FUNCTION stat;
     char name[20];
+    
 };
 
 struct file_descriptor

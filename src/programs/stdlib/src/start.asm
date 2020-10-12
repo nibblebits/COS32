@@ -6,8 +6,6 @@ global _start
 extern main
 
 _start:
-    ; Push argc and argv, currently this thing doesnt even exist so we just push nothing...
-    push dword 0
-    push dword 0
+    ; ARGV AND ARGC were pushed automatically when starting this program
     call main
     ret

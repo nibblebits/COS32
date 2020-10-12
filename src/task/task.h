@@ -97,6 +97,18 @@ int copy_string_from_task(struct task *task, void *virtual, void *phys, int max)
 
 
 /**
+ * Sets the given stack item index to the given value provided
+ */
+int task_set_stack_item(struct task* task, int index, uint32_t val);
+
+
+/**
+ * Pushes the item to the stack
+ */
+int task_push_stack_item(struct task *task, uint32_t val);
+
+
+/**
  * Returns the given stack item as an unsigned integer
  */
 uint32_t task_current_get_stack_item_uint(int index);

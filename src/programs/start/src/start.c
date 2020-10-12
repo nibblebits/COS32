@@ -10,20 +10,17 @@ int main(int argc, char **argv)
   kernel_information(&info);
   printf("COS32 Shell\n");
   printf("Kernel version: D%i-B%i\n", info.date, info.build_no);
-
+  
   char *shell_buf = malloc(512);
 
   while (1)
   {
     printf(">");
     cos32_terminal_readline(shell_buf, 512, true);
-    if (!cos32_run_command(shell_buf, 512))
+    if (cos32_run_command(shell_buf, 512) != 0)
     {
-      printf("\nThe command \"%s\" is invalid.\n", shell_buf);
+      printf("\nThe command \"%s\" is invalid.", shell_buf);
     }
-
-    cos32_sleep(5);
-    print("Now it works\n");
-
+    printf("\n");
   }
 }

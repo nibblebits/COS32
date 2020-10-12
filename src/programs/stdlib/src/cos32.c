@@ -59,15 +59,17 @@ void cos32_free_commands(struct command_argument *commands)
     }
 }
 
-bool cos32_run_command(const char *command, int max)
+int cos32_run_command(const char *command, int max)
 {
+    int res = 0;
     struct command_argument *commands = cos32_parse_command(command, max);
     if (!commands)
     {
+        res = -1;
         goto out;
     }
 
-    int res = cos32_invoke_command(commands);
+    res = cos32_invoke_command(commands);
     if (res < 0)
     {
         goto out;
@@ -76,7 +78,7 @@ out:
     cos32_free_commands(commands);
 
     // res should equal to zero if all is fine
-    return 0;
+    return res;
 }
 
 void cos32_terminal_readline(char *out, int max, bool output_while_typing)

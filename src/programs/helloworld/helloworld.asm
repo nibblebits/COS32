@@ -15,33 +15,18 @@ start:
 continue:
     loop continue
     
-    ; In future we will push to the stack instead    
-    push dword hello
+    ; In future we will push to the stack instead  
+    mov ebx, [esp+4]
+    mov ebx, [ebx+4] 
+    push dword ebx
     mov eax, 1
     int 0x80
+
+    add esp, 4
     
     jmp start
 
-
-read_string:
-    push ebp
-    mov ebp, esp
-    mov edi, [ebp+8]
-.loop:
-    mov eax, 2
-    int 0x80
-    cmp eax, 13
-    je .done
-    cmp eax, 0
-    je .loop
-    stosb
-    jmp .loop
-.done:
-    pop ebp
-    ret
-
 section .data
-hello: db 'Hello', 0
 
 section .asm
 db 'Test assembly data', 0

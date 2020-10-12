@@ -18,7 +18,7 @@ struct command_argument
 /*
  * Executes the given shell command, provided "max" should be equal to the total buffer size
  */
-bool cos32_run_command(const char *command, int max);
+int cos32_run_command(const char *command, int max);
 int cos32_invoke_command(struct command_argument* root_command);
 void cos32_putchar(char c);
 char cos32_getkey();

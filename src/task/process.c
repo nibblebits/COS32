@@ -39,6 +39,19 @@ bool process_running()
     return process_is_running;
 }
 
+int process_count_command_arguments(struct command_argument *argument)
+{
+    int i = 0;
+    struct command_argument *current = argument;
+    while (current)
+    {
+        i++;
+        current = current->next;
+    }
+
+    return i;
+}
+
 void process_save(struct process *process)
 {
     // Save the video memory back into our processes video memory, so when we switch back
@@ -80,18 +93,101 @@ int process_switch(struct process *process)
     return 0;
 }
 
-int process_load_start(const char *path, struct process *parent, PROCESS_FLAGS flags)
+/**
+ * Injects the arguments into the process stack, used to inject argv, argc.
+ * 
+ * All the argument strings are injected along with the total amount of elements.
+ */
+int process_inject_arguments(struct process *process, struct command_argument *root_argument)
+{
+    int res = 0;
+    struct command_argument *current = root_argument;
+    int i = 0;
+
+    // We must create enough room to store all the pointers that we have
+    int argc = process_count_command_arguments(root_argument);
+    if (argc == 0)
+    {
+        res = -EIO;
+        goto out;
+    }
+
+    char** argv = kzalloc(sizeof(const char*) * argc);
+    if (!argv)
+    {
+        res = -ENOMEM;
+        goto out;
+    }
+
+
+    // Now we have the memory we need let's start setting it
+    while (current)
+    {
+        // We have to copy the argument we can't just pass it in like this corruption would be likely
+        char *argument_str = process_malloc(process, sizeof(current->argument));
+        if (!argument_str)
+        {
+            res = -ENOMEM;
+            goto out;
+        }
+
+        // We must now copy the string to this process
+        strncpy(argument_str, current->argument, sizeof(current->argument));
+
+        argv[i] = argument_str;
+        current = current->next;
+        i++;
+    }
+
+
+    // Now we push the argv
+    res = task_push_stack_item(process->task, (uint32_t)argv);
+    if (ISERR(res))
+    {
+        goto out;
+    }
+
+
+    // Let's inject the total arguments
+    res = task_push_stack_item(process->task, argc);
+    if (ISERR(res))
+    {
+        goto out;
+    }
+    
+
+out:
+    return res;
+}
+
+int process_load_start(const char *path, struct process *parent, PROCESS_FLAGS flags, struct command_argument *root_argument)
 {
     int res = 0;
     struct process *process = 0x00;
     res = process_load(path, &process, parent, flags);
-    if (res < 0)
+    if (ISERR(res))
     {
-        return res;
+        goto out;
+    }
+
+    // Do we have any arguments to inject into the process?
+    if (root_argument)
+    {
+        res = process_inject_arguments(process, root_argument);
+        if (ISERR(res))
+        {
+            goto out;
+        }
     }
 
     // Start the process :)
     res = process_start(process);
+    if (ISERR(res))
+    {
+        goto out;
+    }
+
+out:
     return res;
 }
 
@@ -269,10 +365,12 @@ int process_run_for_argument(struct command_argument *root_argument, struct proc
 
     const char *program_name = root_argument->argument;
     // This could be better in future we should take a name and try to get a realpath()
+    // Change the below code to use the path parser this is legacy now...
     char path[COS32_MAX_PATH];
     strncpy(path, "0:/", sizeof(path));
     strncpy(path + 3, program_name, sizeof(path));
-    return process_load_start(path, parent, flags);
+
+    return process_load_start(path, parent, flags, root_argument);
 }
 
 int process_map_memory(struct process *process)
@@ -516,14 +614,14 @@ void process_terminate_subprocesses(struct process *process)
     }
 }
 
-void process_wake(struct process* process)
+void process_wake(struct process *process)
 {
     process->awake = true;
     // Awake the main process task
     task_wake(process->task);
 }
 
-void process_pause(struct process* process)
+void process_pause(struct process *process)
 {
     process->awake = false;
     // Pause the main process task

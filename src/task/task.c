@@ -194,6 +194,56 @@ uint32_t task_current_get_stack_item_uint(int index)
     return (uint32_t)task_current_get_stack_item(index);
 }
 
+int task_set_stack_item(struct task *task, int index, uint32_t val)
+{
+    // We must be on the kernel page table for this to work
+    ASSERT(is_kernel_page());
+
+    // Locate the tasks stack
+    uint32_t *sp_ptr = (uint32_t *)task->registers.esp;
+
+    // The pointer of the item we want to change. Stack grows downwards
+    uint32_t *stack_item_ptr = sp_ptr - (index * sizeof(uint32_t));
+
+    // Switch to the tasks page
+    paging_switch(task->page_directory->directory_entry);
+
+    // Set the item!
+    *stack_item_ptr = val;
+
+    // Switch back to the kernel page we are done
+    kernel_page();
+
+    return 0;
+}
+
+int task_push_stack_item(struct task *task, uint32_t val)
+{
+    // We must be on the kernel page table for this to work
+    ASSERT(is_kernel_page());
+
+    // Locate the tasks stack
+    uint32_t *sp_ptr = (uint32_t *)task->registers.esp;
+
+    // Switch to the tasks page
+    paging_switch(task->page_directory->directory_entry);
+
+   // Stack grows downwards, change the stack pointer to be 4 bytes lower. -1 because this is uint32_t type. 4 bits!
+    sp_ptr -= 1;    
+    
+    // Set the item!
+    *sp_ptr = val;
+
+    // Switch back to the kernel page we are done with user space
+    kernel_page();
+
+
+    // Let's change the stack pointer now
+    task->registers.esp = (uint32_t)sp_ptr;
+
+    return 0;
+}
+
 void *task_current_get_stack_item(int index)
 {
     struct task *task = task_current();
@@ -213,6 +263,7 @@ void *task_get_stack_item(struct task *task, int index)
     // We assume the stack grows downwards for this implementation to work.
     uint32_t *sp_ptr = (uint32_t *)task->registers.esp;
 
+#warning "BUG HERE!!!! MUST CHOOSE CORRECT TASK PAGE FOR PROVIDED TASK"
     // Let's switch to the process page
     task_page();
 
@@ -453,7 +504,7 @@ int task_init(struct task *task, struct process *process)
     return 0;
 }
 
-void task_pause(struct task* task)
+void task_pause(struct task *task)
 {
     task->awake = false;
     task->awake_at = -1;

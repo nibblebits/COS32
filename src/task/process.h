@@ -95,13 +95,17 @@ int process_start(struct process *process);
 void process_wake(struct process* process);
 void process_pause(struct process* process);
 
+/**
+ * Returns how many command arguments we have after the provided argument
+ */
+int process_count_command_arguments(struct command_argument* argument);
 
 /**
  * Loads and starts the process with the given arguments
  * argv[0] is the process to load
  */
 int process_run_for_argument(struct command_argument *root_argument, struct process* parent, PROCESS_FLAGS flags);
-int process_load_start(const char *path, struct process* parent, PROCESS_FLAGS flags);
+int process_load_start(const char *path, struct process *parent, PROCESS_FLAGS flags, struct command_argument* root_argument);
 int process_load_for_slot(const char *filename, struct process **process, int process_slot, struct process* parent, PROCESS_FLAGS flags);
 struct process *process_get(int index);
 bool process_running();
