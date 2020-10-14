@@ -486,14 +486,17 @@ out:
  * Gets the total items for the directory.
  * \warning Uses the directory_stream ensure if you use this streamer that you dont call this function after you seek
  */
-int fat16_get_total_items_for_directory(struct fat_private *fat_private, uint32_t directory_start_sector)
+int fat16_get_total_items_for_directory(struct disk* disk, uint32_t directory_start_sector)
 {
     struct fat_directory_item item;
     struct fat_directory_item empty_item;
     memset(&empty_item, 0, sizeof(empty_item));
+
+    struct fat_private *fat_private = disk->fs_private;
+
     int res = 0;
     int i = 0;
-    int directory_start_pos = directory_start_sector * COS32_SECTOR_SIZE;
+    int directory_start_pos = directory_start_sector * disk->sector_size;
 
     struct disk_stream *stream = fat_private->directory_stream;
     diskstreamer_seek(stream, directory_start_pos);
@@ -525,9 +528,9 @@ out:
     return res;
 }
 
-int fat16_sector_to_absolute(int sector)
+int fat16_sector_to_absolute(struct disk* disk, int sector)
 {
-    return sector * COS32_SECTOR_SIZE;
+    return sector * disk->sector_size;
 }
 
 int fat16_get_root_directory(struct disk *disk, struct fat_private *fat_private, struct fat_directory *directory)
@@ -544,7 +547,7 @@ int fat16_get_root_directory(struct disk *disk, struct fat_private *fat_private,
         total_sectors += 1;
     }
 
-    int total_items = fat16_get_total_items_for_directory(fat_private, root_dir_sector_pos);
+    int total_items = fat16_get_total_items_for_directory(disk, root_dir_sector_pos);
 
     // We should load the entire root directory into memory, this is only FAT it's not going to kill us
     struct fat_directory_item *dir = kzalloc(root_dir_size);
@@ -555,7 +558,7 @@ int fat16_get_root_directory(struct disk *disk, struct fat_private *fat_private,
     }
 
     struct disk_stream *stream = fat_private->directory_stream;
-    if (diskstreamer_seek(stream, fat16_sector_to_absolute(root_dir_sector_pos)) != COS32_ALL_OK)
+    if (diskstreamer_seek(stream, fat16_sector_to_absolute(disk, root_dir_sector_pos)) != COS32_ALL_OK)
     {
         res = -EIO;
         goto out;
@@ -648,7 +651,7 @@ struct fat_directory *fat16_load_fat_directory(struct disk *disk, struct fat_dir
 
     int cluster = fat16_get_first_cluster(item);
     int cluster_sector = fat16_cluster_to_sector(fat_private, cluster);
-    int total_items = fat16_get_total_items_for_directory(fat_private, cluster_sector);
+    int total_items = fat16_get_total_items_for_directory(disk, cluster_sector);
     directory->total = total_items;
     int directory_size = directory->total * sizeof(struct fat_directory_item);
     directory->item = kzalloc(directory_size);
