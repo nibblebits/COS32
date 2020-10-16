@@ -438,6 +438,9 @@ int fat16_resolve(struct disk *disk)
     struct fat_private *fat_private = kmalloc(sizeof(struct fat_private));
     fat16_init_private(disk, fat_private);
     
+    disk->fs_private = fat_private;
+    disk->filesystem = &fat16_fs;
+
     struct disk_stream* stream = diskstreamer_new(disk->id);
     if (!stream)
     {
@@ -464,8 +467,6 @@ int fat16_resolve(struct disk *disk)
     }
 
 
-    disk->fs_private = fat_private;
-    disk->filesystem = &fat16_fs;
 
 out:
 
