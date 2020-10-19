@@ -7,6 +7,8 @@ global enable_interrupts
 global disable_interrupts
 global isr1h_wrapper
 global isr80h_wrapper
+
+global idt_page_fault
 global isr_no_interrupt_wrapper
 global isr_invalid_tss_wrapper
 global isr_segment_not_present_wrapper
@@ -19,6 +21,8 @@ extern isr_no_interrupt
 extern isr80h_handler
 extern isr_invalid_tss_handler
 extern isr_segment_not_present_handler
+extern idt_page_fault_handler
+
 
 idt_load:
     push ebp
@@ -75,6 +79,29 @@ isr0_wrapper:
     call isr0_handler
     iret
 
+idt_page_fault:
+        ; INTERRUPT FRAME START
+        ; ALREADY PUSHED TO US IS THE USER LAND STACK INFORMATION
+        ; uint32_t ip;
+        ; uint32_t cs;
+        ; uint32_t flags;
+        ; uint32_t sp;
+        ; uint32_t ss;
+        ; Save user land registers
+        pushad
+
+        ; INTERRUPT FRAME END 
+
+        ; Push a pointer to the user land registers, and the stack that was passed to us. Essentially push a pointer of the interrupt frame
+        push esp
+        call idt_page_fault_handler
+        pop eax
+        popad
+
+        ; Increment the stack pointer past the error code so operation can continue as normal
+        add esp, 4
+
+        iretd
 
 isr80h_wrapper:
 cli

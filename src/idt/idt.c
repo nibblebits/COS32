@@ -18,6 +18,7 @@ extern struct tss tss;
 void isr0_wrapper();
 void isr1h_wrapper();
 void isr80h_wrapper();
+void idt_page_fault();
 void isr_invalid_tss_wrapper();
 void isr_no_interrupt_wrapper();
 void isr_segment_not_present_wrapper();
@@ -190,15 +191,9 @@ void print_page_fault(uint32_t bad_address)
         print("Fault happend on the kernel page\n");
     }
 }
-void idt_page_fault(struct interrupt_frame frame)
+void idt_page_fault_handler(struct interrupt_frame frame)
 {
-    uint32_t bad_address = registers_cr2();
-    print("Unhandled Page Fault\n");
-    if (bad_address)
-    {
-        print_page_fault(bad_address);
-    }
-    panic("Kernel Terminated Due To Page Fault\n");
+    paging_handle_page_fault();
 }
 
 #warning "Abstract these functions out the ISR is getting cluttered..."

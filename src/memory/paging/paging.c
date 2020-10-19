@@ -6,11 +6,31 @@
 #include "task/task.h"
 #include "task/process.h"
 #include "string/string.h"
+#include "memory/registers.h"
 #include "kernel.h"
 
 void paging_load_directory(uint32_t *directory);
 
 static uint32_t *current_directory = 0;
+static struct paging_4gb_chunk *current_chunk = 0;
+
+static struct paging_fault_handler *fault_handlers[COS32_MAX_PAGING_FAULT_HANDLERS];
+
+static bool paging_process_live_fault(struct paging_fault *fault);
+static void paging_process_past_fault(struct paging_fault *fault);
+
+
+void paging_init()
+{
+}
+
+
+void paging_process(struct paging_4gb_chunk* chunk)
+{
+    // Process the fault queue of the given paging chunk
+    paging_process_fault_queue(chunk);
+}
+
 
 // FIx the magic numbers.....
 
@@ -35,6 +55,116 @@ struct paging_4gb_chunk *paging_new_4gb(uint8_t flags)
     return chunk_4gb;
 }
 
+void paging_handle_page_fault()
+{
+    uint32_t bad_address = registers_cr2();
+    struct paging_fault *fault = paging_register_fault(paging_current_chunk(), (void *)bad_address);
+
+    // Let's now let the fault handler know about this live fault
+    if (!paging_process_live_fault(fault))
+    {
+        panic("Unhandled page fault!\n");
+    }
+}
+static struct paging_fault *paging_new_fault(struct paging_4gb_chunk* chunk)
+{
+    struct paging_fault* ptr = kzalloc(sizeof(struct paging_fault));
+    if (!ptr)
+    {
+        return 0;
+    }
+
+    ptr->chunk = chunk;
+    return ptr;
+
+}
+
+static void paging_free_fault(struct paging_fault *fault)
+{
+    kfree(fault);
+}
+
+/**
+ * Registers a page fault so its ready for processing later on
+ */
+struct paging_fault *paging_register_fault(struct paging_4gb_chunk *chunk, void *address)
+{
+    struct paging_fault *fault = paging_new_fault(chunk);
+    if (!fault)
+    {
+        return 0;
+    }
+
+    fault->address = address;
+    if (chunk->faults == 0)
+    {
+        chunk->faults = fault;
+        chunk->last_fault = fault;
+        return fault;
+    }
+
+    chunk->last_fault->next = fault;
+    chunk->last_fault = fault;
+
+    return fault;
+}
+
+static bool paging_process_live_fault(struct paging_fault *fault)
+{
+    for (int i = 0; i < COS32_MAX_PAGING_FAULT_HANDLERS; i++)
+    {
+        if (fault_handlers[i] != 0)
+        {
+            if (fault_handlers[i]->fault(fault))
+            {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+static void paging_process_past_fault(struct paging_fault *fault)
+{
+    for (int i = 0; i < COS32_MAX_PAGING_FAULT_HANDLERS; i++)
+    {
+        if (fault_handlers[i] != 0)
+        {
+            fault_handlers[i]->past_fault(fault);
+        }
+    }
+}
+/**
+ * Processes the paging fault queue, calling all paging handlers
+ */
+void paging_process_fault_queue(struct paging_4gb_chunk *chunk)
+{
+    struct paging_fault *fault = chunk->faults;
+    while (fault)
+    {
+        paging_process_past_fault(fault);
+        fault = fault->next;
+    }
+}
+
+/**
+ * Clears the fault queue
+ */
+void paging_fault_queue_clear(struct paging_4gb_chunk *chunk)
+{
+    struct paging_fault *fault = chunk->faults;
+    while (fault)
+    {
+        paging_free_fault(fault);
+        fault = fault->next;
+    }
+}
+
+struct paging_4gb_chunk *paging_current_chunk()
+{
+    return current_chunk;
+}
 uint32_t *paging_current_directory()
 {
     return current_directory;
@@ -94,14 +224,14 @@ uint32_t paging_align_value_to_upper_page(uint32_t val)
     {
         return val;
     }
-    
+
     // First we round it to the lower page, we know its misaligned...
     uint32_t new_val = paging_round_value_to_lower_page(val);
     // Since we are sure  the original value is misaligned we need to add on a new page
     // If we don't add the new page on we actually lose information, we have to add a new page
     // Now we know new_val is aligned to the lower page, lets add a new page, alignment will maintain
     new_val += COS32_PAGE_SIZE;
-    
+
     return new_val;
 }
 
@@ -160,10 +290,11 @@ int paging_map(uint32_t *directory, void *virt, void *phys, int flags)
     return res;
 }
 
-void paging_switch(uint32_t *directory)
+void paging_switch(struct paging_4gb_chunk *chunk)
 {
-    paging_load_directory(directory);
-    current_directory = directory;
+    paging_load_directory(chunk->directory_entry);
+    current_directory = chunk->directory_entry;
+    current_chunk = chunk;
 }
 
 bool paging_is_address_aligned(void *ptr)
@@ -183,7 +314,7 @@ void *paging_align_address(void *ptr)
     return ptr;
 }
 
-int paging_get_flags(uint32_t* directory, void* virt)
+int paging_get_flags(uint32_t *directory, void *virt)
 {
     return paging_get(directory, virt) & 0xfff;
 }
@@ -210,4 +341,31 @@ void paging_free_4gb(struct paging_4gb_chunk *chunk)
     }
 
     kfree(chunk->directory_entry);
+}
+
+int paging_find_free_handler_slot_index()
+{
+    for (int i = 0; i < COS32_MAX_PAGING_FAULT_HANDLERS; i++)
+    {
+        if (fault_handlers[i] == 0)
+        {
+            return i;
+        }
+    }
+
+    return -EIO;
+}
+
+/**
+ * Registers the given fault handler into the paging system
+ */
+void paging_register_fault_handler(struct paging_fault_handler *handler)
+{
+    int free_index = paging_find_free_handler_slot_index();
+    if (free_index < 0)
+    {
+        panic("No free page handler slots available! Recompile the kernel with a higher limit\n");
+    }
+
+    fault_handlers[free_index] = handler;
 }

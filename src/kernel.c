@@ -92,10 +92,16 @@ uint32_t* kernel_get_page_directory()
 	return kernel_paging_chunk->directory_entry;
 }
 
+struct paging_4gb_chunk* kernel_page_get_chunk()
+{
+	return kernel_paging_chunk;
+}
+
+
 void kernel_page()
 {
 	kernel_registers();
-	paging_switch(kernel_paging_chunk->directory_entry);
+	paging_switch(kernel_paging_chunk);
 }
 
 bool is_kernel_page()
@@ -147,6 +153,8 @@ void kernel_main(void)
 	idt_load_now();
 
 	// Initialize paging
+	paging_init();
+
 	kernel_paging_chunk = paging_new_4gb(PAGING_ACCESS_FROM_ALL | PAGING_PAGE_PRESENT | PAGING_CACHE_DISABLED | PAGING_PAGE_WRITEABLE);
 	kernel_page();
 	enable_paging();

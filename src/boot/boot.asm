@@ -143,7 +143,10 @@ print:
     ret
 
 kernel_start:
-
+    ; Switch computer into pixel mode
+    mov ah, 0x00
+    mov al, 0x13
+    int 0x10
 .load_protected:    
     cli
     lgdt[gdt_descriptor]

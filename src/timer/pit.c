@@ -2,6 +2,7 @@
 #include "pit.h"
 #include "task/task.h"
 #include "io/io.h"
+#include "kernel.h"
 static long ticks_since_initialized = 0;
 
 void pit_init()
@@ -12,6 +13,11 @@ void pit_init()
 void pit_interrupt(int interrupt)
 {
     ticks_since_initialized += PIT_TIMER_AVERAGE_MS;
+
+
+    // Process paging functionality
+    paging_process(paging_current_chunk());
+    paging_process(kernel_page_get_chunk());
 
     // Let the task mechnism process some important things
     task_process();

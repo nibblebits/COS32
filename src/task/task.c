@@ -86,7 +86,7 @@ int task_switch(struct task *task)
     ASSERT(task->page_directory);
     current_task = task;
 
-    paging_switch(task->page_directory->directory_entry);
+    paging_switch(task->page_directory);
     return 0;
 }
 
@@ -106,7 +106,7 @@ int copy_integer_to_task(struct task *task, void *address, int val)
 {
     int res = 0;
     // Switch to the process page
-    paging_switch(task->page_directory->directory_entry);
+    paging_switch(task->page_directory);
     *((int *)address) = val;
     // Switch to the kernel page
     kernel_page();
@@ -132,7 +132,7 @@ int copy_string_to_task(struct task *task, void *virtual_address, const char *va
     paging_map(task_directory, tmp, tmp, PAGING_PAGE_WRITEABLE | PAGING_PAGE_PRESENT | PAGING_CACHE_DISABLED | PAGING_ACCESS_FROM_ALL);
 
     // Switch to the process page
-    paging_switch(task->page_directory->directory_entry);
+    paging_switch(task->page_directory);
     // Now we copy the mapped "tmp" variable into the virtual address provided to us
     strncpy(virtual_address, tmp, max);
 
@@ -168,7 +168,7 @@ int copy_string_from_task(struct task *task, void *virtual, void *phys, int max)
     // We must map "tmp" into process memory but first lets remember the old value for later
     uint32_t old_entry = paging_get(task_directory, tmp);
     paging_map(task_directory, tmp, tmp, PAGING_PAGE_WRITEABLE | PAGING_PAGE_PRESENT | PAGING_ACCESS_FROM_ALL);
-    paging_switch(task_directory);
+    paging_switch(task->page_directory);
     // Now we have switched to the page of the process we can now access the user process address, lets copy it over to the kernel buffer
     strncpy(tmp, virtual, max);
     kernel_page();
@@ -206,7 +206,7 @@ int task_set_stack_item(struct task *task, int index, uint32_t val)
     uint32_t *stack_item_ptr = sp_ptr - (index * sizeof(uint32_t));
 
     // Switch to the tasks page
-    paging_switch(task->page_directory->directory_entry);
+    paging_switch(task->page_directory);
 
     // Set the item!
     *stack_item_ptr = val;
@@ -226,17 +226,16 @@ int task_push_stack_item(struct task *task, uint32_t val)
     uint32_t *sp_ptr = (uint32_t *)task->registers.esp;
 
     // Switch to the tasks page
-    paging_switch(task->page_directory->directory_entry);
+    paging_switch(task->page_directory);
 
-   // Stack grows downwards, change the stack pointer to be 4 bytes lower. -1 because this is uint32_t type. 4 bits!
-    sp_ptr -= 1;    
-    
+    // Stack grows downwards, change the stack pointer to be 4 bytes lower. -1 because this is uint32_t type. 4 bits!
+    sp_ptr -= 1;
+
     // Set the item!
     *sp_ptr = val;
 
     // Switch back to the kernel page we are done with user space
     kernel_page();
-
 
     // Let's change the stack pointer now
     task->registers.esp = (uint32_t)sp_ptr;
@@ -454,13 +453,13 @@ int task_map_video_memory(struct task *task)
 {
     void *video_memory = task->process->video->ptr;
     return paging_map_to(task->page_directory->directory_entry, (void *)COS32_VIDEO_MEMORY_ADDRESS_START, video_memory, paging_align_address(video_memory + COS32_VIDEO_MEMORY_SIZE),
-                         PAGING_PAGE_PRESENT | PAGING_ACCESS_FROM_ALL | PAGING_PAGE_WRITEABLE);
+                       PAGING_PAGE_PRESENT | PAGING_PAGE_WRITEABLE);
 }
 
 int task_unmap_video_memory(struct task *task)
 {
     return paging_map_to(task->page_directory->directory_entry, (void *)COS32_VIDEO_MEMORY_ADDRESS_START, (void *)COS32_VIDEO_MEMORY_ADDRESS_START, paging_align_address((void *)COS32_VIDEO_MEMORY_ADDRESS_START + COS32_VIDEO_MEMORY_SIZE),
-                         PAGING_PAGE_PRESENT | PAGING_ACCESS_FROM_ALL | PAGING_PAGE_WRITEABLE);
+                        PAGING_PAGE_PRESENT | PAGING_PAGE_WRITEABLE);
 }
 
 int task_init(struct task *task, struct process *process)

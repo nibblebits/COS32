@@ -25,6 +25,12 @@ bool is_kernel_page();
 uint32_t* kernel_get_page_directory();
 
 
+/**
+ * Returns the kernel page chunk
+ */
+struct paging_4gb_chunk* kernel_page_get_chunk();
+
+
 
 #define ASSERT(value) \
     if (!(value)) \
