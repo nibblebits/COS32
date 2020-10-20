@@ -83,8 +83,6 @@ struct gdt_structured gdt_structured[COS32_TOTAL_GDT_SEGMENTS] = {
 
 };
 
-void int80h();
-
 struct paging_4gb_chunk *kernel_paging_chunk = 0;
 
 uint32_t* kernel_get_page_directory()
@@ -164,7 +162,7 @@ void kernel_main(void)
 
 
 	// Load the start program
-	int res = process_load_start("0:/start.e", 0, 0, 0);
+	int res = process_load_start("0:/taskbar.e", 0, 0, 0);
 	if (res < 0)
 	{
 		panic("Failed to load the start program!\n");

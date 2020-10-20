@@ -3,6 +3,11 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include "rectangle.h"
+
+#define VIDEO_MODE_VGA_320_200_WIDTH 320
+#define VIDEO_MODE_VGA_320_200_HEIGHT 200
+#define VIDEO_MODE_VGA_320_200_MEMORY_SIZE VIDEO_MODE_VGA_320_200_WIDTH * VIDEO_MODE_VGA_320_200_HEIGHT
 
 /**
  * Consider to typedef the video pointers, void* is too generic,
@@ -28,6 +33,10 @@ struct video
     struct terminal_properties properties;
     // Pointer to video memory
     void* ptr;
+
+    struct video_rectangle* rectangles;
+    struct video_rectangle* rectangle_last;
+
 };
 
 
@@ -35,6 +44,11 @@ struct video
  * Initializes video memory
  */
 void video_init();
+
+/**
+ * Called by PIT timer frequently. Should work with the video drawing to screen if neccessary.
+ */
+void video_process(struct video* video);
 
 /**
  * Creates new video memory and returns it, we are responsible for reeing with video_free
@@ -57,6 +71,11 @@ void video_restore(struct video* video);
  * Resets the cursor back to the top left of the terminal
  */
 void video_reset_cursor();
+
+
+char* video_back_buffer();
+char* video_back_buffer_clear();
+void video_flush_back_buffer();
 
 
 /**

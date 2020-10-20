@@ -8,6 +8,9 @@ global cos32_getkeyblock
 global cos32_malloc
 global cos32_invoke_command
 global cos32_sleep
+global cos32_video_rectangle_new
+global cos32_video_rectangle_set_pixel
+global cos32_video_rectangle_fill
 
 print:
     push ebp
@@ -93,5 +96,52 @@ cos32_sleep:
     push dword ebx
     int 0x80
     add esp, 4
+    pop ebp
+    ret
+
+cos32_video_rectangle_new:
+    push ebp
+    mov ebp, esp
+    mov eax, 8 ; Comamnd 8 = Video rectangle new. Creates a new video rectangle
+    mov ebx, [ebp+8] ; X
+    push dword ebx
+    mov ebx, [ebp+12] ; Y
+    push dword ebx
+    mov ebx, [ebp+16] ; Width
+    push dword ebx
+    mov ebx, [ebp+20] ; Height
+    push dword ebx
+    int 0x80
+    add esp, 16
+    pop ebp
+    ret
+
+cos32_video_rectangle_set_pixel:
+    push ebp
+    mov ebp, esp
+    mov eax, 9 ; Command 9 = video set pixel. Sets a pixel in this rectangle
+    mov ebx, [ebp+8] ; The video rectangle
+    push ebx
+    mov ebx, [ebp+12] ; X coordinate
+    push ebx
+    mov ebx, [ebp+16] ; Y coordinate
+    push ebx
+    mov ebx, [ebp+20] ; The colour of the pixel
+    push ebx
+    int 0x80
+    add esp, 16
+    pop ebp
+    ret
+
+cos32_video_rectangle_fill:
+    push ebp
+    mov ebp, esp
+    mov eax, 10 ; COmmand 10 = video fill. Fills the rectangle with a given colour
+    mov ebx, [ebp+8] ; The video rectangle
+    push ebx
+    mov ebx, [ebp+12] ; The colour
+    push ebx
+    int 0x80
+    add esp, 8
     pop ebp
     ret

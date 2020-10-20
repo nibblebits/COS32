@@ -15,13 +15,9 @@ int main(int argc, char **argv)
 
   char *shell_buf = malloc(512);
 
-
-
-  char* ptr = (char*)0xA0000;
-  for (int i = 0; i < 4096; i++)
-  {
-    ptr[i] = 1;
-  }
+  void* ptr = cos32_video_rectangle_new(100, 80, 120, 120);
+  cos32_video_rectangle_fill(ptr, 5);
+  while(1) {}
   while (1)
   {
     printf(">");

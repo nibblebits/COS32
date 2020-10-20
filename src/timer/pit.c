@@ -1,6 +1,8 @@
 
 #include "pit.h"
 #include "task/task.h"
+#include "video/video.h"
+#include "task/process.h"
 #include "io/io.h"
 #include "kernel.h"
 static long ticks_since_initialized = 0;
@@ -19,6 +21,10 @@ void pit_interrupt(int interrupt)
     paging_process(paging_current_chunk());
     paging_process(kernel_page_get_chunk());
 
+
+    // Process drawing functionality
+    video_process(process_current()->video);
+    
     // Let the task mechnism process some important things
     task_process();
 

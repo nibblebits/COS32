@@ -33,6 +33,23 @@ void* cos32_malloc(int size);
 void cos32_sleep(int millis);
 
 /**
+ * Creates a new video rectangle for the process
+ */
+void* cos32_video_rectangle_new(int x, int y, int width, int height);
+
+
+/**
+ * Sets a pixel on the given rectangle
+ */
+void* cos32_video_rectangle_set_pixel(void* rect_ptr, int x, int y, char colour);
+
+/**
+ * Fills the given rectangle with a colour
+ */
+
+void* cos32_video_rectangle_fill(void* rect_ptr, char colour);
+
+/**
  * Reads a line from the terminal, if you pass output_while_typing as true then
  * each individual character will be outputted to the terminal as they type.
  * We will return from this function upon a carriage return in which case the "out" buffer

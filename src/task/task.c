@@ -453,13 +453,13 @@ int task_map_video_memory(struct task *task)
 {
     void *video_memory = task->process->video->ptr;
     return paging_map_to(task->page_directory->directory_entry, (void *)COS32_VIDEO_MEMORY_ADDRESS_START, video_memory, paging_align_address(video_memory + COS32_VIDEO_MEMORY_SIZE),
-                       PAGING_PAGE_PRESENT | PAGING_PAGE_WRITEABLE);
+                       PAGING_PAGE_PRESENT | PAGING_ACCESS_FROM_ALL | PAGING_PAGE_WRITEABLE);
 }
 
 int task_unmap_video_memory(struct task *task)
 {
     return paging_map_to(task->page_directory->directory_entry, (void *)COS32_VIDEO_MEMORY_ADDRESS_START, (void *)COS32_VIDEO_MEMORY_ADDRESS_START, paging_align_address((void *)COS32_VIDEO_MEMORY_ADDRESS_START + COS32_VIDEO_MEMORY_SIZE),
-                        PAGING_PAGE_PRESENT | PAGING_PAGE_WRITEABLE);
+                        PAGING_PAGE_PRESENT | PAGING_ACCESS_FROM_ALL | PAGING_PAGE_WRITEABLE);
 }
 
 int task_init(struct task *task, struct process *process)

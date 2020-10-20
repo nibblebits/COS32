@@ -1,6 +1,7 @@
 #include "video.h"
 #include "memory/memory.h"
 #include "memory/kheap.h"
+#include "task/process.h"
 #include "io/io.h"
 #include "string/string.h"
 #include "config.h"
@@ -141,6 +142,28 @@ void print(const char *message)
 	video_terminal_writestring(&kernel_terminal_properties, message);
 }
 
+void video_draw(struct video* video)
+{
+	// Clear the back buffer
+	video_back_buffer_clear();
+	struct video_rectangle* rect = video->rectangles;
+	while(rect != 0)
+	{
+		video_rectangle_draw(rect);
+		rect = rect->next;
+	}
+
+	// Here we flush the back buffer
+	// We copy every bit of video memory from the back buffer, this makes for a slow operation
+	// In the future it might make more sense to copy only what was changed.
+	video_flush_back_buffer();
+}
+
+void video_process(struct video* video)
+{
+	video_draw(video);
+}
+
 void video_init()
 {
 	kernel_terminal_initialize();
@@ -148,6 +171,34 @@ void video_init()
 	video_default = kzalloc(COS32_VIDEO_MEMORY_SIZE);
 	// Let's copy in the real video memory now so we have a default to work with
 	memcpy(video_default, (void *)COS32_VIDEO_MEMORY_ADDRESS_START, COS32_VIDEO_MEMORY_SIZE);
+
+
+}
+
+char* video_back_buffer_clear()
+{
+	char* ptr = video_back_buffer();
+	memset(ptr, 0, VIDEO_MODE_VGA_320_200_MEMORY_SIZE);
+	return ptr;
+}
+
+char* video_back_buffer()
+{
+    static char* ptr = 0;
+    if (ptr == 0)
+    {
+        ptr = kzalloc(VIDEO_MODE_VGA_320_200_MEMORY_SIZE);
+    }
+
+    return ptr;
+}
+
+
+void video_flush_back_buffer()
+{
+    char *video_ptr = (char *)0xA0000;
+	char* back_buffer = video_back_buffer();
+    memcpy(video_ptr, back_buffer, VIDEO_MODE_VGA_320_200_MEMORY_SIZE);
 }
 
 struct video *video_new()
@@ -161,14 +212,18 @@ struct video *video_new()
 	video->properties.terminal_color = vga_entry_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
 
 	video->ptr = video_ptr;
-
+	
 	return video;
 }
 
 void video_free(struct video *video)
 {
+	// Free all rectangles relating to this video
+	video_rectangles_free(video);
+
 	kfree(video->ptr);
 	kfree(video);
+
 }
 
 /**
