@@ -1,6 +1,6 @@
 
 
-FILES = ./build/kernel.asm.o  ./build/keyboard/listener.o ./build/keyboard/listeners/fkeylistener.o ./build/keyboard/keyboard.o ./build/keyboard/classic.o ./build/timer/pit.o ./build/task/task.o ./build/task/process.o ./build/kernel.o ./build/task/tss.asm.o ./build/gdt/gdt.asm.o ./build/gdt/gdt.o ./build/task/task.asm.o ./build/memory/paging/paging.o ./build/memory/paging/paging.asm.o ./build/idt/idt.asm.o ./build/idt/idt.o ./build/io/io.o  ./build/disk/disk.o ./build/fs/pparser.o ./build/fs/file.o ./build/fs/fat/fat16.o ./build/video/video.o ./build/video/rectangle.o ./build/memory/memory.o ./build/string/string.o ./build/formats/elf/elf.o ./build/formats/elf/elfloader.o ./build/memory/registers.asm.o ./build/memory/heap.o ./build/memory/kheap.o ./build/disk/streamer.o
+FILES = ./build/kernel.asm.o  ./build/keyboard/listener.o ./build/keyboard/listeners/fkeylistener.o ./build/keyboard/keyboard.o ./build/keyboard/classic.o ./build/timer/pit.o ./build/task/task.o ./build/task/process.o ./build/kernel.o ./build/task/tss.asm.o ./build/gdt/gdt.asm.o ./build/gdt/gdt.o ./build/task/task.asm.o ./build/memory/paging/paging.o ./build/memory/paging/paging.asm.o ./build/idt/idt.asm.o ./build/idt/idt.o ./build/io/io.o  ./build/disk/disk.o ./build/fs/pparser.o ./build/fs/file.o ./build/fs/fat/fat16.o ./build/video/video.o ./build/video/font/font.o ./build/video/font/formats/psffont.o ./build/video/rectangle.o ./build/memory/memory.o ./build/string/string.o ./build/formats/elf/elf.o ./build/formats/elf/elfloader.o ./build/memory/registers.asm.o ./build/memory/heap.o ./build/memory/kheap.o ./build/disk/streamer.o
 FLAGS =  --freestanding -falign-jumps -falign-functions -falign-labels -falign-loops  -fstrength-reduce -fomit-frame-pointer -finline-functions -Wno-unused-function -fno-builtin -Werror -Wno-unused-label -Wno-cpp -Wno-unused-parameter -nostdlib -nostartfiles -nodefaultlibs -Wall -O0 -Iinc
 BUILD_NUMBER_FILE=build-number.txt
 
@@ -15,14 +15,14 @@ all: ./bin/kernel.bin ./bin/boot.bin ${FILES} programs
 	sudo cp ./src/programs/helloworld/helloworld2.bin /mnt/d/start.b
 	sudo cp ./src/programs/start/start.elf /mnt/d/start.e
 	sudo cp ./src/programs/taskbar/taskbar.elf /mnt/d/taskbar.e
+	sudo mkdir /mnt/d/bin	
+	sudo mkdir /mnt/d/fonts
+	sudo cp ./fonts/plfont.psf /mnt/d/fonts/plfont.psf
+	sudo cp ./fonts/hallo.psf /mnt/d/fonts/hallo.psf
 
-	sudo mkdir /mnt/d/bin
-	sudo cp ./src/programs/start/start.elf /mnt/d/bin/start.e
-
-	
 	sudo umount /mnt/d
 	sudo chmod 777 ./bin/os.bin
-	# UPdate build number
+	# Update build number
 	echo $$(($$(cat $(BUILD_NUMBER_FILE)) + 1)) > $(BUILD_NUMBER_FILE)
 
 
@@ -46,6 +46,12 @@ all: ./bin/kernel.bin ./bin/boot.bin ${FILES} programs
 ./build/video/video.o: ./src/video/video.c ./src/video/video.h 
 	i686-elf-gcc  $(INCLUDES) -I./src/video ${FLAGS} -c ./src/video/video.c -o ./build/video/video.o -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g
 
+
+./build/video/font/font.o: ./src/video/font/font.c ./src/video/font/font.h 
+	i686-elf-gcc  $(INCLUDES) -I./src/video -I./src/video/font ${FLAGS} -c ./src/video/font/font.c -o ./build/video/font/font.o -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g
+
+./build/video/font/formats/psffont.o: ./src/video/font/formats/psffont.c ./src/video/font/formats/psffont.h 
+	i686-elf-gcc  $(INCLUDES) -I./src/video -I./src/video/font -I./src/video/font/formats ${FLAGS} -c ./src/video/font/formats/psffont.c -o ./build/video/font/formats/psffont.o -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g
 
 ./build/video/rectangle.o: ./src/video/rectangle.c ./src/video/rectangle.h 
 	i686-elf-gcc  $(INCLUDES) -I./src/video ${FLAGS} -c ./src/video/rectangle.c -o ./build/video/rectangle.o -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g

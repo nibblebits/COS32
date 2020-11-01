@@ -51,6 +51,11 @@ void video_init();
 void video_process(struct video* video);
 
 /**
+ * Draws a block of pixels to the screen based on the total rows and pixels per row arguments provided
+ */
+void video_draw_block(struct video *video, void *ptr, int x, int y, int total_rows, int pixels_per_row);
+
+/**
  * Creates new video memory and returns it, we are responsible for reeing with video_free
  */
 struct video* video_new();

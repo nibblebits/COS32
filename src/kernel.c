@@ -21,6 +21,7 @@
 #include "task/task.h"
 #include "task/tss.h"
 #include "task/process.h"
+#include "video/font/formats/psffont.h"
 #include "gdt/gdt.h"
 #include "config.h"
 void kernel_registers();
@@ -159,7 +160,6 @@ void kernel_main(void)
 
 
 	print("Kernel initialized\n");
-
 
 	// Load the start program
 	int res = process_load_start("0:/taskbar.e", 0, 0, 0);

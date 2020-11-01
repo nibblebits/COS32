@@ -11,6 +11,8 @@
 #include "memory/registers.h"
 #include "memory/paging/paging.h"
 #include "video/rectangle.h"
+#include "video/font/font.h"
+#include "video/font/formats/psffont.h"
 #include "timer/pit.h"
 #include "status.h"
 struct idt_desc idt_desc[COS32_MAX_INTERRUPTS];
@@ -200,6 +202,15 @@ void idt_page_fault_handler(struct interrupt_frame frame)
 #warning "Abstract these functions out the ISR is getting cluttered..."
 void *isr80h_command1_print(struct interrupt_frame *frame)
 {
+
+	struct video_font* font = psffont_load("0:/fonts/plfont.psf", "PLFONT");
+	void* pixel_data = video_font_make_empty_string(font, strlen("Hello world!"));
+	video_font_draw(font, pixel_data, "Hello world!");
+
+    struct video_rectangle* rect = video_rectangle_new(process_current()->video, 0, 0, 200, 200);
+    video_rectangle_set_scale(rect, 0.5);
+    video_rectangle_draw_blocks(rect, pixel_data, 10, 10, font->c_height, font->c_width, strlen("Hello world!"));
+ 
     // The message to print is the first element on the user stack
     void *msg_user_space_addr = task_current_get_stack_item(0);
     char buf[1024];

@@ -6,6 +6,7 @@
 #include "memory/memory.h"
 #include "string/string.h"
 #include "video/video.h"
+#include "video/rectangle.h"
 #include "idt/idt.h"
 #include "formats/elf/elfloader.h"
 
@@ -112,13 +113,12 @@ int process_inject_arguments(struct process *process, struct command_argument *r
         goto out;
     }
 
-    char** argv = kzalloc(sizeof(const char*) * argc);
+    char **argv = kzalloc(sizeof(const char *) * argc);
     if (!argv)
     {
         res = -ENOMEM;
         goto out;
     }
-
 
     // Now we have the memory we need let's start setting it
     while (current)
@@ -139,7 +139,6 @@ int process_inject_arguments(struct process *process, struct command_argument *r
         i++;
     }
 
-
     // Now we push the argv
     res = task_push_stack_item(process->task, (uint32_t)argv);
     if (ISERR(res))
@@ -147,14 +146,12 @@ int process_inject_arguments(struct process *process, struct command_argument *r
         goto out;
     }
 
-
     // Let's inject the total arguments
     res = task_push_stack_item(process->task, argc);
     if (ISERR(res))
     {
         goto out;
     }
-    
 
 out:
     return res;
