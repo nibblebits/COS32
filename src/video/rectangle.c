@@ -43,17 +43,17 @@ int video_rectangle_set_pixel(struct video_rectangle *rect, int x, int y, char c
 void video_rectangle_draw_block(struct video_rectangle *rect, void *ptr, int absx, int absy, int total_rows, int pixels_per_row)
 {
     char *c_ptr = ptr;
-    int rx = 0;
-    int ry = 0;
+    int rx = absx;
+    int ry = absy;
+
     for (int y = 0; y < total_rows; y++)
     {
-        ry = absy + y;
+        rx = absx;
         for (int i = 0; i < pixels_per_row; i++)
         {
             if ((*c_ptr << i) & 0b10000000)
             {
                 // The pixel is set.
-                rx = absx + i;
                 video_rectangle_set_pixel(rect, rx, ry, 1);
             }
         }
@@ -105,7 +105,7 @@ void video_rectangle_draw(struct video_rectangle *rect)
     rect->redraw = false;
 }
 
-void video_rectangle_set_scale(struct video_rectangle* rect, float scale)
+void video_rectangle_set_scale(struct video_rectangle *rect, float scale)
 {
     rect->properties.scale = scale;
 }

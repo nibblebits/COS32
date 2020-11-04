@@ -3,8 +3,8 @@
 
 int main(int argc, char **argv)
 {
-  print("hello");
-  while(1) {}
+  //print("hello");
+  //while(1) {}
   void *taskbar_rect = cos32_video_rectangle_new(0, 0, 320, 10);
   while (1)
   {

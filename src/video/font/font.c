@@ -59,7 +59,7 @@ void video_font_draw_character(struct video_font *font, void *out, char c)
         // We can't draw an invalid character thats not in this font!
         return;
     }
-
+    
     const char *char_pixel_data = &font->data[start_index];
     for (int y = 0; y < font->c_height; y++)
     {
