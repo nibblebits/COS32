@@ -21,6 +21,7 @@
 #include "task/task.h"
 #include "task/tss.h"
 #include "task/process.h"
+#include "isr80h/isr80h.h"
 #include "video/font/formats/psffont.h"
 #include "gdt/gdt.h"
 #include "config.h"
@@ -159,6 +160,9 @@ void kernel_main(void)
 	kernel_page();
 	enable_paging();
 
+	// Let's register all the kernel commands
+	isr80h_register_all();
+	
 	print("Kernel initialized\n");
 
 	// Load the start program

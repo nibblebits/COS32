@@ -15,6 +15,9 @@
 #include "video/font/formats/psffont.h"
 #include "timer/pit.h"
 #include "status.h"
+
+ISR80H_COMMAND* isr80h_commands[COS32_MAX_ISR80H_COMMANDS];
+
 struct idt_desc idt_desc[COS32_MAX_INTERRUPTS];
 struct idtr_desc idtr_desc;
 extern struct tss tss;
@@ -27,11 +30,6 @@ void isr_no_interrupt_wrapper();
 void isr_segment_not_present_wrapper();
 void isr_page_fault_wrapper();
 
-// These symbols are added during linking process automatically with "ld" command
-// Note we get the address of these symbols they are the value its self
-// DO not try to access the values directly.
-extern void *__BUILD_DATE;
-extern void *__BUILD_NUMBER;
 
 extern void *interrupt_pointer_table[COS32_MAX_INTERRUPTS];
 static INTERRUPT_CALLBACK_FUNCTION interrupt_callbacks[COS32_MAX_INTERRUPTS];
@@ -55,6 +53,8 @@ bool idt_is_reserved(int interrupt)
 
     return false;
 }
+
+
 
 void interrupt_handler(int interrupt, struct interrupt_frame *frame)
 {
@@ -200,127 +200,41 @@ void idt_page_fault_handler(struct interrupt_frame frame)
 }
 
 #warning "Abstract these functions out the ISR is getting cluttered..."
-void *isr80h_command1_print(struct interrupt_frame *frame)
-{ 
-    // The message to print is the first element on the user stack
-    void *msg_user_space_addr = task_current_get_stack_item(0);
-    char buf[1024];
-    ASSERT(copy_string_from_task(task_current(), msg_user_space_addr, buf, sizeof(buf)) == 0);
-    task_print(buf);
-    return 0;
-}
 
-void *isr80h_command2_get_key(struct interrupt_frame *frame)
-{
-    char key = keyboard_pop();
-    return (void *)((int)key);
-}
 
-void *isr80h_command3_get_kernel_info(struct interrupt_frame *frame)
+void isr80h_register_command(int command_id, ISR80H_COMMAND command)
 {
-    struct kernel_info *kernel_info_struct_user_space_addr = task_current_get_stack_item(0);
-    copy_integer_to_task(task_current(), (void *)&kernel_info_struct_user_space_addr->build_no, (int)&__BUILD_NUMBER);
-    copy_integer_to_task(task_current(), (void *)&kernel_info_struct_user_space_addr->date, (int)&__BUILD_DATE);
-    return 0;
-}
+    if (command_id < 0 || command_id >= COS32_MAX_ISR80H_COMMANDS)
+    {
+        panic("The command ID is out of bounds!\n");
+    }
 
-void *isr80h_command4_putchar(struct interrupt_frame *frame)
-{
-    char c = (char)task_current_get_stack_item_uint(0);
-    task_putchar(c);
-    return 0;
-}
-
-void *isr80h_command5_malloc(struct interrupt_frame *frame)
-{
-    int size = task_current_get_stack_item_uint(0);
-    return task_malloc(task_current(), size);
-}
-
-void *isr80h_command6_invoke(struct interrupt_frame *frame)
-{
-    struct command_argument *root_command_argument = task_current_get_stack_item(0);
-    void *result = (void *)process_run_for_argument(root_command_argument, task_current()->process, 0);
-    return result;
-}
-
-void *isr80h_command7_sleep(struct interrupt_frame *frame)
-{
-    uint32_t sleep_seconds = task_current_get_stack_item_uint(0);
-    task_usleep(task_current(), sleep_seconds * 1000);
-    return (void *)0x00;
-}
-
-void *isr80h_command8_video_rectangle_new(struct interrupt_frame *frame)
-{
-    int abs_x = task_current_get_stack_item_uint(3);
-    int abs_y = task_current_get_stack_item_uint(2);
-    int width = task_current_get_stack_item_uint(1);
-    int height = task_current_get_stack_item_uint(0);
-    return video_rectangle_new(process_current()->video, abs_x, abs_y, width, height);
-}
-
-void *isr80h_command9_video_rectangle_set_pixel(struct interrupt_frame *frame)
-{
-    struct video_rectangle *rect = task_current_get_stack_item(3);
-    int x = task_current_get_stack_item_uint(2);
-    int y = task_current_get_stack_item_uint(1);
-    int colour = task_current_get_stack_item_uint(0);
-    return (void *)video_rectangle_set_pixel(rect, x, y, colour);
-}
-
-void* isr80h_command10_video_rectangle_fill(struct interrupt_frame* frame)
-{
-    struct video_rectangle* rect = task_current_get_stack_item(1);
-    int colour = task_current_get_stack_item_uint(0);
-    return (void*) video_rectangle_fill(rect, colour);
+    if (isr80h_commands[command_id] != 0)
+    {
+        panic("Your attempting to register a comamnd thats been taken!\n");
+    }
+    
+    isr80h_commands[command_id] = command;
 }
 void *isr80h_handle_command(int command, struct interrupt_frame *frame)
 {
     void *result = 0;
-    switch (command)
+
+    if (command <= 0 || command >= COS32_MAX_ISR80H_COMMANDS)
     {
-    case SYSTEM_COMMAND_PRINT:
-        result = isr80h_command1_print(frame);
-        break;
+        // Invalid command!
+        return 0;
+    }
 
-    case SYSTEM_COMMAND_GET_KEY:
-        result = isr80h_command2_get_key(frame);
-        break;
+    ISR80H_COMMAND* command_func = isr80h_commands[command];
+    if (!command_func)
+    {
+        // The function does not exist so theirs no command to handle this
+        // lets return 
+        return 0;
+    }
 
-    case SYSTEM_COMMAND_GET_KERNEL_INFO:
-        result = isr80h_command3_get_kernel_info(frame);
-        break;
-
-    case SYSTEM_COMMAND_PUTCHAR:
-        result = isr80h_command4_putchar(frame);
-        break;
-
-    case SYSTEM_COMMAND_MALLOC:
-        result = isr80h_command5_malloc(frame);
-        break;
-
-    case SYSTEM_COMMAND_INVOKE_COMMAND:
-        result = isr80h_command6_invoke(frame);
-        break;
-
-    case SYSTEM_COMMAND_SLEEP:
-        result = isr80h_command7_sleep(frame);
-        break;
-
-    case SYSTEM_COMMAND_VIDEO_RECTANGLE_NEW:
-        result = isr80h_command8_video_rectangle_new(frame);
-        break;
-
-    case SYSTEM_COMMAND_VIDEO_RECTANGLE_SET_PIXEL:
-        result = isr80h_command9_video_rectangle_set_pixel(frame);
-        break;
-
-    case SYSTEM_COMMAND_VIDEO_RECTANGLE_FILL:
-        result = isr80h_command10_video_rectangle_fill(frame);
-        break;
-    };
-
+    result = command_func(frame);
     return result;
 }
 

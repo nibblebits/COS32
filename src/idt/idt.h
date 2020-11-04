@@ -4,7 +4,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
+
+struct interrupt_frame;
 typedef void(*INTERRUPT_CALLBACK_FUNCTION)();
+typedef void*(ISR80H_COMMAND)(struct interrupt_frame* frame);
 
 // ISR Definitions
 #define PIC1		0x20		/* IO base address for master PIC */
@@ -21,22 +24,6 @@ typedef void(*INTERRUPT_CALLBACK_FUNCTION)();
 #define IDT_TRAP_GATE 0x8F
 
 #define ISR_TIMER_INTERRUPT 0x20
-
-
-enum SystemCommands
-{
-    SYSTEM_COMMAND_EXIT,
-    SYSTEM_COMMAND_PRINT,
-    SYSTEM_COMMAND_GET_KEY,
-    SYSTEM_COMMAND_GET_KERNEL_INFO,
-    SYSTEM_COMMAND_PUTCHAR,
-    SYSTEM_COMMAND_MALLOC,
-    SYSTEM_COMMAND_INVOKE_COMMAND,
-    SYSTEM_COMMAND_SLEEP,
-    SYSTEM_COMMAND_VIDEO_RECTANGLE_NEW,
-    SYSTEM_COMMAND_VIDEO_RECTANGLE_SET_PIXEL,
-    SYSTEM_COMMAND_VIDEO_RECTANGLE_FILL
-};
 
 struct idt_desc
 {
@@ -77,6 +64,7 @@ void idt_load(struct idtr_desc* desc);
 void idt_load_now();
 void enable_interrupts();
 void disable_interrupts();
+void isr80h_register_command(int command_id, ISR80H_COMMAND command);
 
 int idt_register_interrupt_callback(int interrupt, INTERRUPT_CALLBACK_FUNCTION interrupt_callback);
 #endif

@@ -1,6 +1,6 @@
 
 
-FILES = ./build/kernel.asm.o  ./build/keyboard/listener.o ./build/keyboard/listeners/fkeylistener.o ./build/keyboard/keyboard.o ./build/keyboard/classic.o ./build/timer/pit.o ./build/task/task.o ./build/task/process.o ./build/kernel.o ./build/task/tss.asm.o ./build/gdt/gdt.asm.o ./build/gdt/gdt.o ./build/task/task.asm.o ./build/memory/paging/paging.o ./build/memory/paging/paging.asm.o ./build/idt/idt.asm.o ./build/idt/idt.o ./build/io/io.o  ./build/disk/disk.o ./build/fs/pparser.o ./build/fs/file.o ./build/fs/fat/fat16.o ./build/video/video.o ./build/video/font/font.o ./build/video/font/formats/psffont.o ./build/video/rectangle.o ./build/memory/memory.o ./build/string/string.o ./build/formats/elf/elf.o ./build/formats/elf/elfloader.o ./build/memory/registers.asm.o ./build/memory/heap.o ./build/memory/kheap.o ./build/disk/streamer.o
+FILES = ./build/kernel.asm.o  ./build/keyboard/listener.o ./build/keyboard/listeners/fkeylistener.o ./build/keyboard/keyboard.o ./build/keyboard/classic.o  ./build/isr80h/isr80h.o ./build/isr80h/io.o ./build/isr80h/process.o ./build/isr80h/isrkernel.o ./build/isr80h/video.o ./build/timer/pit.o ./build/task/task.o ./build/task/process.o ./build/kernel.o ./build/task/tss.asm.o ./build/gdt/gdt.asm.o ./build/gdt/gdt.o ./build/task/task.asm.o ./build/memory/paging/paging.o ./build/memory/paging/paging.asm.o ./build/idt/idt.asm.o ./build/idt/idt.o ./build/io/io.o  ./build/disk/disk.o ./build/fs/pparser.o ./build/fs/file.o ./build/fs/fat/fat16.o ./build/video/video.o ./build/video/font/font.o ./build/video/font/formats/psffont.o ./build/video/rectangle.o ./build/memory/memory.o ./build/string/string.o ./build/formats/elf/elf.o ./build/formats/elf/elfloader.o ./build/memory/registers.asm.o ./build/memory/heap.o ./build/memory/kheap.o ./build/disk/streamer.o
 FLAGS =  --freestanding -falign-jumps -falign-functions -falign-labels -falign-loops  -fstrength-reduce -fomit-frame-pointer -finline-functions -Wno-unused-function -fno-builtin -Werror -Wno-unused-label -Wno-cpp -Wno-unused-parameter -nostdlib -nostartfiles -nodefaultlibs -Wall -O0 -Iinc
 BUILD_NUMBER_FILE=build-number.txt
 
@@ -145,6 +145,20 @@ all: ./bin/kernel.bin ./bin/boot.bin ${FILES} programs
 	i686-elf-gcc  $(INCLUDES) -I./src/disk ${FLAGS} -c ./src/disk/streamer.c -o ./build/disk/streamer.o -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g
 
 
+./build/isr80h/isr80h.o: ./src/isr80h/isr80h.c ./src/isr80h/isr80h.h
+	i686-elf-gcc  $(INCLUDES) -I./src/isr80h ${FLAGS} -c ./src/isr80h/isr80h.c -o ./build/isr80h/isr80h.o -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g
+
+./build/isr80h/io.o: ./src/isr80h/io.c ./src/isr80h/io.h
+	i686-elf-gcc  $(INCLUDES) -I./src/isr80h ${FLAGS} -c ./src/isr80h/io.c -o ./build/isr80h/io.o -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g
+
+./build/isr80h/process.o: ./src/isr80h/process.c ./src/isr80h/process.h
+	i686-elf-gcc  $(INCLUDES) -I./src/isr80h ${FLAGS} -c ./src/isr80h/process.c -o ./build/isr80h/process.o -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g
+
+./build/isr80h/isrkernel.o: ./src/isr80h/isrkernel.c ./src/isr80h/isrkernel.h
+	i686-elf-gcc  $(INCLUDES) -I./src/isr80h ${FLAGS} -c ./src/isr80h/isrkernel.c -o ./build/isr80h/isrkernel.o -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g
+
+./build/isr80h/video.o: ./src/isr80h/video.c ./src/isr80h/video.h
+	i686-elf-gcc  $(INCLUDES) -I./src/isr80h ${FLAGS} -c ./src/isr80h/video.c -o ./build/isr80h/video.o -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g
 programs:
 	cd ./src/programs/stdlib && $(MAKE) all
 	cd ./src/programs/helloworld && $(MAKE) all
