@@ -16,8 +16,7 @@ continue:
     loop continue
     
     ; In future we will push to the stack instead  
-    mov ebx, [esp+4]
-    mov ebx, [ebx+4] 
+    mov ebx, [name]
     push dword ebx
     mov eax, 1
     int 0x80
@@ -27,6 +26,4 @@ continue:
     jmp start
 
 section .data
-
-section .asm
-db 'Test assembly data', 0
+name: db ' hello world!', 0

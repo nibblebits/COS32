@@ -16,7 +16,6 @@
 #include "timer/pit.h"
 #include "status.h"
 
-ISR80H_COMMAND* isr80h_commands[COS32_MAX_ISR80H_COMMANDS];
 
 struct idt_desc idt_desc[COS32_MAX_INTERRUPTS];
 struct idtr_desc idtr_desc;
@@ -33,6 +32,7 @@ void isr_page_fault_wrapper();
 
 extern void *interrupt_pointer_table[COS32_MAX_INTERRUPTS];
 static INTERRUPT_CALLBACK_FUNCTION interrupt_callbacks[COS32_MAX_INTERRUPTS];
+static ISR80H_COMMAND isr80h_commands[COS32_MAX_ISR80H_COMMANDS];
 
 // Our kernel interrupt is reserved and cannot be registered by external resources
 static int reserved_interrupts[] = {0x80};
@@ -226,7 +226,7 @@ void *isr80h_handle_command(int command, struct interrupt_frame *frame)
         return 0;
     }
 
-    ISR80H_COMMAND* command_func = isr80h_commands[command];
+    ISR80H_COMMAND command_func = isr80h_commands[command];
     if (!command_func)
     {
         // The function does not exist so theirs no command to handle this

@@ -7,7 +7,7 @@
 
 struct interrupt_frame;
 typedef void(*INTERRUPT_CALLBACK_FUNCTION)();
-typedef void*(ISR80H_COMMAND)(struct interrupt_frame* frame);
+typedef void*(*ISR80H_COMMAND)(struct interrupt_frame* frame);
 
 // ISR Definitions
 #define PIC1		0x20		/* IO base address for master PIC */

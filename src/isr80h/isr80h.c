@@ -17,4 +17,5 @@ void isr80h_register_all()
     isr80h_register_command(SYSTEM_COMMAND_SLEEP, isr80h_command7_sleep);
     isr80h_register_command(SYSTEM_COMMAND_VIDEO_RECTANGLE_NEW, isr80h_command8_video_rectangle_new);
     isr80h_register_command(SYSTEM_COMMAND_VIDEO_RECTANGLE_SET_PIXEL, isr80h_command9_video_rectangle_set_pixel);
+    isr80h_register_command(SYSTEM_COMMAND_VIDEO_RECTANGLE_FILL, isr80h_command10_video_rectangle_fill);
 }

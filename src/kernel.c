@@ -14,6 +14,7 @@
 #include "memory/paging/paging.h"
 #include "memory/memory.h"
 #include "memory/registers.h"
+#include "isr80h/isr80h.h"
 #include "video/video.h"
 #include "keyboard/keyboard.h"
 #include "keyboard/listener.h"
@@ -21,7 +22,6 @@
 #include "task/task.h"
 #include "task/tss.h"
 #include "task/process.h"
-#include "isr80h/isr80h.h"
 #include "video/font/formats/psffont.h"
 #include "gdt/gdt.h"
 #include "config.h"
@@ -104,12 +104,6 @@ bool is_kernel_page()
 	return paging_current_directory() == kernel_get_page_directory();
 }
 
-
-struct tss* kernel_get_tss()
-{
-	return &tss;
-}
-
 void kernel_main(void)
 {
 	/* Initialize terminal interface */
@@ -160,9 +154,8 @@ void kernel_main(void)
 	kernel_page();
 	enable_paging();
 
-	// Let's register all the kernel commands
 	isr80h_register_all();
-	
+
 	print("Kernel initialized\n");
 
 	// Load the start program
