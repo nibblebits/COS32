@@ -18,6 +18,8 @@ void print_number(int number);
 char* itoa(int i);
 void kernel_page();
 bool is_kernel_page();
+struct tss* kernel_get_tss();
+
 
 /**
  * Returns the page directory that the kernel uses

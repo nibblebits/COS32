@@ -103,6 +103,12 @@ bool is_kernel_page()
 	return paging_current_directory() == kernel_get_page_directory();
 }
 
+
+struct tss* kernel_get_tss()
+{
+	return &tss;
+}
+
 void kernel_main(void)
 {
 	/* Initialize terminal interface */
