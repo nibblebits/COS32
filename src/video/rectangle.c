@@ -42,15 +42,15 @@ int video_rectangle_set_pixel(struct video_rectangle *rect, int x, int y, char c
 
 void video_rectangle_draw_block(struct video_rectangle *rect, void *ptr, int absx, int absy, int total_rows, int pixels_per_row)
 {
+    int rx = 0;
+    int ry = 0;
     char *c_ptr = ptr;
-    int rx = absx;
-    int ry = absy;
-
     for (int y = 0; y < total_rows; y++)
     {
-        rx = absx;
+        ry = absy + y;
         for (int i = 0; i < pixels_per_row; i++)
         {
+            rx = absx + i;
             if ((*c_ptr << i) & 0b10000000)
             {
                 // The pixel is set.

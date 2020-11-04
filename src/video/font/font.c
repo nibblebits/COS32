@@ -2,6 +2,7 @@
 #include "memory/kheap.h"
 #include "memory/memory.h"
 #include "string/string.h"
+#include "font/formats/psffont.h"
 
 static struct video_font_list video_font_list;
 
@@ -31,10 +32,41 @@ void video_font_register(struct video_font *font)
     video_font_list.last = font;
 }
 
-struct video_font *video_font_load(const char *filename)
+void video_font_load_defaults()
 {
-    // Not implemented!
-    return 0;
+    // We using default drive number here... In reality we should scan for active mount
+    video_font_load("0:/fonts/plfont.psf", "Default");
+}
+
+struct video_font* video_font_get(const char* name)
+{
+    struct video_font* result = 0;
+    struct video_font* font_current = video_font_list.head;
+    while(font_current)
+    {
+        if (istrncmp(font_current->font_name, name, sizeof(font_current->font_name)) == 0)
+        {
+            result = font_current;
+            break;
+        }
+        font_current = font_current->next;
+    }
+
+    return result;
+}
+
+struct video_font *video_font_load(const char *filename, const char* name)
+{
+    struct video_font* font = psffont_load(filename, name);
+    if (font)
+    {
+        goto out;
+    }
+
+
+
+out:
+    return font;
 }
 
 
@@ -109,26 +141,13 @@ struct video_font *video_font_new(const char *name, const char *data, int c_byte
     font->c_bytes = c_bytes;
 
     font->next = 0x00;
+
+    // Now let's register the font
+    video_font_register(font);
     return font;
 }
 
 void video_font_free(struct video_font *font)
 {
     kfree(font);
-}
-
-struct video_font *video_font_get(const char *font_name)
-{
-    struct video_font *current = video_font_list.head;
-    while (current)
-    {
-        if (strncmp(current->font_name, font_name, sizeof(current->font_name)) == 0)
-        {
-            // We found the font we care about.
-            return current;
-        }
-        current = current->next;
-    }
-
-    return 0;
 }

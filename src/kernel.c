@@ -36,9 +36,6 @@ void kernel_registers();
 #error "This tutorial needs to be compiled with a ix86-elf compiler"
 #endif
 
-
-
-
 char *itoa(int i)
 {
 	static char text[12];
@@ -61,7 +58,6 @@ char *itoa(int i)
 		text[--loc] = '-';
 	return &text[loc];
 }
-
 
 void panic(char *message)
 {
@@ -86,16 +82,15 @@ struct gdt_structured gdt_structured[COS32_TOTAL_GDT_SEGMENTS] = {
 
 struct paging_4gb_chunk *kernel_paging_chunk = 0;
 
-uint32_t* kernel_get_page_directory()
+uint32_t *kernel_get_page_directory()
 {
 	return kernel_paging_chunk->directory_entry;
 }
 
-struct paging_4gb_chunk* kernel_page_get_chunk()
+struct paging_4gb_chunk *kernel_page_get_chunk()
 {
 	return kernel_paging_chunk;
 }
-
 
 void kernel_page()
 {
@@ -133,9 +128,6 @@ void kernel_main(void)
 	// Initialize the heap
 	kheap_init();
 
-	// Initialize the video memory
-	video_init();
-
 	// Initialize all the keyboards
 	keyboard_init();
 
@@ -148,6 +140,9 @@ void kernel_main(void)
 	// Find the disks
 	disk_search_and_init();
 
+	// Initialize the video memory
+	video_init();
+
 	// Enable IDT
 	idt_load_now();
 
@@ -157,7 +152,6 @@ void kernel_main(void)
 	kernel_paging_chunk = paging_new_4gb(PAGING_ACCESS_FROM_ALL | PAGING_PAGE_PRESENT | PAGING_CACHE_DISABLED | PAGING_PAGE_WRITEABLE);
 	kernel_page();
 	enable_paging();
-
 
 	print("Kernel initialized\n");
 
@@ -170,7 +164,6 @@ void kernel_main(void)
 
 	// Usually the interrupt handler will call this, but as we have started the very first process
 	// we are responsible
-	
+
 	task_run_first_ever_task();
-	
 }

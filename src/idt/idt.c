@@ -203,7 +203,7 @@ void idt_page_fault_handler(struct interrupt_frame frame)
 void *isr80h_command1_print(struct interrupt_frame *frame)
 {
 
-	struct video_font* font = psffont_load("0:/fonts/plfont.psf", "PLFONT");
+	struct video_font* font = video_font_get("default");
 	void* pixel_data = video_font_make_empty_string(font, strlen("Hello world!"));
 	video_font_draw(font, pixel_data, "Hello world!");
 

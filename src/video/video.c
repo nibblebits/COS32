@@ -2,6 +2,7 @@
 #include "memory/memory.h"
 #include "memory/kheap.h"
 #include "task/process.h"
+#include "video/font/font.h"
 #include "io/io.h"
 #include "string/string.h"
 #include "config.h"
@@ -171,6 +172,9 @@ void video_init()
 	video_default = kzalloc(COS32_VIDEO_MEMORY_SIZE);
 	// Let's copy in the real video memory now so we have a default to work with
 	memcpy(video_default, (void *)COS32_VIDEO_MEMORY_ADDRESS_START, COS32_VIDEO_MEMORY_SIZE);
+
+	// Load all the fonts
+	video_font_load_defaults();
 }
 
 char *video_back_buffer_clear()

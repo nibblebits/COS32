@@ -33,8 +33,9 @@ struct video_font
     struct video_font* next;
 };
 
+void video_font_load_defaults();
 void video_font_register(struct video_font* font);
-struct video_font* video_font_load(const char* filename);
+struct video_font *video_font_load(const char *filename, const char* name);
 struct video_font *video_font_new(const char *name, const char *data, int c_bytes, int max_characters, int width, int height);
 void video_font_draw_character(struct video_font* font, void* out, char c);
 void video_font_draw(struct video_font *font, void *out, const char *text);
@@ -49,6 +50,9 @@ void* video_font_make_empty_string(struct video_font* font, int len);
  */
 void video_font_free_string(void* ptr);
 
+/**
+ * Returns the font with the given name, if no font was found then NULL is returned
+ */
 struct video_font* video_font_get(const char* font_name);
 
 #endif
