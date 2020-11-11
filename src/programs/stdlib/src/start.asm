@@ -6,6 +6,6 @@ global _start
 extern main
 
 _start:
-    ; ARGV AND ARGC were pushed automatically when starting this program
+    ; ARGV AND ARGC were pushed automatically when starting this program    
     call main
     ret

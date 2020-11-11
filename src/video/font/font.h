@@ -6,6 +6,7 @@
 
 typedef unsigned short ASCII_CHARACTER;
 
+struct process;
 struct video_font_list
 {
     struct video_font* head;
@@ -45,6 +46,13 @@ void video_font_free(struct video_font* font);
  * Creates a pointer to some room to store a pixel string of "len" amount of bytes
  */
 void* video_font_make_empty_string(struct video_font* font, int len);
+
+/**
+ * Creates a pointer to some room to store a pixel string of "len" amount of bytes.
+ * Uses the given process memory
+ */
+void* video_font_make_empty_string_for_process(struct process* process, struct video_font* font, int len);
+
 /**
  * Releases the pixel data created by video_font_make_empty_string
  */

@@ -2,6 +2,7 @@
 #include "memory/kheap.h"
 #include "memory/memory.h"
 #include "string/string.h"
+#include "task/process.h"
 #include "font/formats/psffont.h"
 
 static struct video_font_list video_font_list;
@@ -69,6 +70,10 @@ out:
     return font;
 }
 
+void* video_font_make_empty_string_for_process(struct process* process, struct video_font* font, int len)
+{
+    return process_malloc(process, (font->c_bytes * len));
+}
 
 void* video_font_make_empty_string(struct video_font* font, int len)
 {

@@ -56,4 +56,30 @@ void* cos32_video_rectangle_fill(void* rect_ptr, char colour);
  * will be populated with the entered string
  */
 void cos32_terminal_readline(char* out, int max, bool output_while_typing);
+
+/**
+ * Draws a block of pixels onto the given rectangle
+ */
+void cos32_video_rectangle_draw_block(void *rect, void *ptr, int absx, int absy, int total_rows, int pixels_per_row);
+/**
+ * Draws a series of blocks of pixels onto the given rectangle
+ */
+void cos32_video_rectangle_draw_blocks(void *rect, void *ptr, int absx, int absy, int total_rows, int pixels_per_row, int total);
+
+/**
+ * Gets the font with the given name
+ */
+void* cos32_video_font_get(const char* font_name);
+
+/**
+ * Draws the pixel data into the provided "ptr" for the given font and message
+ */
+void cos32_video_font_draw(void* font, void* ptr, const char* message);
+
+/**
+ * Creates an empty string for the given font. The string will allow for "len" amount of characters
+ * Pixel data is created to be able to store pixel data for a string of x "len" for the given "font"
+ */
+void* cos32_video_font_make_empty_string(void* font, int len);
+
 #endif

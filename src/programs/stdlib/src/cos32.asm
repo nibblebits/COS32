@@ -11,6 +11,11 @@ global cos32_sleep
 global cos32_video_rectangle_new
 global cos32_video_rectangle_set_pixel
 global cos32_video_rectangle_fill
+global cos32_video_rectangle_draw_block
+global cos32_video_rectangle_draw_blocks
+global cos32_video_font_get
+global cos32_video_font_draw
+global cos32_video_font_make_empty_string
 
 print:
     push ebp
@@ -145,3 +150,83 @@ cos32_video_rectangle_fill:
     add esp, 8
     pop ebp
     ret
+
+
+cos32_video_rectangle_draw_block:
+    push ebp
+    mov ebp, esp
+    mov eax, 11 ; Command 11 draw rectangle block
+    mov ebx, [ebp+8] ; The video rectangle
+    push ebx
+    mov ebx, [ebp+12] ; The pointer to the data to draw the block for
+    push ebx
+    mov ebx, [ebp+16] ; The absolute x position to draw on the rectangle
+    push ebx
+    mov ebx, [ebp+20] ; The absolute y position to draw on the rectangle
+    push ebx
+    mov ebx, [ebp+24] ; The total rows to draw on the rectangle
+    push ebx
+    mov ebx, [ebp+28] ; The pixels per row to draw
+    push ebx
+    int 0x80
+    add esp, 24
+    ret
+
+
+cos32_video_rectangle_draw_blocks:
+    push ebp
+    mov ebp, esp
+    mov eax, 12 ; Command 12 draw rectangle blocks 
+    mov ebx, [ebp+8] ; The video rectangle
+    push ebx
+    mov ebx, [ebp+12] ; The pointer to the data to draw the block for
+    push ebx
+    mov ebx, [ebp+16] ; The absolute x position to draw on the rectangle
+    push ebx
+    mov ebx, [ebp+20] ; The absolute y position to draw on the rectangle
+    push ebx
+    mov ebx, [ebp+24] ; The total rows to draw on the rectangle
+    push ebx
+    mov ebx, [ebp+28] ; The pixels per row to draw
+    push ebx
+    mov ebx, [ebp+32] ; The total amount of pixel blocks in the provided array
+    int 0x80
+    add esp, 28
+    ret
+
+cos32_video_font_get:
+    push ebp
+    mov ebp, esp
+    mov eax, 13 ; Command 13 get video font
+    mov ebx, [ebp+8] ; The font name to load
+    push ebx
+    int 0x80
+    add esp, 4
+    ret
+
+cos32_video_font_draw:
+    push ebp
+    mov ebp, esp
+    mov eax, 14 ; Command 14 Draw character pixel data into buffer
+    mov ebx, [ebp+8] ; The pointer to the font
+    push ebx
+    mov ebx, [ebp+12] ; The pointer to the buffer we wish to put pixel data into
+    push ebx
+    mov ebx, [ebp+16] ; The pointer to the character array that we wish to draw as pixels
+    push ebx
+    int 0x80
+    add esp, 12
+    ret
+
+cos32_video_font_make_empty_string:
+    push ebp
+    mov ebp, esp
+    mov eax, 15 ; Command 15 create an empty string for font pixel data
+    mov ebx, [ebp+8] ; A pointer to the font
+    push ebx
+    mov ebx, [ebp+12] ; The pointer to the "len" integer specifying how many characters we need this buffer to store
+    push ebx
+    int 0x80
+    add esp, 8
+    ret
+    
