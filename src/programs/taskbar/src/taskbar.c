@@ -16,23 +16,11 @@ int main(int argc, char **argv)
     return -1;
   }
 
-  char c = ((char*)(default_font))[0];
-  if (c)
-  {
-  }
-
-  cos32_video_font_draw(default_font, pixel_ptr, "Hello world!");
+  cos32_video_font_draw(default_font, pixel_ptr, "ABC world!");
   
-  void *taskbar_rect = cos32_video_rectangle_new(0, 0, 320, 10);
-  while (1)
-  {
-    for (int i = 0; i < 15; i++)
-    {
-      cos32_video_rectangle_fill(taskbar_rect, i);
-
-    }
-
-  }
+  void *taskbar_rect = cos32_video_rectangle_new(0, 0, 180, 100);
+       cos32_video_rectangle_fill(taskbar_rect, 4);
+  cos32_video_rectangle_draw_font_data(taskbar_rect, default_font, pixel_ptr, 0, 0, 12);
 
   while (1)
   {

@@ -4,6 +4,7 @@
 #include <stdbool.h>
 
 struct video;
+struct video_font;
 struct video_rectangle
 {
     int width;
@@ -34,6 +35,7 @@ int video_rectangle_set_pixel(struct video_rectangle *rect, int x, int y, char c
 char video_rectangle_get_pixel(struct video_rectangle *rect, int x, int y);
 int video_rectangle_fill(struct video_rectangle* rect, int colour);
 void video_rectangle_draw_block(struct video_rectangle *rect, void *ptr, int absx, int absy, int total_rows, int pixels_per_row);
-void video_rectangle_draw_blocks(struct video_rectangle *rect, void *ptr, int absx, int absy, int total_rows, int pixels_per_row, int total);
+void video_rectangle_draw_blocks(struct video_rectangle *rect, void *ptr, int absx, int absy, int total_rows, int pixels_per_row, int slen);
+void video_rectangle_draw_font_data(struct video_rectangle* rect, struct video_font* font, void* ptr, int absx, int absy, int slen);
 void video_rectangle_set_scale(struct video_rectangle* rect, float scale);
 #endif

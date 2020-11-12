@@ -82,4 +82,14 @@ void cos32_video_font_draw(void* font, void* ptr, const char* message);
  */
 void* cos32_video_font_make_empty_string(void* font, int len);
 
+/**
+ * Draws the font data stored in "ptr" for the given font.
+ * The font data "ptr" must be the pixel rendered buffer and not a pointer to a string
+ * 
+ * Call "cos32_video_font_make_empty_string" and "cos32_video_font_draw" before calling this function
+ * 
+ * Pass the pointer created with "cos32_video_font_make_empty_string" as the "ptr" argument.
+ */
+void* cos32_video_rectangle_draw_font_data(void *rect, void* font, void *ptr, int absx, int absy, int total);
+
 #endif

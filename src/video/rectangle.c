@@ -2,6 +2,7 @@
 #include "video.h"
 #include "memory/kheap.h"
 #include "memory/memory.h"
+#include "video/font/font.h"
 #include "status.h"
 #include <stdbool.h>
 
@@ -42,18 +43,18 @@ int video_rectangle_set_pixel(struct video_rectangle *rect, int x, int y, char c
 
 void video_rectangle_draw_block(struct video_rectangle *rect, void *ptr, int absx, int absy, int total_rows, int pixels_per_row)
 {
+    char *c_ptr = ptr;
     int rx = 0;
     int ry = 0;
-    char *c_ptr = ptr;
     for (int y = 0; y < total_rows; y++)
     {
         ry = absy + y;
         for (int i = 0; i < pixels_per_row; i++)
         {
-            rx = absx + i;
             if ((*c_ptr << i) & 0b10000000)
             {
                 // The pixel is set.
+                rx = absx + i;
                 video_rectangle_set_pixel(rect, rx, ry, 1);
             }
         }
@@ -61,10 +62,15 @@ void video_rectangle_draw_block(struct video_rectangle *rect, void *ptr, int abs
     }
 }
 
-void video_rectangle_draw_blocks(struct video_rectangle *rect, void *ptr, int absx, int absy, int total_rows, int pixels_per_row, int total)
+void video_rectangle_draw_font_data(struct video_rectangle* rect, struct video_font* font, void* ptr, int absx, int absy, int slen)
+{
+    video_rectangle_draw_blocks(rect, ptr, absx, absy, font->c_height, font->c_width, slen);
+}
+
+void video_rectangle_draw_blocks(struct video_rectangle *rect, void *ptr, int absx, int absy, int total_rows, int pixels_per_row, int slen)
 {
     int size_per_block = total_rows;
-    for (int i = 0; i < total; i++)
+    for (int i = 0; i < slen; i++)
     {
         video_rectangle_draw_block(rect, ptr, absx, absy, total_rows, pixels_per_row);
         absx += pixels_per_row;

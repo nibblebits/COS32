@@ -16,6 +16,7 @@ global cos32_video_rectangle_draw_blocks
 global cos32_video_font_get
 global cos32_video_font_draw
 global cos32_video_font_make_empty_string
+global cos32_video_rectangle_draw_font_data
 
 print:
     push ebp
@@ -234,4 +235,29 @@ cos32_video_font_make_empty_string:
     add esp, 8
     pop ebp
     ret
+
+cos32_video_rectangle_draw_font_data:
+    push ebp
+    mov ebp, esp
+    mov eax, 16 ; Command 16 draws the given font pixel data into the rectangle
+    mov ebx, [ebp+8] ; Rectangle
+    push ebx
+    mov ebx, [ebp+12] ; Font : video_font
+    push ebx
+    mov ebx, [ebp+16] ; The pixel buffer that contains the pixel blocks
+    push ebx
+    mov ebx, [ebp+20] ; The absolute x coordinate to draw in this rectangle
+    push ebx
+    mov ebx, [ebp+24] ; The absolute y coordinate to draw in this rectangle
+    push ebx
+    mov ebx, [ebp+28] ; The total number of pixel characters stored in the buffer
+    push ebx
+    int 0x80
+    add esp, 24
+    pop ebp
+    ret
+
+
+
+
     

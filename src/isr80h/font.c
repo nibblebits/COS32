@@ -21,7 +21,7 @@ void* isr80h_command14_font_draw(struct interrupt_frame *frame)
 
     char buf[1024];
     copy_string_from_task(task_current(), text_user_space_addr, buf, sizeof(buf));
-    video_font_draw(font, out, text_user_space_addr);
+    video_font_draw(font, out, buf);
     return 0;
 }
 
