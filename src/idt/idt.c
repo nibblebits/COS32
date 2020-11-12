@@ -17,7 +17,7 @@
 #include "status.h"
 
 
-struct idt_desc idt_desc[COS32_MAX_INTERRUPTS];
+static struct idt_desc idt_desc[COS32_MAX_INTERRUPTS];
 struct idtr_desc idtr_desc;
 extern struct tss tss;
 void isr0_wrapper();
@@ -199,9 +199,6 @@ void idt_page_fault_handler(struct interrupt_frame frame)
     paging_handle_page_fault();
 }
 
-#warning "Abstract these functions out the ISR is getting cluttered..."
-
-
 void isr80h_register_command(int command_id, ISR80H_COMMAND command)
 {
     if (command_id < 0 || command_id >= COS32_MAX_ISR80H_COMMANDS)
@@ -216,6 +213,7 @@ void isr80h_register_command(int command_id, ISR80H_COMMAND command)
     
     isr80h_commands[command_id] = command;
 }
+
 void *isr80h_handle_command(int command, struct interrupt_frame *frame)
 {
     void *result = 0;

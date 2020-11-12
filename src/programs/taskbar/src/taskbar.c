@@ -10,11 +10,15 @@ int main(int argc, char **argv)
     return -1;
   }
   
-
   void* pixel_ptr = cos32_video_font_make_empty_string(default_font, 12);
   if (!pixel_ptr)
   {
     return -1;
+  }
+
+  char c = ((char*)(default_font))[0];
+  if (c)
+  {
   }
 
   cos32_video_font_draw(default_font, pixel_ptr, "Hello world!");

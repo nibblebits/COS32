@@ -154,7 +154,7 @@ void kernel_main(void)
 	kernel_page();
 	enable_paging();
 
-	//isr80h_register_all();
+	isr80h_register_all();
 
 	print("Kernel initialized\n");
 

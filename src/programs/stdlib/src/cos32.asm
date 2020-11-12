@@ -170,6 +170,7 @@ cos32_video_rectangle_draw_block:
     push ebx
     int 0x80
     add esp, 24
+    pop ebp
     ret
 
 
@@ -192,6 +193,7 @@ cos32_video_rectangle_draw_blocks:
     mov ebx, [ebp+32] ; The total amount of pixel blocks in the provided array
     int 0x80
     add esp, 28
+    pop ebp
     ret
 
 cos32_video_font_get:
@@ -202,6 +204,7 @@ cos32_video_font_get:
     push ebx
     int 0x80
     add esp, 4
+    pop ebp
     ret
 
 cos32_video_font_draw:
@@ -216,6 +219,7 @@ cos32_video_font_draw:
     push ebx
     int 0x80
     add esp, 12
+    pop ebp
     ret
 
 cos32_video_font_make_empty_string:
@@ -228,5 +232,6 @@ cos32_video_font_make_empty_string:
     push ebx
     int 0x80
     add esp, 8
+    pop ebp
     ret
     

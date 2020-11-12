@@ -20,18 +20,19 @@ SECTIONS
 	{
 		*(.text)
 	}
-	
-	/* Read-only data. */
-	.rodata : ALIGN(4096)
+
+	.asm : ALIGN(4096)
 	{
-		*(.rodata)
+		*(.asm)
 	}
+
  
- 
-	/* Read-write data (initialized) */
+ 	/* Read-write data (initialized) */
 	.data : ALIGN(4096)
 	{
 		*(.data)
+		*(.rodata)
+
 	}
  
 	/* Read-write data (uninitialized) and stack */
@@ -41,13 +42,7 @@ SECTIONS
 		*(.bss)
 	}
 	
-
-	.asm : ALIGN(4096)
-	{
-		*(.asm)
-	}
-
- 
+	
  
 	/* The compiler may produce other sections, by default it will put them in
 	   a segment with the same name. Simply add stuff here as needed. */

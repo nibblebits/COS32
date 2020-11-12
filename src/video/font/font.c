@@ -64,8 +64,6 @@ struct video_font *video_font_load(const char *filename, const char* name)
         goto out;
     }
 
-
-
 out:
     return font;
 }
