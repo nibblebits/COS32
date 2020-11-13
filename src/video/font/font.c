@@ -105,7 +105,6 @@ void video_font_draw_character(struct video_font *font, void *out, char c)
 
 void video_font_draw(struct video_font *font, void *out, const char *text)
 {
-    //const char* font_data = font->data;
     char* out_c = out;
     int len = strlen(text);
     for (int i = 0; i < len; i++)

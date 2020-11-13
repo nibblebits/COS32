@@ -23,7 +23,7 @@ char video_rectangle_get_pixel(struct video_rectangle *rect, int x, int y)
     {
         return -EINVARG;
     }
-    int index = (y * rect->height) + x;
+    int index = (y * rect->width) + x;
     return rect->pixels[index];
 }
 
@@ -34,7 +34,7 @@ int video_rectangle_set_pixel(struct video_rectangle *rect, int x, int y, char c
         return -EINVARG;
     }
 
-    int index = (y * rect->height) + x;
+    int index = (y * rect->width) + x;
     rect->pixels[index] = colour;
     rect->redraw = true;
 
@@ -92,7 +92,6 @@ int video_rectangle_fill(struct video_rectangle *rect, int colour)
             }
         }
     }
-
     return res;
 }
 
@@ -108,6 +107,7 @@ void video_rectangle_draw(struct video_rectangle *rect)
             video_rectangle_vga_320_200_plot_pixel(back_buffer, x + rect->x, y + rect->y, pixel);
         }
     }
+
     rect->redraw = false;
 }
 
