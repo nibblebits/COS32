@@ -138,6 +138,9 @@ void *task_current_get_stack_item(int index);
  */
 int task_page();
 
+int task_page_task(struct task* task);
+
+
 /**
  * Should be called for the first task we ever run, i.e no tasks exist before us
  */

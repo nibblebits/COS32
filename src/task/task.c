@@ -97,8 +97,13 @@ struct task *task_current()
 
 int task_page()
 {
+    return task_page_task(current_task);
+}
+
+int task_page_task(struct task* task)
+{
     user_registers();
-    task_switch(current_task);
+    task_switch(task);
     return 0;
 }
 
@@ -262,9 +267,8 @@ void *task_get_stack_item(struct task *task, int index)
     // We assume the stack grows downwards for this implementation to work.
     uint32_t *sp_ptr = (uint32_t *)task->registers.esp;
 
-#warning "BUG HERE!!!! MUST CHOOSE CORRECT TASK PAGE FOR PROVIDED TASK"
     // Let's switch to the process page
-    task_page();
+    task_page_task(task);
 
     result = (void *)sp_ptr[index];
 
