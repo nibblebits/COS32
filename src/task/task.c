@@ -103,7 +103,7 @@ int task_page()
 int task_page_task(struct task* task)
 {
     user_registers();
-    task_switch(task);
+    paging_switch(task->page_directory);
     return 0;
 }
 
