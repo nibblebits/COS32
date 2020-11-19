@@ -17,6 +17,9 @@ int main(int argc, char **argv)
 
   void* ptr = cos32_video_rectangle_new(100, 80, 120, 120);
   cos32_video_rectangle_fill(ptr, 5);
+
+  cos32_video_rectangle_get("taskbar");
+  
   while(1) {}
   while (1)
   {

@@ -78,3 +78,11 @@ void* isr80h_command17_rectangle_publish(struct interrupt_frame* frame)
     copy_string_from_task(task_current(), user_space_rectangle_name, buf, sizeof(buf));
     return (void*) video_rectangle_publish(buf, video_rect_addr);
 }
+
+void* isr80h_command18_rectangle_get(struct interrupt_frame* frame)
+{
+    void* user_space_rectangle_name = task_current_get_stack_item(0);
+    char buf[1024];
+    copy_string_from_task(task_current(), user_space_rectangle_name, buf, sizeof(buf));
+    return (void*) video_rectangle_get(buf);
+}

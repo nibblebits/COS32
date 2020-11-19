@@ -99,4 +99,9 @@ void* cos32_video_rectangle_draw_font_data(void *rect, void* font, void *ptr, in
  */
 void* cos32_video_rectangle_publish(void* rect, const char* name);
 
+
+/**
+ * Gets the published rectangle by the given name
+ */
+void* cos32_video_rectangle_get(const char* name);
 #endif

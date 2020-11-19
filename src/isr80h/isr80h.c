@@ -26,5 +26,5 @@ void isr80h_register_all()
     isr80h_register_command(SYSTEM_COMMAND_VIDEO_FONT_MAKE_EMPTY_STRING, isr80h_command_15_font_make_empty_string);
     isr80h_register_command(SYSTEM_COMMAND_VIDEO_RECTANGLE_DRAW_FONT_DATA, isr80h_command16_rectangle_draw_font_data);
     isr80h_register_command(SYSTEM_COMMAND_VIDEO_RECTANGLE_PUBLISH, isr80h_command17_rectangle_publish);
-    
+    isr80h_register_command(SYSTEM_COMMAND_VIDEO_RECTANGLE_GET, isr80h_command18_rectangle_get);
 }
