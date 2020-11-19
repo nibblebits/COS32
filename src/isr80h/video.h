@@ -8,4 +8,5 @@ void* isr80h_command10_video_rectangle_fill(struct interrupt_frame* frame);
 void* isr80h_command11_video_rectangle_draw_block(struct interrupt_frame* frame);
 void *isr80h_command12_video_rectangle_draw_blocks(struct interrupt_frame *frame);
 void* isr80h_command16_rectangle_draw_font_data(struct interrupt_frame* frame);
+void* isr80h_command17_rectangle_publish(struct interrupt_frame* frame);
 #endif

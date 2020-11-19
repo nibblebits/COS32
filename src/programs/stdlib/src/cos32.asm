@@ -17,6 +17,7 @@ global cos32_video_font_get
 global cos32_video_font_draw
 global cos32_video_font_make_empty_string
 global cos32_video_rectangle_draw_font_data
+global cos32_video_rectangle_publish
 
 print:
     push ebp
@@ -258,6 +259,18 @@ cos32_video_rectangle_draw_font_data:
     ret
 
 
+cos32_video_rectangle_publish:
+    push ebp
+    mov ebp, esp
+    mov eax, 17 ; Command 17 publishes the given rectangle
+    mov ebx, [ebp+8] ; Rectangle
+    push ebx
+    mov ebx, [ebp+12] ; The address of the name of the rectangle
+    push ebx
+    int 0x80
+    add esp, 8
+    pop ebp
+    ret
 
 
     

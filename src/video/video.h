@@ -27,6 +27,11 @@ struct terminal_properties
 
 };
 
+struct video_rectangle_list_item
+{
+    struct video_rectangle* rectangle;
+    struct video_rectangle_list_item* next;
+};
 
 struct video
 {
@@ -34,8 +39,8 @@ struct video
     // Pointer to video memory
     void* ptr;
 
-    struct video_rectangle* rectangles;
-    struct video_rectangle* rectangle_last;
+    struct video_rectangle_list_item* rectangles;
+    struct video_rectangle_list_item* rectangle_last;
 
 };
 

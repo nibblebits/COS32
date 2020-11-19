@@ -92,4 +92,11 @@ void* cos32_video_font_make_empty_string(void* font, int len);
  */
 void* cos32_video_rectangle_draw_font_data(void *rect, void* font, void *ptr, int absx, int absy, int total);
 
+
+/**
+ * Publishes the given rectangle with the given name,
+ * makes this rectangle globally accessible from all processes
+ */
+void* cos32_video_rectangle_publish(void* rect, const char* name);
+
 #endif

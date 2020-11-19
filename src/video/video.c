@@ -147,11 +147,11 @@ void video_draw(struct video *video)
 {
 	// Clear the back buffer
 	video_back_buffer_clear();
-	struct video_rectangle *rect = video->rectangles;
-	while (rect != 0)
+	struct video_rectangle_list_item *list_item = video->rectangles;
+	while (list_item != 0)
 	{
-		video_rectangle_draw(rect);
-		rect = rect->next;
+		video_rectangle_draw(list_item->rectangle);
+		list_item = list_item->next;
 	}
 
 	// Here we flush the back buffer

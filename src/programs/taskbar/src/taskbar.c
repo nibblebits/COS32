@@ -22,6 +22,9 @@ int main(int argc, char **argv)
   cos32_video_rectangle_fill(taskbar_rect, 2);
   cos32_video_rectangle_draw_font_data(taskbar_rect, default_font, pixel_ptr, 120, 5, strlen("COS32 Kernel"));
 
+  // Publish the rectangle so its accessible from other processes
+  cos32_video_rectangle_publish(taskbar_rect, "taskbar");
+  
   while (1)
   {
   }

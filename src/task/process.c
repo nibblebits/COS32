@@ -401,6 +401,8 @@ static struct video *process_get_video(PROCESS_FLAGS flags, struct process *pare
     return flags & PROCESS_USE_PARENT_VIDEO_MEMORY ? parent->video : video_new();
 }
 
+
+
 int process_load_for_slot(const char *filename, struct process **process, int process_slot, struct process *parent, PROCESS_FLAGS flags)
 {
     int res = 0;
@@ -450,6 +452,14 @@ int process_load_for_slot(const char *filename, struct process **process, int pr
     _process->stack = program_stack_ptr;
 
     _process->video = process_get_video(flags, parent);
+    if (!_process->video)
+    {
+        res = -ENOMEM;
+        goto out;
+    }
+
+    // The default rectangles that should be shown for each process must be registered to us
+    video_rectangle_register_default_rectangles(_process->video);
 
     task = task_new(_process);
     if (ERROR_I(task) <= 0)

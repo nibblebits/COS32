@@ -68,3 +68,13 @@ void *isr80h_command16_rectangle_draw_font_data(struct interrupt_frame *frame)
     video_rectangle_draw_font_data(rect, font, ptr, absx, absy, total);
     return 0;
 }
+
+void* isr80h_command17_rectangle_publish(struct interrupt_frame* frame)
+{
+    void* user_space_rectangle_name = task_current_get_stack_item(0);
+    void* video_rect_addr = task_current_get_stack_item(1);
+
+    char buf[1024];
+    copy_string_from_task(task_current(), user_space_rectangle_name, buf, sizeof(buf));
+    return (void*) video_rectangle_publish(buf, video_rect_addr);
+}

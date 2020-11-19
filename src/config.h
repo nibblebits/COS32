@@ -52,7 +52,7 @@
 // The maximum amount of malloc allocations a user program can have
 #define COS32_MAX_PROGRAM_ALLOCATIONS 1024
 
-
+#define COS32_VIDEO_RECTANGLES_MAX_PUBLISHABLE 64
 
 
 #define KERNEL_CODE_SEGMENT 0x8
@@ -63,7 +63,6 @@
 
 // DOuble check this thing
 #define USER_CODE_SEGMENT 0x1b
-
 
 
 
