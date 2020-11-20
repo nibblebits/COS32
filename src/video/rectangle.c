@@ -262,4 +262,17 @@ void video_rectangle_register_default_rectangles(struct video* video)
 
     // Register the rectangle on this processes video!
     video_rectangle_register(video, taskbar_rect);
+
+
+    // We should have a rectangle for the terminal for console programs
+    // This will have to be enabled in the future, for now its default
+    struct video_rectangle* printable_rectangle = video_rectangle_new(video, 0, taskbar_rect->height, 320, 200-taskbar_rect->height);
+    video_rectangle_fill(printable_rectangle, 3);
+    if (!printable_rectangle)
+    {
+        return;
+    }
+
+    // Any terminal operations to 0xB8000 will result in this rectangle being printed too.
+    video->printing_rectangle = printable_rectangle;
 }

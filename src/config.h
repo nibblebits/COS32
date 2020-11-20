@@ -9,11 +9,9 @@
 #define COS32_KERNAL_HEAP_TABLE_ADDRESS 0x00007E00 
 
 #define COS32_100MB 104857600
+#define COS32_200MB COS32_100MB * 2
 #define COS32_1MB 1048576
 
-// We have this statically, in a better implementation we would determine
-// how much RAM the system has and point our table lower in memory where we have many blocks free..
-#define COS32_TOTAL_KERNEL_HEAP_BLOCKS 256
 
 // 13 Megabyte maximum at this region for kernel heap
 #define COS32_KERNEL_HEAP_ADDRESS  0x01000000

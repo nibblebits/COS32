@@ -25,6 +25,12 @@ struct terminal_properties
     // The colour of the terminal
     uint8_t terminal_color;
 
+    // ASCII Data for the terminal
+    char* data;
+    
+    // The video associated with this terminal
+    struct video* video;
+
 };
 
 struct video_rectangle_list_item
@@ -41,6 +47,9 @@ struct video
 
     struct video_rectangle_list_item* rectangles;
     struct video_rectangle_list_item* rectangle_last;
+
+    // The rectangle that all print operations should be drawn too
+    struct video_rectangle* printing_rectangle;
 
 };
 

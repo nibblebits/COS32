@@ -10,7 +10,7 @@ int main(int argc, char **argv)
   kernel_information(&info);
 
 
-  printf("COS32 Shell\n");
+  printf("COS32 Shell ");
   printf("Kernel version: D%i-B%i\n", info.date, info.build_no);
 
   char *shell_buf = malloc(512);

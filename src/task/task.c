@@ -400,11 +400,7 @@ static void task_list_remove(struct task *task)
 
 void task_print(const char *message)
 {
-    // This only works because the task can see the entire kernel address space, bare in mind problems will happen
-    // if I change this in the future
-    task_page();
     video_terminal_writestring(&current_task->process->video->properties, message);
-    kernel_page();
 }
 
 void task_putchar(char c)

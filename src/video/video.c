@@ -6,11 +6,13 @@
 #include "io/io.h"
 #include "string/string.h"
 #include "config.h"
+#include "kernel.h"
 
 #include <stdint.h>
 #include <stddef.h>
 
 void *video_default = 0;
+static struct video_font *console_font = 0;
 
 /* Hardware text mode color constants. */
 enum vga_color
@@ -47,7 +49,6 @@ static const size_t VGA_WIDTH = 80;
 static const size_t VGA_HEIGHT = 25;
 
 struct terminal_properties kernel_terminal_properties;
-uint16_t *terminal_buffer;
 
 void terminal_putchar(struct terminal_properties *properties, char c);
 
@@ -55,22 +56,21 @@ void kernel_terminal_initialize(void)
 {
 	kernel_terminal_properties.terminal_row = 0;
 	kernel_terminal_properties.terminal_col = 0;
+	kernel_terminal_properties.video = 0;
+	// Heap probably doesn't exist at this point in time so we cant allocae the data for the kernel yet
+	kernel_terminal_properties.data = 0;
 	kernel_terminal_properties.terminal_color = vga_entry_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
-	terminal_buffer = (uint16_t *)0xB8000;
-	for (size_t y = 0; y < VGA_HEIGHT; y++)
-	{
-		for (size_t x = 0; x < VGA_WIDTH; x++)
-		{
-			const size_t index = y * VGA_WIDTH + x;
-			terminal_buffer[index] = vga_entry(' ', kernel_terminal_properties.terminal_color);
-		}
-	}
 }
 
-void terminal_putentryat(uint16_t *terminal_buffer, char c, uint8_t color, size_t x, size_t y)
+void terminal_putentryat(char *terminal_buffer, char c, size_t x, size_t y)
 {
+	if (!terminal_buffer)
+	{
+		return;
+	}
+
 	const size_t index = y * VGA_WIDTH + x;
-	terminal_buffer[index] = vga_entry(c, color);
+	terminal_buffer[index] = c;
 }
 
 void terminal_backspace(struct terminal_properties *properties)
@@ -113,7 +113,7 @@ void terminal_putchar(struct terminal_properties *properties, char c)
      * write to video memory directly. This is why paging is important. We can safetly write to the real video memory
      * because if the task has paged it will write to its own internal buffers instead
      */
-	terminal_putentryat(terminal_buffer, c, properties->terminal_color, properties->terminal_col, properties->terminal_row);
+	terminal_putentryat(properties->data, c, properties->terminal_col, properties->terminal_row);
 	if (++properties->terminal_col == VGA_WIDTH)
 	{
 		properties->terminal_col = 0;
@@ -143,10 +143,34 @@ void print(const char *message)
 	video_terminal_writestring(&kernel_terminal_properties, message);
 }
 
+
+
+/**
+ * Pastes the terminal buffer to the rectangle after first clearing it
+ */
+static void video_terminal_paste(struct terminal_properties *video, struct video_rectangle *rectangle)
+{
+	video_rectangle_fill(rectangle, 3);
+
+	int terminal_buf_len = VGA_WIDTH*VGA_HEIGHT;
+
+	void* str_pixel_data = video_font_make_empty_string(console_font, terminal_buf_len);
+	video_font_draw(console_font, str_pixel_data, video->data);
+	video_rectangle_draw_font_data(rectangle, console_font, str_pixel_data, 0, 0, terminal_buf_len);
+	video_font_free_string(str_pixel_data);
+}
+
 void video_draw(struct video *video)
 {
 	// Clear the back buffer
 	video_back_buffer_clear();
+
+	// Let's draw the terminal data to the printing rectangle
+	if (video->printing_rectangle)
+	{
+		video_terminal_paste(&video->properties, video->printing_rectangle);
+	}
+
 	struct video_rectangle_list_item *list_item = video->rectangles;
 	while (list_item != 0)
 	{
@@ -175,6 +199,13 @@ void video_init()
 
 	// Load all the fonts
 	video_font_load_defaults();
+
+	// Let's set the console fault
+	console_font = video_font_get("Default");
+	if (!console_font)
+	{
+		panic("No default font was found, we cannot continue!\n");
+	}
 }
 
 char *video_back_buffer_clear()
@@ -211,7 +242,9 @@ struct video *video_new()
 	video->properties.terminal_row = 0;
 	video->properties.terminal_col = 0;
 	video->properties.terminal_color = vga_entry_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
-
+	video->properties.video = video;
+	video->properties.data = kzalloc(VGA_WIDTH*VGA_HEIGHT);
+	memset(video->properties.data, ' ', VGA_WIDTH*VGA_HEIGHT);
 	video->ptr = video_ptr;
 
 	return video;
@@ -225,7 +258,6 @@ void video_free(struct video *video)
 	kfree(video->ptr);
 	kfree(video);
 }
-
 
 /**
  * Saves the current video  memory state into the provided video pointer
