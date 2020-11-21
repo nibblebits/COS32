@@ -46,7 +46,7 @@ static inline uint16_t vga_entry(unsigned char uc, uint8_t color)
 }
 
 static const size_t VGA_WIDTH = 80;
-static const size_t VGA_HEIGHT = 25;
+static const size_t VGA_HEIGHT = 20;
 
 struct terminal_properties kernel_terminal_properties;
 
@@ -54,22 +54,21 @@ void terminal_putchar(struct terminal_properties *properties, char c);
 
 void kernel_terminal_initialize(void)
 {
-	kernel_terminal_properties.terminal_row = 0;
-	kernel_terminal_properties.terminal_col = 0;
+	kernel_terminal_properties.index = 0;
+
 	kernel_terminal_properties.video = 0;
 	// Heap probably doesn't exist at this point in time so we cant allocae the data for the kernel yet
 	kernel_terminal_properties.data = 0;
 	kernel_terminal_properties.terminal_color = vga_entry_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
 }
 
-void terminal_putentryat(char *terminal_buffer, char c, size_t x, size_t y)
+void terminal_putentryat(char *terminal_buffer, char c, int index)
 {
 	if (!terminal_buffer)
 	{
 		return;
 	}
 
-	const size_t index = y * VGA_WIDTH + x;
 	terminal_buffer[index] = c;
 }
 
@@ -77,27 +76,15 @@ void terminal_backspace(struct terminal_properties *properties)
 {
 
 	// We can't go back anymore
-	if (properties->terminal_row == 0x00 && properties->terminal_col == 0x00)
+	if (properties->index == 0)
 		return;
 
-	if (properties->terminal_col == 0x00)
-	{
-		properties->terminal_row -= 1;
-		properties->terminal_col = VGA_WIDTH;
-	}
-
-	properties->terminal_col -= 1;
+	properties->index -= 1;
 	terminal_putchar(properties, ' ');
-	properties->terminal_col -= 1;
+	properties->index -= 1;
 }
 void terminal_putchar(struct terminal_properties *properties, char c)
 {
-	if (c == '\n')
-	{
-		properties->terminal_col = 0;
-		properties->terminal_row += 1;
-		return;
-	}
 	// Backspace
 	if (c == 0x08)
 	{
@@ -105,21 +92,8 @@ void terminal_putchar(struct terminal_properties *properties, char c)
 		return;
 	}
 
-	/**
-     * Notice we actually write directly to video memory and don't expect a videos buffer,
-     * this was no accident, each task has the real video memory paged to point to its own video memory.
-     * This makes more sense than setting the video memory of the video structure as we need to remember
-     * that pixels can also be set manually and theirs no gaurantee a user will use our functions, they may
-     * write to video memory directly. This is why paging is important. We can safetly write to the real video memory
-     * because if the task has paged it will write to its own internal buffers instead
-     */
-	terminal_putentryat(properties->data, c, properties->terminal_col, properties->terminal_row);
-	if (++properties->terminal_col == VGA_WIDTH)
-	{
-		properties->terminal_col = 0;
-		if (++properties->terminal_row == VGA_HEIGHT)
-			properties->terminal_row = 0;
-	}
+	terminal_putentryat(properties->data, c, properties->index);
+	properties->index++;
 }
 
 void terminal_write(struct terminal_properties *properties, const char *data, size_t size)
@@ -144,6 +118,38 @@ void print(const char *message)
 }
 
 
+/**
+ * Splits the data into a seperate line if it gets too large or new line character is present
+ */
+static char* video_terminal_get_next_line(struct video_rectangle* rect, struct video_font* font, char* data_now, int* len)
+{
+	*len = 0;
+	
+	int slen = strlen(data_now);
+	if (slen == 0)
+	{
+		return 0;
+	}
+
+	// Let's prevent the text going off the screen, we should loop around in such cases
+	int max_characters = rect->width / font->c_width;
+	if (slen > max_characters)
+	{	
+		slen = max_characters;
+	}
+
+	for (int i = 0; i < slen; i++)
+	{
+		if (data_now[i] == '\n')
+		{
+			*len = i;
+			return &data_now[i]+1;
+		}
+	}
+
+	*len = slen;
+	return &data_now[slen];
+}
 
 /**
  * Pastes the terminal buffer to the rectangle after first clearing it
@@ -151,13 +157,22 @@ void print(const char *message)
 static void video_terminal_paste(struct terminal_properties *video, struct video_rectangle *rectangle)
 {
 	video_rectangle_fill(rectangle, 3);
+	
+	int x = 0;
+	int y = 0;
+	int len = 0;
+	char* next_data = video->data;
+	char* data_now = video->data;
+	while((next_data = video_terminal_get_next_line(rectangle, console_font, data_now, &len)))
+	{
+		void* str_pixel_data = video_font_make_empty_string(console_font, len);
+		video_font_draw(console_font, str_pixel_data, data_now);
+		video_rectangle_draw_font_data(rectangle, console_font, str_pixel_data, x, y, len);
+		video_font_free_string(str_pixel_data);
+		data_now = next_data;
+		y += console_font->c_height;
+	}
 
-	int terminal_buf_len = VGA_WIDTH*VGA_HEIGHT;
-
-	void* str_pixel_data = video_font_make_empty_string(console_font, terminal_buf_len);
-	video_font_draw(console_font, str_pixel_data, video->data);
-	video_rectangle_draw_font_data(rectangle, console_font, str_pixel_data, 0, 0, terminal_buf_len);
-	video_font_free_string(str_pixel_data);
 }
 
 void video_draw(struct video *video)
@@ -239,12 +254,11 @@ struct video *video_new()
 	memcpy(video_ptr, video_default, COS32_VIDEO_MEMORY_SIZE);
 
 	struct video *video = kzalloc(sizeof(struct video));
-	video->properties.terminal_row = 0;
-	video->properties.terminal_col = 0;
+	video->properties.index = 0;
 	video->properties.terminal_color = vga_entry_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
 	video->properties.video = video;
 	video->properties.data = kzalloc(VGA_WIDTH*VGA_HEIGHT);
-	memset(video->properties.data, ' ', VGA_WIDTH*VGA_HEIGHT);
+	memset(video->properties.data, 0x00, VGA_WIDTH*VGA_HEIGHT);
 	video->ptr = video_ptr;
 
 	return video;

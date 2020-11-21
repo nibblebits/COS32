@@ -17,17 +17,14 @@
 
 struct terminal_properties
 {
-    // The row that the terminal will write to next
-    size_t terminal_row;
-    // the column that the terminal will write to next
-    size_t terminal_col;
-
+    // The index in the data array for the current character
+    int index;
+    
     // The colour of the terminal
     uint8_t terminal_color;
 
     // ASCII Data for the terminal
     char* data;
-    
     // The video associated with this terminal
     struct video* video;
 

@@ -72,7 +72,7 @@ void video_rectangle_draw_font_data(struct video_rectangle *rect, struct video_f
 }
 
 void video_rectangle_draw_blocks(struct video_rectangle *rect, void *ptr, int absx, int absy, int total_rows, int pixels_per_row, int slen)
-{
+{    
     int size_per_block = total_rows;
     for (int i = 0; i < slen; i++)
     {
