@@ -19,18 +19,15 @@ static struct paging_fault_handler *fault_handlers[COS32_MAX_PAGING_FAULT_HANDLE
 static bool paging_process_live_fault(struct paging_fault *fault);
 static void paging_process_past_fault(struct paging_fault *fault);
 
-
 void paging_init()
 {
 }
 
-
-void paging_process(struct paging_4gb_chunk* chunk)
+void paging_process(struct paging_4gb_chunk *chunk)
 {
     // Process the fault queue of the given paging chunk
     paging_process_fault_queue(chunk);
 }
-
 
 // FIx the magic numbers.....
 
@@ -63,12 +60,26 @@ void paging_handle_page_fault()
     // Let's now let the fault handler know about this live fault
     if (!paging_process_live_fault(fault))
     {
-        panic("Unhandled page fault!\n");
+        if (is_kernel_page())
+        {
+            panic("Unhandled page fault!\n");
+        }
+
+        // We have to switch to the kernel page as we need to do kernel stuff
+        kernel_page();
+        
+        // It was a user process that page faulted?
+        // Kill the process
+        process_crash(process_current(), -1);
+
+        // We have no task to go back too as we just destoryed the process and its tasks
+        // so we must call task_next to change the current task
+        task_next();
     }
 }
-static struct paging_fault *paging_new_fault(struct paging_4gb_chunk* chunk)
+static struct paging_fault *paging_new_fault(struct paging_4gb_chunk *chunk)
 {
-    struct paging_fault* ptr = kzalloc(sizeof(struct paging_fault));
+    struct paging_fault *ptr = kzalloc(sizeof(struct paging_fault));
     if (!ptr)
     {
         return 0;
@@ -76,7 +87,6 @@ static struct paging_fault *paging_new_fault(struct paging_4gb_chunk* chunk)
 
     ptr->chunk = chunk;
     return ptr;
-
 }
 
 static void paging_free_fault(struct paging_fault *fault)

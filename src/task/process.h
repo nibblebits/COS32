@@ -96,6 +96,18 @@ void process_wake(struct process* process);
 void process_pause(struct process* process);
 
 /**
+ * Terminates the provided process with the given error code
+ */
+int process_terminate(struct process* process, int error_code);
+
+/**
+ * Called when a process has done something illegal and needs terminating.
+ * When a process becomes unstable it can be called crashed. Call this function
+ * to terminate the process and report the crash.
+ */
+int process_crash(struct process* process, int error_code);
+
+/**
  * Returns how many command arguments we have after the provided argument
  */
 int process_count_command_arguments(struct command_argument* argument);

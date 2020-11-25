@@ -403,6 +403,18 @@ static struct video *process_get_video(PROCESS_FLAGS flags, struct process *pare
 
 
 
+int process_crash(struct process* process, int error_code)
+{
+    return process_terminate(process, error_code);
+}
+
+int process_terminate(struct process* process, int error_code)
+{
+    // Free the current process
+    process_free(process);
+    return 0;
+}
+
 int process_load_for_slot(const char *filename, struct process **process, int process_slot, struct process *parent, PROCESS_FLAGS flags)
 {
     int res = 0;

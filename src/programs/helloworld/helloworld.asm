@@ -11,7 +11,7 @@ global _start
 _start:
 
 start:
-    mov ecx, 10000000
+    mov ecx, 1000
 continue:
     loop continue
     

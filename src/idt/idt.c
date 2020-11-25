@@ -107,18 +107,11 @@ out:
 
 void idt_general_protection_fault(int interrupt)
 {
-    // Free the current process
-    int id = process_current()->id;
-    process_free(process_current());
+    // Crash the program that faulted.
+    process_crash(process_current(), -1);
 
-    // Load the killed program so the user knows this process was killed
-    struct process *new_process = 0;
-    int res = process_load_for_slot("0:/killed.e", &new_process, id, 0, 0);
-    if (res == 0)
-    {
-        process_start(new_process);
-    }
-
+    // Go to the next task as the task of the process we crashed
+    // Is now non-existant.
     task_next();
 }
 
