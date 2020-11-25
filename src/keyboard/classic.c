@@ -5,6 +5,7 @@
 #include "status.h"
 #include "kernel.h"
 #include "task/task.h"
+#include "string/string.h"
 
 
 int classic_keyboard_init();
@@ -13,7 +14,7 @@ int classic_keyboard_pop();
 
 // An array of special key scancodes ( I don't like magic numbers change this soon )
 static uint8_t keyboard_special_keys_set_one[] = {
-    0x3B, 0x3C, 0x3D, 0x3E, 0x3F, 0x3F, 0x40, 0x41, 0xf2, 0x43, 0x44, 0x57, 0x58};
+    0x3B, 0x3C, 0x3D, 0x3E, 0x3F, 0x3F, 0x40, 0x41, 0x43, 0x44, 0x57, 0x58, 0x3A};
 
 /*
  		0x01 	escape pressed 	0x02 	1 pressed 	0x03 	2 pressed
@@ -163,7 +164,33 @@ uint8_t classic_keyboard_scancode_to_char(uint8_t scancode)
         return 0;
     }
 
-    return keyboard_scan_set_one[scancode];
+    char c = keyboard_scan_set_one[scancode];
+    // If the caps lock is not on then we will need to convert the character to lowercase
+    if (!keyboard_is_special_on(CAPS_LOCK_PRESSED_OR_RELEASED))
+    {
+        c = tolower(c);
+    }
+
+    return c;
+}
+
+
+static void classic_keyboard_handle_caps_lock_press(int scancode)
+{
+    // We don't care if caps lock is released, we dont want to process this event
+    // We only care about press events.
+    if (scancode & CLASSIC_KEYBOARD_KEY_RELEASED)
+    {
+        return;
+    }
+
+    if (keyboard_is_special_on(CAPS_LOCK_PRESSED_OR_RELEASED))
+    {
+        keyboard_special_off(CAPS_LOCK_PRESSED_OR_RELEASED);
+        return;
+    }
+
+    keyboard_special_on(CAPS_LOCK_PRESSED_OR_RELEASED);
 }
 
 /**
@@ -179,9 +206,17 @@ void classic_keyboard_handle_interrupt()
 
     // Unset the key released b it as we want to get the special index regardless if the key was released or not
     int special_index = classic_keyboard_scancode_special(scancode & ~CLASSIC_KEYBOARD_KEY_RELEASED);
-    
+
+    // Some cases are special, such as the caps lock .
+    // Maybe a better abstraction can be implemented at another date.
+    if (special_index == CAPS_LOCK_PRESSED_OR_RELEASED)
+    {
+        classic_keyboard_handle_caps_lock_press(scancode);
+        return;
+    }
+
     // Key is released
-    if (scancode & CLASSIC_KEYBOARD_KEY_RELEASED)
+    if ((scancode & CLASSIC_KEYBOARD_KEY_RELEASED))
     {
         // Is the scan code special?
         if (special_index != -1)
