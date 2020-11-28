@@ -94,6 +94,13 @@ int process_switch(struct process *process)
     return 0;
 }
 
+
+void process_get_arguments(struct process* process, int* argc, char*** argv)
+{
+    *argc = process->arguments.argc;
+    *argv = process->arguments.argv;
+}
+
 /**
  * Injects the arguments into the process stack, used to inject argv, argc.
  * 
@@ -113,12 +120,15 @@ int process_inject_arguments(struct process *process, struct command_argument *r
         goto out;
     }
 
-    char **argv = kzalloc(sizeof(const char *) * argc);
+    char **argv = process_malloc(process, sizeof(const char *) * argc);
     if (!argv)
     {
         res = -ENOMEM;
         goto out;
     }
+
+    uint32_t directory_out, table_out = 0;
+    paging_get_indexes(argv, &directory_out, &table_out);
 
     // Now we have the memory we need let's start setting it
     while (current)
@@ -139,19 +149,10 @@ int process_inject_arguments(struct process *process, struct command_argument *r
         i++;
     }
 
-    // Now we push the argv
-    res = task_push_stack_item(process->task, (uint32_t)argv);
-    if (ISERR(res))
-    {
-        goto out;
-    }
-
-    // Let's inject the total arguments
-    res = task_push_stack_item(process->task, argc);
-    if (ISERR(res))
-    {
-        goto out;
-    }
+    // In previous implementations we would push to the tasks stack, in this implementation
+    // We will just remember the pointers for the process to poll us for later on
+    process->arguments.argc = argc;
+    process->arguments.argv = argv;
 
 out:
     return res;
@@ -177,6 +178,11 @@ int process_load_start(const char *path, struct process *parent, PROCESS_FLAGS f
         }
     }
 
+    char* ptr = kzalloc(65535);
+    if(ptr)
+    {
+        
+    }
     // Start the process :)
     res = process_start(process);
     if (ISERR(res))
@@ -401,14 +407,109 @@ static struct video *process_get_video(PROCESS_FLAGS flags, struct process *pare
     return flags & PROCESS_USE_PARENT_VIDEO_MEMORY ? parent->video : video_new();
 }
 
-
-
-int process_crash(struct process* process, int error_code)
+struct command_argument *process_arguments_create(const char *starting_argument)
 {
-    return process_terminate(process, error_code);
+    struct command_argument *argument = process_argument_create_one();
+    if (!argument)
+    {
+        return 0;
+    }
+
+    strncpy(argument->argument, starting_argument, sizeof(argument->argument));
+    return argument;
 }
 
-int process_terminate(struct process* process, int error_code)
+struct command_argument *process_argument_create_one()
+{
+    return kzalloc(sizeof(struct command_argument));
+}
+
+struct command_argument *process_arguments_get_last(struct command_argument *root_argument)
+{
+    struct command_argument *current = root_argument;
+    while (current)
+    {
+        if (current->next == 0)
+            return current;
+
+        current = current->next;
+    }
+
+    return 0;
+}
+
+struct command_argument *process_arguments_add(struct command_argument *arguments, const char *argument)
+{
+    struct command_argument *last_arg = process_arguments_get_last(arguments);
+    struct command_argument *new_argument = process_argument_create_one();
+    last_arg->next = new_argument;
+
+    strncpy(new_argument->argument, argument, sizeof(new_argument->argument));
+    return new_argument;
+}
+
+void process_argument_destory(struct command_argument *argument)
+{
+    kfree(argument);
+}
+
+void process_arguments_destory(struct command_argument *root_argument)
+{
+    struct command_argument *current = root_argument;
+    while (current)
+    {
+        struct command_argument *next_arg = current->next;
+        process_argument_destory(current);
+        current = next_arg;
+    }
+}
+
+int process_crash(struct process *process, int error_code)
+{
+    struct command_argument *root_argument = 0;
+    int res = 0;
+
+    // Store the filename of the crashed process
+    char filename[COS32_MAX_PATH];
+    strncpy(filename, process->filename, sizeof(filename));
+
+    // itoa recyles the same memory, this can be a problem so we must copy the data
+    char error_code_str[10];
+    memset(error_code_str, 0, sizeof(error_code_str));
+    strncpy(error_code_str, itoa(error_code), sizeof(error_code_str));
+
+    char death_ip_str[20];
+    strncpy(death_ip_str, itoa((int)process->task->registers.ip), sizeof(death_ip_str));
+
+    // Terminate the program that crashed
+    res = process_terminate(process, error_code);
+    if (res < 0)
+    {
+        goto out;
+    }
+
+    // Prepare our crash program so we can alert we had to terminate a process
+    root_argument = process_arguments_create("0:/bin/crash.e");
+    if (!root_argument)
+    {
+        goto out;
+    }
+
+    process_arguments_add(root_argument, filename);
+    process_arguments_add(root_argument, error_code_str);
+    process_arguments_add(root_argument, death_ip_str);
+
+    // Let's now load in the crash program to explain what happend
+    process_load_start("0:/bin/crash.e", NULL, 0, root_argument);
+out:
+    if (root_argument)
+    {
+        process_arguments_destory(root_argument);
+    }
+    return res;
+}
+
+int process_terminate(struct process *process, int error_code)
 {
     // Free the current process
     process_free(process);
@@ -472,7 +573,6 @@ int process_load_for_slot(const char *filename, struct process **process, int pr
 
     // The default rectangles that should be shown for each process must be registered to us
     video_rectangle_register_default_rectangles(_process->video);
-    
 
     task = task_new(_process);
     if (ERROR_I(task) <= 0)

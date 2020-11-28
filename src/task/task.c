@@ -462,6 +462,16 @@ int task_unmap_video_memory(struct task *task)
                         PAGING_PAGE_PRESENT | PAGING_ACCESS_FROM_ALL | PAGING_PAGE_WRITEABLE);
 }
 
+
+void* task_virtual_address_to_physical(struct task* task, void* virtual_address)
+{
+    void* physical_address = 0;
+    task_page_task(task);
+    physical_address = paging_get_physical_address(task->page_directory->directory_entry, virtual_address);
+    kernel_page();
+    return physical_address;
+}
+
 int task_init(struct task *task, struct process *process)
 {
     ASSERT(process->video);

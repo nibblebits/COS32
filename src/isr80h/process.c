@@ -22,3 +22,13 @@ void *isr80h_command7_sleep(struct interrupt_frame *frame)
     task_usleep(task_current(), sleep_seconds * 1000);
     return (void *)0x00;
 }
+
+void* isr80h_command19_process_get_arguments(struct interrupt_frame* frame)
+{
+    struct process* process = task_current()->process;
+    struct process_arguments* arguments = task_virtual_address_to_physical(task_current(), task_current_get_stack_item(0));
+
+    // Load the argc, and argv into user passed structure
+    process_get_arguments(process, &arguments->argc, &arguments->argv);
+    return 0;
+}

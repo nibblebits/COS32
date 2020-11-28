@@ -158,8 +158,12 @@ void kernel_main(void)
 
 	print("Kernel initialized\n");
 
+	struct command_argument* root_argument = process_arguments_create("0:/taskbar.e");
+	process_arguments_add(root_argument, "test argument");
+		process_arguments_add(root_argument, "test argument2");
+
 	// Load the start program
-	int res = process_load_start("0:/taskbar.e", 0, 0, 0);
+	int res = process_load_start("0:/taskbar.e", 0, 0, root_argument);
 	if (res < 0)
 	{
 		panic("Failed to load the start program!\n");

@@ -172,6 +172,11 @@ int paging_set(uint32_t *directory, void *virt, uint32_t val);
 uint32_t paging_get(uint32_t *directory, void *virt);
 
 /**
+ * Gets only the physical address without the flags for the given virtual address
+ */
+void* paging_get_physical_address(uint32_t* directory, void* virt);
+
+/**
  * Returns true if the given address is page aligned
  */
 bool paging_is_address_aligned(void *ptr);

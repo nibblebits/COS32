@@ -118,6 +118,12 @@ uint32_t task_current_get_stack_item_uint(int index);
  */
 void *task_get_stack_item(struct task *task, int index);
 
+
+/**
+ * Takes a task virtual address and retreives the physical address that the kernel can use.
+ */
+void* task_virtual_address_to_physical(struct task* task, void* virtual_address);
+
 /**
  * Saves the state for the current task
  */

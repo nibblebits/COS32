@@ -8,13 +8,11 @@
 #include "formats/elf/elfloader.h"
 #include <stdbool.h>
 
-
 struct command_argument
 {
     char argument[512];
-    struct command_argument* next;
+    struct command_argument *next;
 };
-
 
 typedef enum ProcessFileType
 {
@@ -28,15 +26,22 @@ typedef unsigned char PROCESS_FLAGS;
 #define PROCESS_UNPAUSE_PARENT_ON_DEATH 0b00000010
 
 struct interrupt_frame;
+
+// Process arguments passed to this process
+struct process_arguments
+{
+    int argc;
+    char **argv;
+};
+
 struct process
 {
     // The id of this process
     uint8_t id;
 
-    
     char filename[COS32_MAX_PATH];
     // Each process has a task for its self
-    struct task* task;
+    struct task *task;
 
     // These are all the heap allocations that this process has, if its not NULL then its allocated
     // Limiting the user process to maximum allocations is not the best idea
@@ -49,16 +54,16 @@ struct process
     PROCESS_FLAGS flags;
 
     // The parent process, otherwise NULL
-    struct process* parent;
-    
+    struct process *parent;
+
     union
     {
         // The physical pointer to the process memory, if this is a raw binary file
         void *ptr;
         // A pointer to the elf file, if this is an elf file. You can find the loaded elf sections here and their addresses
-        struct elf_file* elf_file;
+        struct elf_file *elf_file;
     };
-    
+
     // The physical pointer to the stack memory
     void *stack;
 
@@ -82,43 +87,45 @@ struct process
         int head;
     } keyboard;
 
+    // Process arguments passed to this process
+    struct process_arguments arguments;
 
     // The video memory for this process, when we switch to this process the video memory
     // Should be wrote back out overwriting the current screen memory
-    struct video* video;
+    struct video *video;
 };
 
-int process_load(const char *filename, struct process **process, struct process* parent, PROCESS_FLAGS flags);
+int process_load(const char *filename, struct process **process, struct process *parent, PROCESS_FLAGS flags);
 int process_switch(struct process *process);
 int process_start(struct process *process);
 
-void process_wake(struct process* process);
-void process_pause(struct process* process);
+void process_wake(struct process *process);
+void process_pause(struct process *process);
 
 /**
  * Terminates the provided process with the given error code
  */
-int process_terminate(struct process* process, int error_code);
+int process_terminate(struct process *process, int error_code);
 
 /**
  * Called when a process has done something illegal and needs terminating.
  * When a process becomes unstable it can be called crashed. Call this function
  * to terminate the process and report the crash.
  */
-int process_crash(struct process* process, int error_code);
+int process_crash(struct process *process, int error_code);
 
 /**
  * Returns how many command arguments we have after the provided argument
  */
-int process_count_command_arguments(struct command_argument* argument);
+int process_count_command_arguments(struct command_argument *argument);
 
 /**
  * Loads and starts the process with the given arguments
  * argv[0] is the process to load
  */
-int process_run_for_argument(struct command_argument *root_argument, struct process* parent, PROCESS_FLAGS flags);
-int process_load_start(const char *path, struct process *parent, PROCESS_FLAGS flags, struct command_argument* root_argument);
-int process_load_for_slot(const char *filename, struct process **process, int process_slot, struct process* parent, PROCESS_FLAGS flags);
+int process_run_for_argument(struct command_argument *root_argument, struct process *parent, PROCESS_FLAGS flags);
+int process_load_start(const char *path, struct process *parent, PROCESS_FLAGS flags, struct command_argument *root_argument);
+int process_load_for_slot(const char *filename, struct process **process, int process_slot, struct process *parent, PROCESS_FLAGS flags);
 struct process *process_get(int index);
 bool process_running();
 void process_mark_running(bool running);
@@ -132,7 +139,7 @@ void *process_malloc(struct process *process, int size);
 /**
  * Frees and unloads the given process
  */
-void process_free(struct process* process);
+void process_free(struct process *process);
 
 /**
  * Maps pages into memory starting at the physical address until the physical end address is reached.
@@ -147,7 +154,22 @@ void process_free(struct process* process);
  * /param phys The start physical address so map (must divide into a page)
  * /param phys_end The end physical address to map (must divide into a page)
  */
-int process_paging_map_to(struct process* process, void *virt, void *phys, void *phys_end, int flags);
+int process_paging_map_to(struct process *process, void *virt, void *phys, void *phys_end, int flags);
 
+/**
+ * Gets the arguments from the given process
+ */
+void process_get_arguments(struct process* process, int* argc, char*** argv);
+
+/**
+ * Functions for managing process command arguments
+ */
+
+struct command_argument *process_arguments_create(const char *starting_argument);
+struct command_argument *process_argument_create_one();
+struct command_argument *process_arguments_get_last(struct command_argument *root_argument);
+struct command_argument *process_arguments_add(struct command_argument *arguments, const char *argument);
+void process_argument_destory(struct command_argument *argument);
+void process_arguments_destory(struct command_argument *root_argument);
 
 #endif

@@ -16,6 +16,8 @@ all: ./bin/kernel.bin ./bin/boot.bin ${FILES} programs
 	sudo cp ./src/programs/start/start.elf /mnt/d/start.e
 	sudo cp ./src/programs/taskbar/taskbar.elf /mnt/d/taskbar.e
 	sudo mkdir /mnt/d/bin	
+	sudo cp ./src/programs/crash/crash.elf /mnt/d/bin/crash.e
+	
 	sudo mkdir /mnt/d/fonts
 	sudo cp ./fonts/plfont.psf /mnt/d/fonts/plfont.psf
 	sudo cp ./fonts/hallo.psf /mnt/d/fonts/hallo.psf
@@ -24,6 +26,8 @@ all: ./bin/kernel.bin ./bin/boot.bin ${FILES} programs
 	sudo chmod 777 ./bin/os.bin
 	# Update build number
 	echo $$(($$(cat $(BUILD_NUMBER_FILE)) + 1)) > $(BUILD_NUMBER_FILE)
+	i686-elf-gcc $(INCLUDES) -S ${FLAGS} -c ./src/testing.c -o ./src/testing.s -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g
+
 
 
 ./bin/boot.bin: ./src/boot/boot.asm
@@ -168,6 +172,7 @@ programs:
 	cd ./src/programs/stdlib && $(MAKE) all
 	cd ./src/programs/helloworld && $(MAKE) all
 	cd ./src/programs/killed && $(MAKE) all
+	cd ./src/programs/crash && $(MAKE) all
 	cd ./src/programs/start && $(MAKE) all
 	cd ./src/programs/taskbar && $(MAKE) all
 
@@ -175,6 +180,7 @@ programs:
 programs_clean:
 	cd ./src/programs/stdlib && $(MAKE) clean
 	cd ./src/programs/helloworld && $(MAKE) clean
+	cd ./src/programs/crash && $(MAKE) clean
 	cd ./src/programs/killed && $(MAKE) clean
 	cd ./src/programs/start && $(MAKE) clean
 	cd ./src/programs/taskbar && $(MAKE) clean

@@ -15,6 +15,12 @@ struct command_argument
     struct command_argument* next;
 };
 
+struct process_arguments
+{
+    int argc;
+    char **argv;
+};
+
 /*
  * Executes the given shell command, provided "max" should be equal to the total buffer size
  */
@@ -104,4 +110,7 @@ void* cos32_video_rectangle_publish(void* rect, const char* name);
  * Gets the published rectangle by the given name
  */
 void* cos32_video_rectangle_get(const char* name);
+
+
+int cos32_get_arguments(struct process_arguments* arguments);
 #endif

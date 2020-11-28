@@ -67,10 +67,10 @@ void paging_handle_page_fault()
 
         // We have to switch to the kernel page as we need to do kernel stuff
         kernel_page();
-        
+
         // It was a user process that page faulted?
         // Kill the process
-        process_crash(process_current(), -1);
+        process_crash(task_current()->process, -1);
 
         // We have no task to go back too as we just destoryed the process and its tasks
         // so we must call task_next to change the current task
@@ -267,6 +267,7 @@ uint32_t paging_get(uint32_t *directory, void *virt)
     return table[table_index];
 }
 
+
 int paging_set(uint32_t *directory, void *virt, uint32_t val)
 {
     // Addresses must be 4096 aligned
@@ -286,6 +287,17 @@ int paging_set(uint32_t *directory, void *virt, uint32_t val)
     uint32_t *table = (uint32_t *)(entry & 0xfffff000);
     table[table_index] = val;
     return 0;
+}
+
+
+void* paging_get_physical_address(uint32_t* directory, void* virt)
+{
+    // We need to pass only aligned virtual addresses to paging_get
+    // Let's align this thing.
+
+    void* virt_addr_new = (void*)paging_align_to_lower_page(virt);
+    void* difference = (void*)((uint32_t)virt - (uint32_t)virt_addr_new);
+    return (void*) ((paging_get(directory, virt_addr_new) & 0xfffff000) + difference);
 }
 
 int paging_map(uint32_t *directory, void *virt, void *phys, int flags)

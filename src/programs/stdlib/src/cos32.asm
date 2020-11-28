@@ -19,6 +19,7 @@ global cos32_video_font_make_empty_string
 global cos32_video_rectangle_draw_font_data
 global cos32_video_rectangle_publish
 global cos32_video_rectangle_get
+global cos32_get_arguments
 
 print:
     push ebp
@@ -284,3 +285,16 @@ cos32_video_rectangle_get:
     add esp, 4
     pop ebp
     ret
+
+; int cos32_get_arguments(struct process_arguments* arguments);
+cos32_get_arguments:
+    push ebp
+    mov ebp, esp
+    mov eax, 19 ; Command 19 get the process arguments, argc, and argv.
+    mov ebx, [ebp+8] ; The process_arguments structure to be populated
+    push ebx
+    int 0x80    ; Invoke the kernel!
+    add esp, 4
+    pop ebp
+    ret
+

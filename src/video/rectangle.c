@@ -72,7 +72,7 @@ void video_rectangle_draw_font_data(struct video_rectangle *rect, struct video_f
 }
 
 void video_rectangle_draw_blocks(struct video_rectangle *rect, void *ptr, int absx, int absy, int total_rows, int pixels_per_row, int slen)
-{    
+{
     int size_per_block = total_rows;
     for (int i = 0; i < slen; i++)
     {
@@ -133,7 +133,6 @@ static int video_rectangle_publish_insert(struct video_rectangle *rect)
     return 0;
 }
 
-
 int video_rectangle_publish(const char *name, struct video_rectangle *rect)
 {
     if (!name)
@@ -147,11 +146,11 @@ int video_rectangle_publish(const char *name, struct video_rectangle *rect)
     }
 
     // Copy the name to the rectangle.
-    strncpy((char*)rect->name, name, sizeof(rect->name));
+    strncpy((char *)rect->name, name, sizeof(rect->name));
 
     // Set the published flag on this rectangle.
     rect->flags |= VIDEO_RECTANGLE_FLAG_PUBLISHED;
-    
+
     return video_rectangle_publish_insert(rect);
 }
 
@@ -167,7 +166,6 @@ struct video_rectangle *video_rectangle_get(const char *name)
 
     return 0;
 }
-
 
 void video_rectangle_draw(struct video_rectangle *rect)
 {
@@ -194,7 +192,7 @@ void video_rectangle_register(struct video *video, struct video_rectangle *rect)
 {
     rect->shared++;
 
-    struct video_rectangle_list_item* list_item = kzalloc(sizeof(struct video_rectangle_list_item));
+    struct video_rectangle_list_item *list_item = kzalloc(sizeof(struct video_rectangle_list_item));
     list_item->rectangle = rect;
     if (video->rectangles == 0)
     {
@@ -202,7 +200,6 @@ void video_rectangle_register(struct video *video, struct video_rectangle *rect)
         video->rectangle_last = list_item;
         return;
     }
-
 
     video->rectangle_last->next = list_item;
     video->rectangle_last = list_item;
@@ -249,12 +246,12 @@ void video_rectangles_free(struct video *video)
     }
 }
 
-void video_rectangle_register_default_rectangles(struct video* video)
+void video_rectangle_register_default_rectangles(struct video *video)
 {
     // The taskbar is a default rectangle lets add it to the process video
     // This can be changed to some sort of list in the future allowing people
     // to make graphics that stick around ;)
-    struct video_rectangle* taskbar_rect = video_rectangle_get("taskbar");
+    struct video_rectangle *taskbar_rect = video_rectangle_get("taskbar");
     if (!taskbar_rect)
     {
         return;
@@ -262,7 +259,6 @@ void video_rectangle_register_default_rectangles(struct video* video)
 
     // Register the rectangle on this processes video!
     video_rectangle_register(video, taskbar_rect);
-
 
     // We should have a rectangle for the terminal for console programs
     // This will have to be enabled in the future, for now its default
