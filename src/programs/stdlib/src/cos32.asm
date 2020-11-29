@@ -21,15 +21,14 @@ global cos32_video_rectangle_publish
 global cos32_video_rectangle_get
 global cos32_get_arguments
 
+; WARNING AVOID USING ALL GENERAL PURPOSE REGISTERS EXCEPT EAX TO RETURN A RESULT
+; I AM NOT SURE WHICH REGISTERS GCC RELIES ON THE VALUE BEING THE SAME
+; HOWEVER EBX IS CONFIRMED.
 print:
-    push ebp
-    mov ebp, esp
     mov eax, 1 ; Command 1 = Print
-    mov ebx, [ebp+8] ; String to print
-    push dword ebx  ; Push it to the stack
+    push dword [esp+4]  ; Push it to the stack
     int 0x80 ; Invoke kernel to print
     add esp, 4 ; Restore stack
-    pop ebp
     ret
 
 cos32_getkey:
@@ -64,14 +63,10 @@ kernel_information:
     ret
 
 cos32_putchar:
-    push ebp
-    mov ebp, esp
     mov eax, 4 ; Command 4 = putchar write to stdout
-    mov ebx, [ebp+8] 
-    push dword ebx
+    push dword [esp+4]
     int 0x80
     add esp, 4
-    pop ebp
     ret
 
 

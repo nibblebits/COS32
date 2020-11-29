@@ -3,9 +3,8 @@
 ; 23 Aug 2020 23:19
 
 global _start
-extern main
+extern start_c_func
 
-_start:
-    ; ARGV AND ARGC were pushed automatically when starting this program    
-    call main
+_start:    
+    call start_c_func
     ret

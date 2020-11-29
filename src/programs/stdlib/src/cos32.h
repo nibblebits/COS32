@@ -29,7 +29,7 @@ int cos32_invoke_command(struct command_argument* root_command);
 void cos32_putchar(char c);
 char cos32_getkey();
 char cos32_getkeyblock();
-void print(const char* message);
+int print(const char* message);
 void kernel_information(struct kernel_info* info);
 void* cos32_malloc(int size);
 

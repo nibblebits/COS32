@@ -26,9 +26,6 @@ all: ./bin/kernel.bin ./bin/boot.bin ${FILES} programs
 	sudo chmod 777 ./bin/os.bin
 	# Update build number
 	echo $$(($$(cat $(BUILD_NUMBER_FILE)) + 1)) > $(BUILD_NUMBER_FILE)
-	i686-elf-gcc $(INCLUDES) -S ${FLAGS} -c ./src/testing.c -o ./src/testing.s -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g
-
-
 
 ./bin/boot.bin: ./src/boot/boot.asm
 	nasm -f bin ./src/boot/boot.asm -o ./bin/boot.bin

@@ -1,4 +1,4 @@
-#ifndef START_H
-#define START_H
+#ifndef CRASH_H
+#define CRASH_H
 
 #endif
