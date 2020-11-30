@@ -1,6 +1,6 @@
 
 
-FILES = ./build/kernel.asm.o  ./build/keyboard/listener.o ./build/keyboard/listeners/fkeylistener.o ./build/keyboard/keyboard.o ./build/keyboard/classic.o  ./build/timer/pit.o ./build/task/task.o ./build/task/process.o ./build/kernel.o ./build/gdt/gdt.o  ./build/memory/paging/paging.o ./build/idt/idt.o ./build/io/io.o  ./build/disk/disk.o ./build/fs/pparser.o ./build/fs/file.o ./build/fs/fat/fat16.o ./build/video/video.o  ./build/video/font/font.o ./build/video/font/formats/psffont.o ./build/video/rectangle.o ./build/memory/memory.o ./build/string/string.o ./build/formats/elf/elf.o ./build/formats/elf/elfloader.o  ./build/memory/heap.o ./build/memory/kheap.o ./build/disk/streamer.o ./build/isr80h/isr80h.o ./build/isr80h/io.o ./build/isr80h/process.o ./build/isr80h/isrkernel.o ./build/isr80h/video.o ./build/isr80h/font.o ./build/memory/registers.asm.o ./build/task/tss.asm.o ./build/gdt/gdt.asm.o ./build/task/task.asm.o ./build/memory/paging/paging.asm.o ./build/idt/idt.asm.o
+FILES = ./build/kernel.asm.o  ./build/keyboard/listener.o ./build/keyboard/listeners/fkeylistener.o ./build/keyboard/listeners/scrollkeylistener.o ./build/keyboard/keyboard.o ./build/keyboard/classic.o  ./build/timer/pit.o ./build/task/task.o ./build/task/process.o ./build/kernel.o ./build/gdt/gdt.o  ./build/memory/paging/paging.o ./build/idt/idt.o ./build/io/io.o  ./build/disk/disk.o ./build/fs/pparser.o ./build/fs/file.o ./build/fs/fat/fat16.o ./build/video/video.o  ./build/video/font/font.o ./build/video/font/formats/psffont.o ./build/video/rectangle.o ./build/memory/memory.o ./build/string/string.o ./build/formats/elf/elf.o ./build/formats/elf/elfloader.o  ./build/memory/heap.o ./build/memory/kheap.o ./build/disk/streamer.o ./build/isr80h/isr80h.o ./build/isr80h/io.o ./build/isr80h/process.o ./build/isr80h/isrkernel.o ./build/isr80h/video.o ./build/isr80h/font.o ./build/memory/registers.asm.o ./build/task/tss.asm.o ./build/gdt/gdt.asm.o ./build/task/task.asm.o ./build/memory/paging/paging.asm.o ./build/idt/idt.asm.o
 FLAGS =  --freestanding -falign-jumps -falign-functions -falign-labels -falign-loops  -fstrength-reduce -fomit-frame-pointer -finline-functions -Wno-unused-function -fno-builtin -Werror -Wno-unused-label -Wno-cpp -Wno-unused-parameter -nostdlib -nostartfiles -nodefaultlibs -Wall -O0 -Iinc
 BUILD_NUMBER_FILE=build-number.txt
 
@@ -87,6 +87,9 @@ all: ./bin/kernel.bin ./bin/boot.bin ${FILES} programs
 
 ./build/keyboard/listeners/fkeylistener.o: ./src/keyboard/listeners/fkeylistener.c ./src/keyboard/listeners/fkeylistener.h
 	i686-elf-gcc $(INCLUDES) -I./src/keyboard/listeners ${FLAGS} -c ./src/keyboard/listeners/fkeylistener.c  -o ./build/keyboard/listeners/fkeylistener.o -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g
+
+./build/keyboard/listeners/scrollkeylistener.o: ./src/keyboard/listeners/scrollkeylistener.c ./src/keyboard/listeners/scrollkeylistener.h
+	i686-elf-gcc $(INCLUDES) -I ./src/keyboard -I./src/keyboard/listeners ${FLAGS} -c ./src/keyboard/listeners/scrollkeylistener.c  -o ./build/keyboard/listeners/scrollkeylistener.o -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g
 
 
 ./build/keyboard/classic.o: ./src/keyboard/classic.c ./src/keyboard/classic.h

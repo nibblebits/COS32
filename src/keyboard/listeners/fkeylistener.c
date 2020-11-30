@@ -11,7 +11,7 @@
 void fkeylistener_keypress(char c);
 void fkeylistener_special(enum SpecialKeys key);
 
-struct keyboard_listener listener = {
+static struct keyboard_listener listener = {
     .keypress = fkeylistener_keypress,
     .special = fkeylistener_special};
 

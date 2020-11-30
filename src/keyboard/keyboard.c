@@ -7,6 +7,7 @@
 #include "listener.h"
 #include "task/process.h"
 #include "listeners/fkeylistener.h"
+#include "listeners/scrollkeylistener.h"
 static struct keyboard *keyboard_list_head = 0;
 static struct keyboard *keyboard_list_last = 0;
 
@@ -27,6 +28,9 @@ void keyboard_init()
 
     // Initialize the fkey listener
     fkeylistener_init();
+
+    // Initialize the scroll key lsitener
+    scrollkeylistener_init();
 }
 
 int keyboard_insert(struct keyboard *keyboard)

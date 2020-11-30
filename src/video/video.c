@@ -47,6 +47,7 @@ static inline uint16_t vga_entry(unsigned char uc, uint8_t color)
 
 static const size_t VGA_WIDTH = 80;
 static const size_t VGA_HEIGHT = 20;
+static const size_t VGA_TOTAL_PAGES = 6;
 
 struct terminal_properties kernel_terminal_properties;
 
@@ -151,20 +152,37 @@ static char* video_terminal_get_next_line(struct video_rectangle* rect, struct v
 	return &data_now[slen];
 }
 
+void video_terminal_set_scroll(struct terminal_properties* properties, int scroll)
+{
+	if (scroll < 0)
+		return;
+
+	properties->y_scroll = scroll;
+}
+
 /**
  * Pastes the terminal buffer to the rectangle after first clearing it
  */
-static void video_terminal_paste(struct terminal_properties *video, struct video_rectangle *rectangle)
+static void video_terminal_paste(struct terminal_properties *terminal_properties, struct video_rectangle *rectangle)
 {
 	video_rectangle_fill(rectangle, 3);
 	
 	int x = 0;
 	int y = 0;
 	int len = 0;
-	char* next_data = video->data;
-	char* data_now = video->data;
+	char* next_data = terminal_properties->data;
+	char* data_now = terminal_properties->data;
+
+	int ignore = terminal_properties->y_scroll;
 	while((next_data = video_terminal_get_next_line(rectangle, console_font, data_now, &len)))
 	{
+		// We want to ignore some lines based on the scroll position.
+		if (ignore > 0)
+		{
+			ignore--;
+			data_now = next_data;
+			continue;
+		}
 		void* str_pixel_data = video_font_make_empty_string(console_font, len);
 		video_font_draw(console_font, str_pixel_data, data_now);
 		video_rectangle_draw_font_data(rectangle, console_font, str_pixel_data, x, y, len);
@@ -253,12 +271,16 @@ struct video *video_new()
 	void *video_ptr = kmalloc(COS32_VIDEO_MEMORY_SIZE);
 	memcpy(video_ptr, video_default, COS32_VIDEO_MEMORY_SIZE);
 
+	int terminal_data_size = VGA_WIDTH * VGA_HEIGHT * VGA_TOTAL_PAGES;
+
 	struct video *video = kzalloc(sizeof(struct video));
 	video->properties.index = 0;
 	video->properties.terminal_color = vga_entry_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
 	video->properties.video = video;
-	video->properties.data = kzalloc(VGA_WIDTH*VGA_HEIGHT);
-	memset(video->properties.data, 0x00, VGA_WIDTH*VGA_HEIGHT);
+	video->properties.data = kzalloc(terminal_data_size);
+	memset(video->properties.data, 0x00, terminal_data_size);
+
+	video->properties.y_scroll = 1;
 	video->ptr = video_ptr;
 
 	return video;

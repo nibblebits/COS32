@@ -25,6 +25,10 @@ struct terminal_properties
 
     // ASCII Data for the terminal
     char* data;
+
+    // The Y scroll position for this terminal
+    int y_scroll;
+
     // The video associated with this terminal
     struct video* video;
 
@@ -105,6 +109,7 @@ void print(const char *message);
  */
 void video_terminal_writestring(struct terminal_properties* properties, const char *data);
 void video_terminal_putchar(struct terminal_properties* properties, char c);
+void video_terminal_set_scroll(struct terminal_properties* properties, int scroll);
 
 void kernel_terminal_initialize(void);
 #endif
