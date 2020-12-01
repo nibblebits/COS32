@@ -15,11 +15,12 @@ static bool video_rectangle_pixel_in_bounds(struct video_rectangle *rect, int x,
     return !(x >= rect->width || y >= rect->height || x < 0 || y < 0);
 }
 
-static inline void video_rectangle_vga_320_200_plot_pixel(char *back_buffer, int x, int y, char colour)
+static inline void video_rectangle_vga_320_200_plot_pixel(char *back_buffer, int x, int y, unsigned char colour)
 {
-    int index = (y * VIDEO_MODE_VGA_320_200_WIDTH) + x;
+    int index = (y * VIDEO_MODE_VGA_320x200_WIDTH) + x;
     back_buffer[index] = colour;
 }
+
 
 char video_rectangle_get_pixel(struct video_rectangle *rect, int x, int y)
 {

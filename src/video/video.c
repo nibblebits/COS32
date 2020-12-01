@@ -244,7 +244,7 @@ void video_init()
 char *video_back_buffer_clear()
 {
 	char *ptr = video_back_buffer();
-	memset(ptr, 0, VIDEO_MODE_VGA_320_200_MEMORY_SIZE);
+	memset(ptr, 0, VIDEO_MODE_VGA_320x200_MEMORY_SIZE);
 	return ptr;
 }
 
@@ -253,7 +253,7 @@ char *video_back_buffer()
 	static char *ptr = 0;
 	if (ptr == 0)
 	{
-		ptr = kzalloc(VIDEO_MODE_VGA_320_200_MEMORY_SIZE);
+		ptr = kzalloc(VIDEO_MODE_VGA_320x200_MEMORY_SIZE);
 	}
 
 	return ptr;
@@ -263,7 +263,7 @@ void video_flush_back_buffer()
 {
 	char *video_ptr = (char *)0xA0000;
 	char *back_buffer = video_back_buffer();
-	memcpy(video_ptr, back_buffer, VIDEO_MODE_VGA_320_200_MEMORY_SIZE);
+	memcpy(video_ptr, back_buffer, VIDEO_MODE_VGA_320x200_MEMORY_SIZE);
 }
 
 struct video *video_new()
