@@ -17,6 +17,7 @@ all: ./bin/kernel.bin ./bin/boot.bin ${FILES} programs
 	sudo mkdir /mnt/d/bin	
 	sudo cp ./src/programs/crash/crash.elf /mnt/d/bin/crash.e
 	sudo cp ./src/programs/shell/shell.elf /mnt/d/bin/shell.e
+	sudo cp ./src/programs/testlibprogram/testlibprogram.elf /mnt/d/test.e
 
 	sudo mkdir /mnt/d/fonts
 	sudo cp ./fonts/plfont.psf /mnt/d/fonts/plfont.psf
@@ -174,6 +175,8 @@ programs:
 	cd ./src/programs/crash && $(MAKE) all
 	cd ./src/programs/shell && $(MAKE) all
 	cd ./src/programs/taskbar && $(MAKE) all
+	cd ./src/programs/testlib && $(MAKE) all
+	cd ./src/programs/testlibprogram && $(MAKE) all
 
 
 programs_clean:
@@ -183,6 +186,9 @@ programs_clean:
 	cd ./src/programs/killed && $(MAKE) clean
 	cd ./src/programs/shell && $(MAKE) clean
 	cd ./src/programs/taskbar && $(MAKE) clean
+	cd ./src/programs/testlib && $(MAKE) clean
+	cd ./src/programs/testlibprogram && $(MAKE) clean
+
 
 clean: programs_clean
 	rm -rf ${FILES}
