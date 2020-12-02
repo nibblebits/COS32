@@ -118,14 +118,13 @@ void print(const char *message)
 	video_terminal_writestring(&kernel_terminal_properties, message);
 }
 
-
 /**
  * Splits the data into a seperate line if it gets too large or new line character is present
  */
-static char* video_terminal_get_next_line(struct video_rectangle* rect, struct video_font* font, char* data_now, int* len)
+static char *video_terminal_get_next_line(struct video_rectangle *rect, struct video_font *font, char *data_now, int *len)
 {
 	*len = 0;
-	
+
 	int slen = strlen(data_now);
 	if (slen == 0)
 	{
@@ -135,7 +134,7 @@ static char* video_terminal_get_next_line(struct video_rectangle* rect, struct v
 	// Let's prevent the text going off the screen, we should loop around in such cases
 	int max_characters = rect->width / font->c_width;
 	if (slen > max_characters)
-	{	
+	{
 		slen = max_characters;
 	}
 
@@ -144,7 +143,7 @@ static char* video_terminal_get_next_line(struct video_rectangle* rect, struct v
 		if (data_now[i] == '\n')
 		{
 			*len = i;
-			return &data_now[i]+1;
+			return &data_now[i] + 1;
 		}
 	}
 
@@ -152,7 +151,7 @@ static char* video_terminal_get_next_line(struct video_rectangle* rect, struct v
 	return &data_now[slen];
 }
 
-void video_terminal_set_scroll(struct terminal_properties* properties, int scroll)
+void video_terminal_set_scroll(struct terminal_properties *properties, int scroll)
 {
 	if (scroll < 0)
 		return;
@@ -166,15 +165,15 @@ void video_terminal_set_scroll(struct terminal_properties* properties, int scrol
 static void video_terminal_paste(struct terminal_properties *terminal_properties, struct video_rectangle *rectangle)
 {
 	video_rectangle_fill(rectangle, 3);
-	
+
 	int x = 0;
 	int y = 0;
 	int len = 0;
-	char* next_data = terminal_properties->data;
-	char* data_now = terminal_properties->data;
+	char *next_data = terminal_properties->data;
+	char *data_now = terminal_properties->data;
 
 	int ignore = terminal_properties->y_scroll;
-	while((next_data = video_terminal_get_next_line(rectangle, console_font, data_now, &len)))
+	while ((next_data = video_terminal_get_next_line(rectangle, console_font, data_now, &len)))
 	{
 		// We want to ignore some lines based on the scroll position.
 		if (ignore > 0)
@@ -183,20 +182,17 @@ static void video_terminal_paste(struct terminal_properties *terminal_properties
 			data_now = next_data;
 			continue;
 		}
-		void* str_pixel_data = video_font_make_empty_string(console_font, len);
+		void *str_pixel_data = video_font_make_empty_string(console_font, len);
 		video_font_draw(console_font, str_pixel_data, data_now);
 		video_rectangle_draw_font_data(rectangle, console_font, str_pixel_data, x, y, len);
 		video_font_free_string(str_pixel_data);
 		data_now = next_data;
 		y += console_font->c_height;
 	}
-
 }
 
 void video_draw(struct video *video)
 {
-	// Clear the back buffer
-	video_back_buffer_clear();
 
 	// Let's draw the terminal data to the printing rectangle
 	if (video->printing_rectangle)
@@ -207,19 +203,20 @@ void video_draw(struct video *video)
 	struct video_rectangle_list_item *list_item = video->rectangles;
 	while (list_item != 0)
 	{
-		video_rectangle_draw(list_item->rectangle);
+		video_rectangle_draw(video, list_item->rectangle);
 		list_item = list_item->next;
 	}
 
-	// Here we flush the back buffer
-	// We copy every bit of video memory from the back buffer, this makes for a slow operation
-	// In the future it might make more sense to copy only what was changed.
-	video_flush_back_buffer();
+	video_flush_back_buffer(video);
+	video->flags &= ~VIDEO_FLAG_FLUSH;
 }
 
 void video_process(struct video *video)
 {
-	video_draw(video);
+	if (video->flags & VIDEO_FLAG_AUTO_FLUSH)
+	{
+		video_draw(video);
+	}
 }
 
 void video_init()
@@ -241,29 +238,30 @@ void video_init()
 	}
 }
 
-char *video_back_buffer_clear()
+void video_back_buffer_clear(struct video* video)
 {
-	char *ptr = video_back_buffer();
+	char *ptr = video_back_buffer(video);
 	memset(ptr, 0, VIDEO_MODE_VGA_320x200_MEMORY_SIZE);
-	return ptr;
 }
 
-char *video_back_buffer()
+char *video_back_buffer(struct video* video)
 {
-	static char *ptr = 0;
-	if (ptr == 0)
-	{
-		ptr = kzalloc(VIDEO_MODE_VGA_320x200_MEMORY_SIZE);
-	}
-
-	return ptr;
+	return video->backbuffer;
 }
 
-void video_flush_back_buffer()
+void video_flush_back_buffer(struct video* video)
 {
+	// Note address 0xA0000 possibly points to tasks physical video memory
+	// And not the hardware equivilant, this is great for us as we dont
+	// have to worry about writing into video memory of another process#
+
+	task_page();
 	char *video_ptr = (char *)0xA0000;
-	char *back_buffer = video_back_buffer();
-	memcpy(video_ptr, back_buffer, VIDEO_MODE_VGA_320x200_MEMORY_SIZE);
+	memcpy(video_ptr, video->backbuffer, VIDEO_MODE_VGA_320x200_MEMORY_SIZE);
+	kernel_page();
+
+	// Clear the now copied back buffer.
+	video_back_buffer_clear(video);
 }
 
 struct video *video_new()
@@ -280,8 +278,11 @@ struct video *video_new()
 	video->properties.data = kzalloc(terminal_data_size);
 	memset(video->properties.data, 0x00, terminal_data_size);
 
-	video->properties.y_scroll = 1;
+	video->properties.y_scroll = 0;
 	video->ptr = video_ptr;
+	video->backbuffer = kzalloc(VIDEO_MODE_VGA_320x200_MEMORY_SIZE);
+
+	video->flags = VIDEO_FLAG_AUTO_FLUSH;
 
 	return video;
 }

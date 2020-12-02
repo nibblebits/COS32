@@ -38,7 +38,7 @@ void fkeylistener_special(enum SpecialKeys key)
     int res = 0;
     if (is_released)
     {
-        res = process_load_for_slot("0:/start.e", &process, key, 0, 0);
+        res = process_load_for_slot("0:/bin/shell.e", &process, key, 0, 0);
         if (res == -EISTKN)
         {
             process = process_get(key);

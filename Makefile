@@ -13,14 +13,13 @@ all: ./bin/kernel.bin ./bin/boot.bin ${FILES} programs
 	sudo mount -t vfat ./bin/os.bin /mnt/d
 	sudo cp ./src/programs/helloworld/helloworld.elf /mnt/d/hello.e
 	sudo cp ./src/programs/helloworld/helloworld2.bin /mnt/d/start.b
-	sudo cp ./src/programs/start/start.elf /mnt/d/start.e
 	sudo cp ./src/programs/taskbar/taskbar.elf /mnt/d/taskbar.e
 	sudo mkdir /mnt/d/bin	
 	sudo cp ./src/programs/crash/crash.elf /mnt/d/bin/crash.e
-	
+	sudo cp ./src/programs/shell/shell.elf /mnt/d/bin/shell.e
+
 	sudo mkdir /mnt/d/fonts
 	sudo cp ./fonts/plfont.psf /mnt/d/fonts/plfont.psf
-	sudo cp ./fonts/hallo.psf /mnt/d/fonts/hallo.psf
 
 	sudo umount /mnt/d
 	sudo chmod 777 ./bin/os.bin
@@ -173,7 +172,7 @@ programs:
 	cd ./src/programs/helloworld && $(MAKE) all
 	cd ./src/programs/killed && $(MAKE) all
 	cd ./src/programs/crash && $(MAKE) all
-	cd ./src/programs/start && $(MAKE) all
+	cd ./src/programs/shell && $(MAKE) all
 	cd ./src/programs/taskbar && $(MAKE) all
 
 
@@ -182,7 +181,7 @@ programs_clean:
 	cd ./src/programs/helloworld && $(MAKE) clean
 	cd ./src/programs/crash && $(MAKE) clean
 	cd ./src/programs/killed && $(MAKE) clean
-	cd ./src/programs/start && $(MAKE) clean
+	cd ./src/programs/shell && $(MAKE) clean
 	cd ./src/programs/taskbar && $(MAKE) clean
 
 clean: programs_clean

@@ -168,9 +168,9 @@ struct video_rectangle *video_rectangle_get(const char *name)
     return 0;
 }
 
-void video_rectangle_draw(struct video_rectangle *rect)
+void video_rectangle_draw(struct video* video, struct video_rectangle *rect)
 {
-    char *back_buffer = video_back_buffer();
+    char *back_buffer = video_back_buffer(video);
 
     for (int x = 0; x < rect->width; x++)
     {

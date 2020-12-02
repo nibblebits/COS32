@@ -1,3 +1,4 @@
+#include "shell.h"
 #include "cos32.h"
 #include "stdio.h"
 #include "stdlib.h"
@@ -11,15 +12,8 @@ int main(int argc, char **argv)
 
   printf("COS32 Shell\n");
   printf("Kernel version: D%i-B%i\n", info.date, info.build_no);
-
+  //cos32_flush_video_buffer();
   char *shell_buf = malloc(512);
-
-  void* ptr = cos32_video_rectangle_new(180, 80, 120, 120);
-  cos32_video_rectangle_fill(ptr, 5);
-
-  cos32_video_rectangle_get("taskbar");
-
-  
   while (1)
   {
     printf(">");
@@ -29,5 +23,7 @@ int main(int argc, char **argv)
       printf("\nThe command \"%s\" is invalid.", shell_buf);
     }
     printf("\n");
+     // cos32_flush_video_buffer();
+
   }
 }

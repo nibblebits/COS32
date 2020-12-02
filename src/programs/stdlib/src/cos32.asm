@@ -20,6 +20,8 @@ global cos32_video_rectangle_draw_font_data
 global cos32_video_rectangle_publish
 global cos32_video_rectangle_get
 global cos32_get_arguments
+global cos32_flush_video_buffer
+global cos32_video_clear_flag
 
 ; WARNING AVOID USING ALL GENERAL PURPOSE REGISTERS EXCEPT EAX TO RETURN A RESULT
 ; I AM NOT SURE WHICH REGISTERS GCC RELIES ON THE VALUE BEING THE SAME
@@ -252,3 +254,20 @@ cos32_get_arguments:
     pop ebp
     ret
 
+cos32_flush_video_buffer:
+    push ebp
+    mov ebp, esp
+    mov eax, 20 ; Command 20 flush the video buffer
+    int 0x80 ; Invoke the kernel!
+    pop ebp
+    ret
+
+cos32_video_clear_flag:
+    push ebp
+    mov ebp, esp
+    mov eax, 21 ; Command 21 clear video flag
+    push dword [ebp+8]
+    int 0x80
+    add esp, 4
+    pop ebp
+    ret

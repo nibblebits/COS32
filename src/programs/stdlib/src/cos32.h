@@ -3,6 +3,9 @@
 
 #include <stdbool.h>
 
+#define VIDEO_FLAG_AUTO_FLUSH 0b00000001
+#define VIDEO_FLAG_FLUSH 0b00000010
+
 struct kernel_info
 {
     unsigned int date;
@@ -20,6 +23,8 @@ struct process_arguments
     int argc;
     char **argv;
 };
+
+
 
 /*
  * Executes the given shell command, provided "max" should be equal to the total buffer size
@@ -112,5 +117,21 @@ void* cos32_video_rectangle_publish(void* rect, const char* name);
 void* cos32_video_rectangle_get(const char* name);
 
 
+/**
+ * Gets the "argc" and "argv" arguments of this process
+ */
 int cos32_get_arguments(struct process_arguments* arguments);
+
+/**
+ * Flushes the video buffer to the screen
+ */
+void cos32_flush_video_buffer();
+
+/**
+ * Clears the video flag for our video
+ */
+void cos32_video_clear_flag(int flag);
+
+
+
 #endif

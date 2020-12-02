@@ -72,13 +72,13 @@ void process_restore(struct process *process)
     current_process = process;
     process_is_running = true;
 
-    // Restore the processes video memory back into the main video memory
-    // So what was once shown shows again on the screen
-    video_restore(process->video);
-
     // We now need to unmap the restored processes video memory so that it outputs data directly to the terminal
     // rather than its internal private video memory
     task_unmap_video_memory(process->task);
+
+    // Restore the processes video memory back into the main video memory
+    // So what was once shown shows again on the screen
+    video_restore(process->video);
 }
 
 int process_switch(struct process *process)
@@ -94,8 +94,7 @@ int process_switch(struct process *process)
     return 0;
 }
 
-
-void process_get_arguments(struct process* process, int* argc, char*** argv)
+void process_get_arguments(struct process *process, int *argc, char ***argv)
 {
     *argc = process->arguments.argc;
     *argv = process->arguments.argv;
@@ -178,10 +177,9 @@ int process_load_start(const char *path, struct process *parent, PROCESS_FLAGS f
         }
     }
 
-    char* ptr = kzalloc(65535);
-    if(ptr)
+    char *ptr = kzalloc(65535);
+    if (ptr)
     {
-        
     }
     // Start the process :)
     res = process_start(process);

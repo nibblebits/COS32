@@ -28,4 +28,6 @@ void isr80h_register_all()
     isr80h_register_command(SYSTEM_COMMAND_VIDEO_RECTANGLE_PUBLISH, isr80h_command17_rectangle_publish);
     isr80h_register_command(SYSTEM_COMMAND_VIDEO_RECTANGLE_GET, isr80h_command18_rectangle_get);
     isr80h_register_command(SYSTEM_COMMAND_PROCESS_GET_ARGUMENTS, isr80h_command19_process_get_arguments);
+    isr80h_register_command(SYSTEM_COMMAND_VIDEO_BUFFER_FLUSH, isr80h_command20_video_buffer_flush);
+    isr80h_register_command(SYSTEM_COMMAND_VIDEO_CLEAR_FLAG, isr80h_command21_video_clear_flag);
 }

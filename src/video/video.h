@@ -9,6 +9,12 @@
 #define VIDEO_MODE_VGA_320x200_HEIGHT 200
 #define VIDEO_MODE_VGA_320x200_MEMORY_SIZE VIDEO_MODE_VGA_320x200_WIDTH * VIDEO_MODE_VGA_320x200_HEIGHT
 
+
+#define VIDEO_FLAG_AUTO_FLUSH 0b00000001
+#define VIDEO_FLAG_FLUSH 0b00000010
+
+typedef unsigned char VIDEO_FLAGS;
+
 /**
  * Consider to typedef the video pointers, void* is too generic,
  * either that or create a structure to represent it
@@ -45,13 +51,14 @@ struct video
     struct terminal_properties properties;
     // Pointer to video memory
     void* ptr;
+    void* backbuffer;
 
     struct video_rectangle_list_item* rectangles;
     struct video_rectangle_list_item* rectangle_last;
 
     // The rectangle that all print operations should be drawn too
     struct video_rectangle* printing_rectangle;
-
+    VIDEO_FLAGS flags;
 };
 
 
@@ -93,9 +100,10 @@ void video_restore(struct video* video);
 void video_reset_cursor();
 
 
-char* video_back_buffer();
-char* video_back_buffer_clear();
-void video_flush_back_buffer();
+char* video_back_buffer(struct video* video);
+void video_back_buffer_clear(struct video* video);
+void video_flush_back_buffer(struct video* video);
+void video_draw(struct video *video);
 
 
 /**

@@ -86,3 +86,17 @@ void* isr80h_command18_rectangle_get(struct interrupt_frame* frame)
     copy_string_from_task(task_current(), user_space_rectangle_name, buf, sizeof(buf));
     return (void*) video_rectangle_get(buf);
 }
+
+void* isr80h_command20_video_buffer_flush(struct interrupt_frame* frame)
+{
+    // Set the flush flag so the buffer is flushed on the next draw cycle
+    video_draw(task_current()->process->video);
+    return 0;
+}
+
+void* isr80h_command21_video_clear_flag(struct interrupt_frame* frame)
+{
+    int flag = (int)task_current_get_stack_item_uint(0);
+    task_current()->process->video->flags &= ~flag;
+    return 0;
+}

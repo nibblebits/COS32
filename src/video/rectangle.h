@@ -42,7 +42,7 @@ struct video_rectangle
 void video_rectangle_register(struct video *video, struct video_rectangle *rect);
 struct video_rectangle *video_rectangle_new(struct video *video, int x, int y, int width, int height);
 void video_rectangles_free(struct video* video);
-void video_rectangle_draw(struct video_rectangle *rect);
+void video_rectangle_draw(struct video* video, struct video_rectangle *rect);
 int video_rectangle_set_pixel(struct video_rectangle *rect, int x, int y, char colour);
 char video_rectangle_get_pixel(struct video_rectangle *rect, int x, int y);
 int video_rectangle_fill(struct video_rectangle* rect, int colour);
