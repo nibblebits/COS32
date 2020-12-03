@@ -9,6 +9,7 @@
 #include "video/rectangle.h"
 #include "idt/idt.h"
 #include "formats/elf/elfloader.h"
+#include "formats/elf/elf.h"
 
 #include "task.h"
 #include "kernel.h"
@@ -338,6 +339,7 @@ int process_map_elf(struct process *process)
             continue;
         }
 
+      
         int flags = PAGING_PAGE_PRESENT | PAGING_ACCESS_FROM_ALL | PAGING_PAGE_WRITEABLE;
 
         // Due to weird issue with modifyable array data being in text section
@@ -350,9 +352,11 @@ int process_map_elf(struct process *process)
         }
 
         // Assert for now, could error handle this if needed at another time....
-        ASSERT(paging_map_to(process->task->page_directory->directory_entry, virt_addr, phys_addr, phys_end_addr, flags) == 0);
+        ASSERT(paging_map_to(process->task->page_directory->directory_entry, paging_align_to_lower_page(virt_addr), paging_align_to_lower_page(phys_addr), paging_align_address(phys_end_addr), flags) == 0);
+
         current = elf_next_section(current);
     }
+
 out:
     return res;
 }

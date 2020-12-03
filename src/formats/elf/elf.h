@@ -30,8 +30,8 @@
 #define ELFCLASS64 2
 
 #define ELFDATANONE 0
-#define ELFDATA2LSB 1 
-#define ELFDATA2MSB 2 
+#define ELFDATA2LSB 1
+#define ELFDATA2MSB 2
 
 typedef uint16_t elf32_half;
 typedef uint32_t elf32_word;
@@ -49,21 +49,22 @@ struct elf32_phdr
     elf32_word p_memsz;
     elf32_word p_flags;
     elf32_word p_align;
-};
+} __attribute__((packed));
+
 
 struct elf_section_header
 {
-    elf32_word sh_name;
-    elf32_word sh_type;
-    elf32_word sh_flags;
-    elf32_addr sh_addr;
-    elf32_off sh_offset;
-    elf32_word sh_size;
-    elf32_word sh_link;
-    elf32_word sh_info;
-    elf32_word sh_addralign;
-    elf32_word sh_entsize; 
-};
+    elf32_word	sh_name;
+    elf32_word	sh_type;
+	elf32_word	sh_flags;
+	elf32_addr	sh_addr;
+	elf32_off	sh_offset;
+	elf32_word	sh_size;
+	elf32_word	sh_link;
+	elf32_word	sh_info;
+	elf32_word	sh_addralign;
+	elf32_word	sh_entsize;
+} __attribute__((packed));
 
 struct elf_header
 {
@@ -81,9 +82,28 @@ struct elf_header
     elf32_half e_shentsize;
     elf32_half e_shnum;
     elf32_half e_shstrndx;
-};
+} __attribute__((packed));
 
+struct elf32_dyn
+{
+    elf32_sword d_tag;
+    union
+    {
+        elf32_word d_val;
+        elf32_addr d_ptr;
 
-void* elf_get_entry_ptr(struct elf_header* elf_header);
-uint32_t elf_get_entry(struct elf_header* elf_header);
+    } d_un;
+} __attribute__((packed));
+
+struct elf32_sym
+{
+    elf32_word st_name;
+    elf32_addr st_value;
+    elf32_word st_size;
+    unsigned char st_info;
+    unsigned char st_other;
+    elf32_half st_shndx;
+} __attribute__((packed));
+void * elf_get_entry_ptr(struct elf_header *elf_header);
+uint32_t elf_get_entry(struct elf_header *elf_header);
 #endif

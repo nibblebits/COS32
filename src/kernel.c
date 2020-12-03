@@ -157,7 +157,7 @@ void kernel_main(void)
 	isr80h_register_all();
 
 	print("Kernel initialized\n");
-
+	
 	struct command_argument* root_argument = process_arguments_create("0:/taskbar.e");
 	process_arguments_add(root_argument, "test argument");
 		process_arguments_add(root_argument, "test argument2");

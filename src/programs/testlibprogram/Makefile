@@ -2,8 +2,8 @@ OBJECTS=./build/testprogram.o
 FLAGS =  --verbose --freestanding -falign-jumps -falign-functions -falign-labels -falign-loops  -fstrength-reduce -fomit-frame-pointer -finline-functions -Wno-unused-function -fno-builtin -Werror -Wno-unused-label -Wno-cpp -Wno-unused-parameter -nostdlib -nostartfiles -nodefaultlibs -Wall -O0 -Iinc
 	
 
-./build/testprogram.o: ./src/testprogram.c
-	i686-elf-gcc $(INCLUDES)  ${FLAGS} -L../testlib  -l:testlib.so -c ./src/testprogram.c -o ./build/testprogram.o -fno-common -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g
+./build/testprogram.o: ./src/testprogram.asm
+	nasm -f elf ./src/testprogram.asm -o ./build/testprogram.o
 
 
 all: ${OBJECTS}

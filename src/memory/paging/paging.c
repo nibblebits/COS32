@@ -245,11 +245,11 @@ uint32_t paging_align_value_to_upper_page(uint32_t val)
     return new_val;
 }
 
-uint32_t paging_align_to_lower_page(void *virt)
+void* paging_align_to_lower_page(void *virt)
 {
     uint32_t addr = (uint32_t)virt;
     addr -= (addr % COS32_PAGE_SIZE);
-    return addr;
+    return (void*)addr;
 }
 
 uint32_t paging_get(uint32_t *directory, void *virt)

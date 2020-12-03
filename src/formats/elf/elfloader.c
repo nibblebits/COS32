@@ -38,56 +38,44 @@ static bool elf_has_program_header(struct elf_header *header)
     return header->e_phoff != 0;
 }
 
-static int elf_read_program_header(int fp, struct elf_header *elf_header, struct elf32_phdr *p_header, int index)
+static int elf_read_section_header(int fp, struct elf_header *elf_header, struct elf_section_header *p_header, int index)
 {
     int res = 0;
-    res = fseek(fp, elf_header->e_phoff + (elf_header->e_phentsize * index), SEEK_SET);
+    res = fseek(fp, elf_header->e_shoff + (elf_header->e_shentsize * index), SEEK_SET);
     if (res < 0)
     {
         goto out;
     }
 
-    if (fread(p_header, sizeof(struct elf32_phdr), 1, fp) != 1)
+    if (fread(p_header, elf_header->e_shentsize, 1, fp) != 1)
     {
         res = -EIO;
         goto out;
     }
 
-    // We currently only support segments ready to be loaded into memory, no dynamic linking is yet available
-    if (p_header->p_type != PT_LOAD && p_header->p_type != PT_NULL)
-    {
-        res = -EUNIMP;
-        goto out;
-    }
 out:
     return res;
 }
 
-static int elf_load_section(int fp, struct elf32_phdr *phdr, struct elf_header *header, struct elf_loaded_section *section)
+static int elf_load_section(int fp, struct elf_section_header *section_header, struct elf_header *header, struct elf_loaded_section *section)
 {
     int res = 0;
-    // If the section is not aligned to a page then we can't load this elf, we expect alignment
-    if (!paging_is_address_aligned((void *)phdr->p_paddr) || !paging_is_address_aligned((void *)phdr->p_vaddr))
-    {
-        res = -EINFORMAT;
-        goto out;
-    }
 
     void *data_ptr = 0;
-    if (phdr->p_filesz == 0)
+    if (section_header->sh_addr == 0)
     {
         // We don't load sections with no data... needs a little cleaning... get a new function here
         goto set_section;
     }
 
-    data_ptr = kzalloc(phdr->p_filesz);
+    data_ptr = kzalloc(section_header->sh_size);
     if (!data_ptr)
     {
         res = -ENOMEM;
         goto out;
     }
 
-    if (fseek(fp, phdr->p_offset, SEEK_SET) < 0)
+    if (fseek(fp, section_header->sh_offset, SEEK_SET) < 0)
     {
         res = -EIO;
         goto out;
@@ -96,7 +84,7 @@ static int elf_load_section(int fp, struct elf32_phdr *phdr, struct elf_header *
     // I Know we read the entire thing at once, not the best idea but its easier to work with
     // may change this in the future although no performance losses will happen
     // in this kernel from us doing it this way
-    if (fread(data_ptr, phdr->p_filesz, 1, fp) != 1)
+    if (fread(data_ptr, section_header->sh_size, 1, fp) != 1)
     {
         res = -EIO;
         goto out;
@@ -105,10 +93,12 @@ static int elf_load_section(int fp, struct elf32_phdr *phdr, struct elf_header *
 
 set_section:
     section->phys_addr = (void *)data_ptr;
-    section->virt_addr = (void *)phdr->p_vaddr;
+    section->virt_addr = (void *)section_header->sh_addr;
     // We end at the end of the page regardless of section size.
-    section->phys_end = paging_align_address((void *)(data_ptr + phdr->p_filesz));
-    section->flags = phdr->p_flags;
+    section->phys_end = paging_align_address((void *)(data_ptr + section_header->sh_size));
+    section->flags = section_header->sh_flags;
+
+    memcpy(&section->header, section_header, sizeof(struct elf_section_header));
 
 out:
     // If their was a problem clean the memory
@@ -191,24 +181,24 @@ int elf_load_sections(int fp, struct elf_header *header, struct elf_file *elf_fi
     struct elf_loaded_section *section_head = kzalloc(sizeof(struct elf_loaded_section));
     struct elf_loaded_section *current_section = section_head;
     int res = 0;
-    for (int i = 0; i < header->e_phnum; i++)
+    for (int i = 0; i < header->e_shnum; i++)
     {
-        struct elf32_phdr elf_program_header;
-        res = elf_read_program_header(fp, header, &elf_program_header, i);
+        struct elf_section_header elf_section_header;
+        res = elf_read_section_header(fp, header, &elf_section_header, i);
 
         if (res < 0)
         {
             goto out;
         }
         
-        res = elf_load_section(fp, &elf_program_header, header, current_section);
+        res = elf_load_section(fp, &elf_section_header, header, current_section);
         if (res < 0)
         {
             goto out;
         }
 
         // I don't like this needs cleaning up, consider linked list functionality abstracted out
-        if (i != header->e_phnum - 1)
+        if (i != header->e_shnum - 1)
         {
             struct elf_loaded_section *next_s = kzalloc(sizeof(struct elf_loaded_section));
             current_section->next = next_s;
@@ -272,6 +262,51 @@ int elf_close(struct elf_file *file)
     return res;
 }
 
+int elf_process_pt_dynamic_section(struct elf_loaded_section* section)
+{
+    struct elf32_dyn* dyn_list = section->phys_addr;
+    if(dyn_list)
+    {
+        struct elf32_sym* ptr = (void*) dyn_list[3].d_un.d_ptr;
+        if (ptr)
+        {
+
+        }
+    }
+    return 0;
+}
+
+int elf_process_section(struct elf_loaded_section* section)
+{
+    /*int res = 0;
+    struct elf32_phdr* phdr = &section->phdr;
+    switch(phdr->p_type)
+    {
+        case PT_DYNAMIC:
+            res = elf_process_pt_dynamic_section(section);
+        break;
+    };
+
+    return res;*/
+    return 0;
+}
+
+int elf_process_sections(struct elf_file* file)
+{
+    int res = 0;
+    struct elf_loaded_section* section = elf_first_section(file);
+    while(section)
+    {
+        res = elf_process_section(section);
+        if (res < 0)
+        {
+            break;
+        }
+
+        section = section->next;
+    }
+    return 0;
+}
 int elf_load(const char *filename, struct elf_file **file_out)
 {
     struct elf_file *elf_file = kzalloc(sizeof(struct elf_file));
@@ -294,6 +329,10 @@ int elf_load(const char *filename, struct elf_file **file_out)
     {
         goto out;
     }
+
+    /**
+     * Processing of sections must happen when the memory has been mapped in process.c
+     */
 
     *file_out = elf_file;
 out:
