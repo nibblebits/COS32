@@ -7,70 +7,57 @@
 #include "elf.h"
 #include "config.h"
 
-struct elf_loaded_section
-{
-    void *phys_addr;
-    void *virt_addr;
-    void *phys_end;
-
-    // The size of this loaded section
-    size_t size;
-
-    // Flags, e.g read, write, execute... memory protection
-    elf32_word flags;
-
-    // The header as seen on the binary
-    struct elf_section_header header;
-
-    // Consider storing section name at some point
-    struct elf_loaded_section *next;
-};
 
 struct elf_file
 {
     char filename[COS32_MAX_PATH];
-    struct elf_header header;
-    struct elf_loaded_section *section_h;
+
+    int in_memory_size;
+
+    // The physical memory address for the elf memory 
+    // This is the entire ELF file loaded/mapped into memory
+    void* elf_memory;
+
+
+    /**
+     * These memory pointers point to the code and data of this elf file
+     */
+
+    /**
+     * The virtual base address of this binary
+     */
+    void* virtual_base_address;
+
+    /**
+     * The virtual end address of this binary
+     */
+    void* virtual_end_address;
+
+    /**
+     * The physical base address of this binary
+     */
+    void* physical_base_address;
+
+    /**
+     * The physical end address of this binary
+     */
+    void* physical_end_address;
+
 };
 
 /**
  * 
- * Returns zero on success, we will change this to popualte some structure resource later on...
+ * Returns zero on success, loads the elf file
  */
 int elf_load(const char *filename, struct elf_file **file_out);
 
-/**
- * Closes the elf file
- */
-int elf_close(struct elf_file *file);
 
-/**
- * Returns the virtual address that the given elf section must be loaded at
- */
-void *elf_virtual_address(struct elf_loaded_section *section);
-/**
- * Returns the physical address in memory that the provided section is actually loaded at
- * \note This function does not return the physical address specified in the elf section on disk, it returns the allocated memory that we loaded the section into
- */
-void *elf_phys_address(struct elf_loaded_section *section);
+void* elf_memory(struct elf_file* file);
 
-/**
- * Returns the physical address in memory for the end of this loaded section
- */
-void *elf_phys_end_address(struct elf_loaded_section *section);
+struct elf_header* elf_header(struct elf_file* file);
+void *elf_virtual_base(struct elf_file *file);
+void *elf_virtual_end(struct elf_file *file);
+void* elf_phys_base(struct elf_file* file);
+void* elf_phys_end(struct elf_file* file);
 
-/**
- * Returns the first loaded section of the elf file
- */
-struct elf_loaded_section *elf_first_section(struct elf_file *file);
-/**
- * Returns the next loaded section thats next to the section provided
- */
-struct elf_loaded_section *elf_next_section(struct elf_loaded_section *section);
-
-/**
- * Processes the elf sections, should be called only once per elf file.
- * Must be called while on the processes page directory.
- */
-int elf_process_sections(struct elf_file* file);
 #endif

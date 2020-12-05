@@ -11,13 +11,12 @@ char *strncpy(char *dest, const char *src, int n)
     return dest;
 }
 
-
 size_t strlen(const char *str)
 {
-	size_t len = 0;
-	while (str[len])
-		len++;
-	return len;
+    size_t len = 0;
+    while (str[len])
+        len++;
+    return len;
 }
 
 char tolower(char s1)
@@ -29,6 +28,21 @@ char tolower(char s1)
     return s1;
 }
 
+int strcmp(const char *s1, const char *s2)
+{
+    unsigned char u1, u2;
+
+    while (1)
+    {
+        u1 = (unsigned char)*s1++;
+        u2 = (unsigned char)*s2++;
+        if (u1 != u2)
+            return u1 - u2;
+        if (u1 == '\0')
+            break;
+    }
+    return 0;
+}
 int strncmp(const char *s1, const char *s2, int n)
 {
     unsigned char u1, u2;
@@ -60,7 +74,6 @@ int istrncmp(const char *s1, const char *s2, int n)
     }
     return 0;
 }
-
 
 /**
  * Gets the length of the string, stops when the terminator provided is reached or a null terminator

@@ -15,6 +15,25 @@
 #define PT_SHLIB 5
 #define PT_PHDR 6
 
+
+#define SHT_NULL 0
+#define SHT_PROGBITS 1
+#define SHT_SYMTAB 2
+#define SHT_STRTAB 3
+#define SHT_RELA 4
+#define SHT_HASH 5
+#define SHT_DYNAMIC 6
+#define SHT_NOTE 7
+#define SHT_NOBITS 8
+#define SHT_REL 9
+#define SHT_SHLIB 10
+#define SHT_DYNSYM 11
+#define SHT_LOPROC 12
+#define SHT_HIPROC 13
+#define SHT_LOUSER 14
+#define SHT_HIUSER 15
+
+
 #define ET_NONE 0
 #define ET_REL 1
 #define ET_EXEC 2
@@ -32,6 +51,8 @@
 #define ELFDATANONE 0
 #define ELFDATA2LSB 1
 #define ELFDATA2MSB 2
+
+#define SHN_UNDEF 0
 
 typedef uint16_t elf32_half;
 typedef uint32_t elf32_word;
@@ -52,7 +73,7 @@ struct elf32_phdr
 } __attribute__((packed));
 
 
-struct elf_section_header
+struct elf32_shdr
 {
     elf32_word	sh_name;
     elf32_word	sh_type;
@@ -104,6 +125,8 @@ struct elf32_sym
     unsigned char st_other;
     elf32_half st_shndx;
 } __attribute__((packed));
+
 void * elf_get_entry_ptr(struct elf_header *elf_header);
 uint32_t elf_get_entry(struct elf_header *elf_header);
+
 #endif

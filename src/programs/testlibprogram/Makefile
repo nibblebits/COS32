@@ -7,7 +7,7 @@ FLAGS =  --verbose --freestanding -falign-jumps -falign-functions -falign-labels
 
 
 all: ${OBJECTS}
-	i686-elf-ld  -g -T ./linker.ld -o ./testlibprogram.elf -O0 -nostdlib -g -L../testlib  ${OBJECTS} -l:testlib.so
+	i686-elf-ld  -nostdlib -g -T ./linker.ld -o ./testlibprogram.elf -O0  -g -L../testlib  ${OBJECTS} -l:testlib.so
 
 clean:
 	rm -rf ./testlibprogram.elf

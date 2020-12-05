@@ -285,7 +285,7 @@ static int process_load_elf(const char *filename, struct process *process)
 out:
     if (ISERR(res))
     {
-        elf_close(elf_file);
+     //   elf_close(elf_file);
     }
     return res;
 }
@@ -325,37 +325,7 @@ int process_map_elf(struct process *process)
     }
 
     struct elf_file *elf_file = process->elf_file;
-    struct elf_loaded_section *current = elf_first_section(elf_file);
-    while (current)
-    {
-        void *virt_addr = elf_virtual_address(current);
-        void *phys_addr = elf_phys_address(current);
-        void *phys_end_addr = elf_phys_end_address(current);
-
-        if (virt_addr == 0 || phys_addr == 0)
-        {
-            // We don't load null sections..
-            current = elf_next_section(current);
-            continue;
-        }
-
-      
-        int flags = PAGING_PAGE_PRESENT | PAGING_ACCESS_FROM_ALL | PAGING_PAGE_WRITEABLE;
-
-        // Due to weird issue with modifyable array data being in text section
-        // for programs, we should make the .text section writeable by default
-        // We will assume its the first section.
-        // This solution is bad, we should figure out why GCC is doing this and change it..
-        if ((current->flags & PF_W))
-        {
-            flags |= PAGING_PAGE_WRITEABLE;
-        }
-
-        // Assert for now, could error handle this if needed at another time....
-        ASSERT(paging_map_to(process->task->page_directory->directory_entry, paging_align_to_lower_page(virt_addr), paging_align_to_lower_page(phys_addr), paging_align_address(phys_end_addr), flags) == 0);
-
-        current = elf_next_section(current);
-    }
+    ASSERT(paging_map_to(process->task->page_directory->directory_entry, paging_align_to_lower_page(elf_virtual_base(elf_file)), elf_phys_base(elf_file), paging_align_address(elf_phys_end(elf_file)), PAGING_PAGE_PRESENT | PAGING_ACCESS_FROM_ALL | PAGING_PAGE_WRITEABLE) == 0);
 
 out:
     return res;
@@ -693,7 +663,7 @@ void process_free_binary_data(struct process *process)
 void process_free_elf_data(struct process *process)
 {
     // Close the elf file
-    elf_close(process->elf_file);
+   // elf_close(process->elf_file);
 }
 
 void process_free_data(struct process *process)

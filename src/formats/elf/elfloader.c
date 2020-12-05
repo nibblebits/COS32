@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include "memory/memory.h"
 #include "memory/kheap.h"
+#include "string/string.h"
 #include "memory/paging/paging.h"
 #include "kernel.h"
 #include "config.h"
@@ -38,304 +39,178 @@ static bool elf_has_program_header(struct elf_header *header)
     return header->e_phoff != 0;
 }
 
-static int elf_read_section_header(int fp, struct elf_header *elf_header, struct elf_section_header *p_header, int index)
+void* elf_memory(struct elf_file* file)
 {
-    int res = 0;
-    res = fseek(fp, elf_header->e_shoff + (elf_header->e_shentsize * index), SEEK_SET);
-    if (res < 0)
-    {
-        goto out;
-    }
-
-    if (fread(p_header, elf_header->e_shentsize, 1, fp) != 1)
-    {
-        res = -EIO;
-        goto out;
-    }
-
-out:
-    return res;
+    return file->elf_memory;
 }
 
-static int elf_load_section(int fp, struct elf_section_header *section_header, struct elf_header *header, struct elf_loaded_section *section)
+struct elf_header *elf_header(struct elf_file *file)
 {
-    int res = 0;
-
-    void *data_ptr = 0;
-    if (section_header->sh_addr == 0)
-    {
-        // We don't load sections with no data... needs a little cleaning... get a new function here
-        goto set_section;
-    }
-
-    data_ptr = kzalloc(section_header->sh_size);
-    if (!data_ptr)
-    {
-        res = -ENOMEM;
-        goto out;
-    }
-
-    if (fseek(fp, section_header->sh_offset, SEEK_SET) < 0)
-    {
-        res = -EIO;
-        goto out;
-    }
-
-    // I Know we read the entire thing at once, not the best idea but its easier to work with
-    // may change this in the future although no performance losses will happen
-    // in this kernel from us doing it this way
-    if (fread(data_ptr, section_header->sh_size, 1, fp) != 1)
-    {
-        res = -EIO;
-        goto out;
-    }
-
-
-set_section:
-    section->phys_addr = (void *)data_ptr;
-    section->virt_addr = (void *)section_header->sh_addr;
-    // We end at the end of the page regardless of section size.
-    section->phys_end = paging_align_address((void *)(data_ptr + section_header->sh_size));
-    section->flags = section_header->sh_flags;
-
-    memcpy(&section->header, section_header, sizeof(struct elf_section_header));
-
-out:
-    // If their was a problem clean the memory
-    if (res < 0 && data_ptr != 0)
-    {
-        kfree(data_ptr);
-    }
-
-    return res;
+    // First byte in the elf memory is the start of the elf header
+    return file->elf_memory;
 }
 
-static int elf_load_header(int fp, struct elf_header *header)
+struct elf32_shdr *elf_sheader(struct elf_header *header)
 {
-    int res = 0;
-    memset(header, 0, sizeof(struct elf_header));
-    if (fread((void *)header, sizeof(struct elf_header), 1, fp) != 1)
-    {
-        res = -EIO;
-        goto out;
-    }
-
-    if (!elf_valid_signature(header))
-    {
-        res = -EINFORMAT;
-        goto out;
-    }
-
-    if (!elf_valid_class(header))
-    {
-        res = -EINFORMAT;
-        if (header->e_ident[EI_CLASS] == ELFCLASS64)
-        {
-            res = -EUNIMP;
-        }
-        goto out;
-    }
-
-    if (!elf_valid_encoding(header))
-    {
-        res = -EINFORMAT;
-        if (header->e_ident[EI_DATA] == ELFDATA2MSB)
-        {
-            res = -EUNIMP;
-        }
-
-        goto out;
-    }
-
-    if (!elf_is_executable(header))
-    {
-        res = -EINFORMAT;
-        goto out;
-    }
-
-    if (!elf_has_program_header(header))
-    {
-        res = -EINFORMAT;
-        goto out;
-    }
-
-out:
-    return res;
+    return (struct elf32_shdr *)((int)header + header->e_shoff);
 }
 
-int elf_free_sections(struct elf_loaded_section *section)
+struct elf32_phdr *elf_pheader(struct elf_header *header)
 {
-    struct elf_loaded_section *current = section;
-    while (current != 0)
-    {
-        struct elf_loaded_section *next = current->next;
-        kfree(current);
-        current = next;
-    }
-
-    return 0;
-}
-
-int elf_load_sections(int fp, struct elf_header *header, struct elf_file *elf_file)
-{
-    struct elf_loaded_section *section_head = kzalloc(sizeof(struct elf_loaded_section));
-    struct elf_loaded_section *current_section = section_head;
-    int res = 0;
-    for (int i = 0; i < header->e_shnum; i++)
-    {
-        struct elf_section_header elf_section_header;
-        res = elf_read_section_header(fp, header, &elf_section_header, i);
-
-        if (res < 0)
-        {
-            goto out;
-        }
-        
-        res = elf_load_section(fp, &elf_section_header, header, current_section);
-        if (res < 0)
-        {
-            goto out;
-        }
-
-        // I don't like this needs cleaning up, consider linked list functionality abstracted out
-        if (i != header->e_shnum - 1)
-        {
-            struct elf_loaded_section *next_s = kzalloc(sizeof(struct elf_loaded_section));
-            current_section->next = next_s;
-            current_section = next_s;
-        }
-    }
-
-    elf_file->section_h = section_head;
-out:
-    // We had an error so delete all the sections we loaded into memory...
-    if (res < 0)
-    {
-        elf_free_sections(section_head);
-    }
-
-    return res;
-}
-
-void *elf_virtual_address(struct elf_loaded_section *section)
-{
-    return section->virt_addr;
-}
-
-void *elf_phys_address(struct elf_loaded_section *section)
-{
-    return section->phys_addr;
-}
-
-void *elf_phys_end_address(struct elf_loaded_section *section)
-{
-    return section->phys_end;
-}
-
-struct elf_loaded_section *elf_first_section(struct elf_file *file)
-{
-    return file->section_h;
-}
-
-struct elf_loaded_section *elf_next_section(struct elf_loaded_section *section)
-{
-    return section->next;
-}
-
-int elf_close(struct elf_file *file)
-{
-    // Ugly
-    if (!file)
+    if (header->e_phoff == 0)
     {
         return 0;
     }
 
-    int res = 0;
-    struct elf_loaded_section *section = elf_first_section(file);
-    while (section)
+    return (struct elf32_phdr *)((int)header + header->e_phoff);
+}
+
+struct elf32_phdr *elf_program_header(struct elf_header *header, int index)
+{
+    return &elf_pheader(header)[index];
+}
+struct elf32_shdr *elf_section(struct elf_header *header, int index)
+{
+    return &elf_sheader(header)[index];
+}
+
+char *elf_str_table(struct elf_header *header)
+{
+    return (char *)header + elf_section(header, header->e_shstrndx)->sh_offset;
+}
+
+void *elf_virtual_base(struct elf_file *file)
+{
+    return file->virtual_base_address;
+}
+
+void *elf_virtual_end(struct elf_file *file)
+{
+    return file->virtual_end_address;
+}
+
+void* elf_phys_base(struct elf_file* file)
+{
+    return file->physical_base_address;
+}
+
+void* elf_phys_end(struct elf_file* file)
+{
+    return file->physical_end_address;
+}
+
+int elf_validate_loaded(struct elf_header *header)
+{
+    return (elf_valid_signature(header) && elf_valid_class(header) && elf_valid_encoding(header) && elf_has_program_header(header)) ? COS32_ALL_OK : -EINVARG;
+}
+
+int elf_process_phdr_pt_load(struct elf_file* elf_file, struct elf32_phdr* phdr)
+{
+    // We want the lowest address we can find for the program header.
+    // This will give us the virtual base address of this elf file.
+    if (elf_file->virtual_base_address >= (void*)phdr->p_vaddr || elf_file->virtual_base_address == 0x00)
     {
-        struct elf_loaded_section *nxt_section = elf_next_section(section);
-        kfree(section->phys_addr);
-        kfree(section);
-        section = nxt_section;
+        elf_file->virtual_base_address = (void*) phdr->p_vaddr;
+
+        // We also want to calculate the physical base address here
+        elf_file->physical_base_address = elf_memory(elf_file)+phdr->p_offset;
     }
+
+    // We want to get the highest address we can find for the program header
+    // This will allow us to calculate the end address of this elf file
+    unsigned int end_virtual_address = phdr->p_vaddr + phdr->p_filesz;
+    if(elf_file->virtual_end_address <= (void*)(end_virtual_address) || elf_file->virtual_end_address == 0x00)
+    {
+        elf_file->virtual_end_address = (void*) end_virtual_address;
+        
+        // We also want to set the physical end address
+        elf_file->physical_end_address = elf_memory(elf_file)+phdr->p_offset+phdr->p_filesz;
+
+    }
+
+    return 0;
+}
+
+int elf_process_pheader(struct elf_file *elf_file, struct elf32_phdr *phdr)
+{
+    int res = 0;
+    switch (phdr->p_type)
+    {
+    case PT_LOAD:
+        res = elf_process_phdr_pt_load(elf_file, phdr);
+        break;
+    }
+
     return res;
 }
 
-int elf_process_pt_dynamic_section(struct elf_loaded_section* section)
-{
-    struct elf32_dyn* dyn_list = section->phys_addr;
-    if(dyn_list)
-    {
-        struct elf32_sym* ptr = (void*) dyn_list[3].d_un.d_ptr;
-        if (ptr)
-        {
-
-        }
-    }
-    return 0;
-}
-
-int elf_process_section(struct elf_loaded_section* section)
-{
-    /*int res = 0;
-    struct elf32_phdr* phdr = &section->phdr;
-    switch(phdr->p_type)
-    {
-        case PT_DYNAMIC:
-            res = elf_process_pt_dynamic_section(section);
-        break;
-    };
-
-    return res;*/
-    return 0;
-}
-
-int elf_process_sections(struct elf_file* file)
+int elf_process_pheaders(struct elf_file *elf_file)
 {
     int res = 0;
-    struct elf_loaded_section* section = elf_first_section(file);
-    while(section)
+    struct elf_header *header = elf_header(elf_file);
+    for (int i = 0; i < header->e_phnum; i++)
     {
-        res = elf_process_section(section);
+        struct elf32_phdr *phdr = elf_program_header(header, i);
+        res = elf_process_pheader(elf_file, phdr);
         if (res < 0)
         {
             break;
         }
-
-        section = section->next;
     }
-    return 0;
+    return res;
 }
+int elf_process_loaded(struct elf_file *elf_file)
+{
+    struct elf_header *header = elf_header(elf_file);
+    int res = elf_validate_loaded(header);
+    if (res < 0)
+    {
+        goto out;
+    }
+
+    res = elf_process_pheaders(elf_file);
+    if (res < 0)
+    {
+        goto out;
+    }
+
+out:
+    return res;
+}
+
 int elf_load(const char *filename, struct elf_file **file_out)
 {
     struct elf_file *elf_file = kzalloc(sizeof(struct elf_file));
+    int fd = 0;
     int res = fopen(filename, "r");
     if (res <= 0)
     {
-        res = -EIO;
         goto out;
     }
+    fd = res;
 
-    int fp = res;
-    res = elf_load_header(fp, &elf_file->header);
+    struct file_stat stat;
+    res = fstat(fd, &stat);
     if (res < 0)
     {
         goto out;
     }
 
-    res = elf_load_sections(fp, &elf_file->header, elf_file);
+    elf_file->elf_memory = kzalloc(stat.filesize);
+    res = fread(elf_file->elf_memory, stat.filesize, 1, fd);
     if (res < 0)
     {
         goto out;
     }
 
-    /**
-     * Processing of sections must happen when the memory has been mapped in process.c
-     */
+    res = elf_process_loaded(elf_file);
+    if (res < 0)
+    {
+        goto out;
+    }
 
     *file_out = elf_file;
 out:
-    fclose(fp);
+    fclose(fd);
     return res;
 }

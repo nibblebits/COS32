@@ -10,6 +10,7 @@ int strnlen_terminator(const char *str, int max, char terminator);
 int isdigit(char c);
 int tonumericdigit(char c);
 char *strtok(char *str, const char *delimiters);
+int strcmp(const char *s1, const char *s2);
 int strncmp(const char *s1, const char *s2, int n);
 int istrncmp(const char *s1, const char *s2, int n);
 char tolower(char s1);
