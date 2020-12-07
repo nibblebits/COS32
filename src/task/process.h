@@ -4,8 +4,8 @@
 #include "config.h"
 #include "task.h"
 #include "keyboard/keyboard.h"
-// This directory path is rubbish, change the name
-#include "formats/elf/elfloader.h"
+
+#include "loader/formats/elf/elfloader.h"
 #include <stdbool.h>
 
 struct command_argument

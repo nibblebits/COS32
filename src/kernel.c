@@ -18,7 +18,8 @@
 #include "video/video.h"
 #include "keyboard/keyboard.h"
 #include "keyboard/listener.h"
-#include "formats/elf/elfloader.h"
+#include "loader/formats/elf/elfloader.h"
+#include "loader/library.h"
 #include "task/task.h"
 #include "task/tss.h"
 #include "task/process.h"
@@ -104,6 +105,10 @@ bool is_kernel_page()
 	return paging_current_directory() == kernel_get_page_directory();
 }
 
+int mytestfunction()
+{
+	return 50;
+}
 void kernel_main(void)
 {
 	/* Initialize terminal interface */
@@ -150,12 +155,18 @@ void kernel_main(void)
 	// Initialize paging
 	paging_init();
 
+
 	kernel_paging_chunk = paging_new_4gb(PAGING_ACCESS_FROM_ALL | PAGING_PAGE_PRESENT | PAGING_CACHE_DISABLED | PAGING_PAGE_WRITEABLE);
 	kernel_page();
 	enable_paging();
 
 	isr80h_register_all();
 
+	// Let's create a fake library to test with
+	struct library* library = library_new("testlib.so");
+	library_new_symbol(library, "mytestfunction", (void*)mytestfunction);
+	library_new_symbol(library, "mysecondtestfunction", (void*) mytestfunction);
+	
 	print("Kernel initialized\n");
 	
 	struct command_argument* root_argument = process_arguments_create("0:/taskbar.e");

@@ -1,6 +1,6 @@
 
 
-FILES = ./build/kernel.asm.o  ./build/keyboard/listener.o ./build/keyboard/listeners/fkeylistener.o ./build/keyboard/listeners/scrollkeylistener.o ./build/keyboard/keyboard.o ./build/keyboard/classic.o  ./build/timer/pit.o ./build/task/task.o ./build/task/process.o ./build/kernel.o ./build/gdt/gdt.o  ./build/memory/paging/paging.o ./build/idt/idt.o ./build/io/io.o  ./build/disk/disk.o ./build/fs/pparser.o ./build/fs/file.o ./build/fs/fat/fat16.o ./build/video/video.o  ./build/video/font/font.o ./build/video/font/formats/psffont.o ./build/video/rectangle.o ./build/memory/memory.o ./build/string/string.o ./build/formats/elf/elf.o ./build/formats/elf/elfloader.o  ./build/memory/heap.o ./build/memory/kheap.o ./build/disk/streamer.o ./build/isr80h/isr80h.o ./build/isr80h/io.o ./build/isr80h/process.o ./build/isr80h/isrkernel.o ./build/isr80h/video.o ./build/isr80h/font.o ./build/memory/registers.asm.o ./build/task/tss.asm.o ./build/gdt/gdt.asm.o ./build/task/task.asm.o ./build/memory/paging/paging.asm.o ./build/idt/idt.asm.o
+FILES = ./build/kernel.asm.o  ./build/keyboard/listener.o ./build/keyboard/listeners/fkeylistener.o ./build/keyboard/listeners/scrollkeylistener.o ./build/keyboard/keyboard.o ./build/keyboard/classic.o  ./build/timer/pit.o ./build/task/task.o ./build/task/process.o ./build/kernel.o ./build/gdt/gdt.o  ./build/memory/array.o ./build/memory/paging/paging.o ./build/idt/idt.o ./build/io/io.o  ./build/disk/disk.o ./build/fs/pparser.o ./build/fs/file.o ./build/fs/fat/fat16.o ./build/video/video.o  ./build/video/font/font.o ./build/video/font/formats/psffont.o ./build/video/rectangle.o ./build/memory/memory.o ./build/string/string.o ./build/loader/library.o ./build/loader/formats/elf/elf.o ./build/loader/formats/elf/elfloader.o  ./build/memory/heap.o ./build/memory/kheap.o ./build/disk/streamer.o ./build/isr80h/isr80h.o ./build/isr80h/io.o ./build/isr80h/process.o ./build/isr80h/isrkernel.o ./build/isr80h/video.o ./build/isr80h/font.o ./build/memory/registers.asm.o ./build/task/tss.asm.o ./build/gdt/gdt.asm.o ./build/task/task.asm.o ./build/memory/paging/paging.asm.o ./build/idt/idt.asm.o
 FLAGS =  --freestanding -falign-jumps -falign-functions -falign-labels -falign-loops  -fstrength-reduce -fomit-frame-pointer -finline-functions -Wno-unused-function -fno-builtin -Werror -Wno-unused-label -Wno-cpp -Wno-unused-parameter -nostdlib -nostartfiles -nodefaultlibs -Wall -O0 -Iinc
 BUILD_NUMBER_FILE=build-number.txt
 
@@ -99,8 +99,13 @@ all: ./bin/kernel.bin ./bin/boot.bin ${FILES} programs
 ./build/memory/paging/paging.asm.o: ./src/memory/paging/paging.asm ./src/memory/paging/paging.h
 	nasm -f elf -g ./src/memory/paging/paging.asm -o ./build/memory/paging/paging.asm.o
 
+
 ./build/memory/paging/paging.o: ./src/memory/paging/paging.c ./src/memory/paging/paging.h
 	i686-elf-gcc $(INCLUDES) -I./src/memory/paging  ${FLAGS} -c ./src/memory/paging/paging.c -o ./build/memory/paging/paging.o -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g
+
+./build/memory/array.o: ./src/memory/array.c ./src/memory/array.h
+	i686-elf-gcc $(INCLUDES) -I./src/memory/  ${FLAGS} -c ./src/memory/array.c -o ./build/memory/array.o -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g
+
 
 ./build/kernel.asm.o: ./src/kernel.asm
 	nasm -f elf -g ./src/kernel.asm -o ./build/kernel.asm.o
@@ -134,12 +139,17 @@ all: ./bin/kernel.bin ./bin/boot.bin ${FILES} programs
 	i686-elf-gcc $(INCLUDES) -I./src/fs/fat ${FLAGS} -c ./src/fs/fat/fat16.c -o ./build/fs/fat/fat16.o -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g
 
 
-./build/formats/elf/elf.o: ./src/formats/elf/elf.c ./src/formats/elf/elf.h
-	i686-elf-gcc $(INCLUDES) -I./src/formats/elf ${FLAGS} -c ./src/formats/elf/elf.c -o ./build/formats/elf/elf.o -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g
+./build/loader/library.o: ./src/loader/library.c ./src/loader/library.h
+	i686-elf-gcc $(INCLUDES) -I./src/loader/library ${FLAGS} -c ./src/loader/library.c -o ./build/loader/library.o -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g
 
 
-./build/formats/elf/elfloader.o: ./src/formats/elf/elfloader.c ./src/formats/elf/elfloader.h
-	i686-elf-gcc $(INCLUDES) -I./src/formats/elf ${FLAGS} -c ./src/formats/elf/elfloader.c -o ./build/formats/elf/elfloader.o -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g
+
+./build/loader/formats/elf/elf.o: ./src/loader/formats/elf/elf.c ./src/loader/formats/elf/elf.h
+	i686-elf-gcc $(INCLUDES) -I./src/loader/formats/elf ${FLAGS} -c ./src/loader/formats/elf/elf.c -o ./build/loader/formats/elf/elf.o -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g
+
+
+./build/loader/formats/elf/elfloader.o: ./src/loader/formats/elf/elfloader.c ./src/loader/formats/elf/elfloader.h
+	i686-elf-gcc $(INCLUDES) -I./src/loader/formats/elf ${FLAGS} -c ./src/loader/formats/elf/elfloader.c -o ./build/loader/formats/elf/elfloader.o -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g
 
 ./build/kernel.o: ./src/kernel.c ./src/kernel.h
 	i686-elf-gcc $(INCLUDES) ${FLAGS} -c ./src/kernel.c -o ./build/kernel.o -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g

@@ -12,7 +12,7 @@ void *isr80h_command5_malloc(struct interrupt_frame *frame)
 void *isr80h_command6_invoke(struct interrupt_frame *frame)
 {
     struct command_argument *root_command_argument = task_current_get_stack_item(0);
-    void *result = (void *)process_run_for_argument(root_command_argument, task_current()->process, 0);
+    void *result = (void *)process_run_for_argument(root_command_argument, 0, 0);
     return result;
 }
 

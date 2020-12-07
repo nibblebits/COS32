@@ -8,8 +8,8 @@
 #include "video/video.h"
 #include "video/rectangle.h"
 #include "idt/idt.h"
-#include "formats/elf/elfloader.h"
-#include "formats/elf/elf.h"
+#include "loader/formats/elf/elfloader.h"
+#include "loader/formats/elf/elf.h"
 
 #include "task.h"
 #include "kernel.h"
@@ -178,10 +178,7 @@ int process_load_start(const char *path, struct process *parent, PROCESS_FLAGS f
         }
     }
 
-    char *ptr = kzalloc(65535);
-    if (ptr)
-    {
-    }
+
     // Start the process :)
     res = process_start(process);
     if (ISERR(res))

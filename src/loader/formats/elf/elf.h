@@ -15,6 +15,11 @@
 #define PT_SHLIB 5
 #define PT_PHDR 6
 
+#define STB_LOCAL 0
+#define STB_GLOBAL 1
+#define STB_WEAK 2
+#define STB_LOPROC 13
+#define STB_HIPROC 15
 
 #define SHT_NULL 0
 #define SHT_PROGBITS 1
@@ -53,6 +58,20 @@
 #define ELFDATA2MSB 2
 
 #define SHN_UNDEF 0
+
+#define DT_NULL 0
+#define DT_NEEDED 1
+#define DT_RELA 7
+#define DT_REL 17
+#define DT_HASH 4
+
+#define ELF32_ST_BIND(i) ((i)>>4)
+#define ELF32_ST_TYPE(i) ((i)&0xf)
+#define ELF32_ST_INFO(b,t) (((b)<<4)+((t)&0xf))
+
+#define ELF32_R_SYM(i) ((i)>>8)
+#define ELF32_R_TYPE(i) ((unsigned char)(i))
+#define ELF32_R_INFO(s,t) (((s)<<8)+(unsigned char)(t))
 
 typedef uint16_t elf32_half;
 typedef uint32_t elf32_word;
@@ -125,6 +144,22 @@ struct elf32_sym
     unsigned char st_other;
     elf32_half st_shndx;
 } __attribute__((packed));
+
+struct elf32_rel
+{
+    elf32_addr r_offset;
+    elf32_addr r_info;
+} __attribute__((packed));
+
+struct elf32_rela
+{
+    elf32_addr r_offset;
+    elf32_addr r_info;
+    elf32_sword r_append;
+} __attribute__((packed));
+
+
+
 
 void * elf_get_entry_ptr(struct elf_header *elf_header);
 uint32_t elf_get_entry(struct elf_header *elf_header);

@@ -59,5 +59,11 @@ void *elf_virtual_base(struct elf_file *file);
 void *elf_virtual_end(struct elf_file *file);
 void* elf_phys_base(struct elf_file* file);
 void* elf_phys_end(struct elf_file* file);
+struct elf32_shdr* elf_sheader_by_name(struct elf_header* header, const char* name);
+struct elf32_sym* elf_dynsym(struct elf_header* header, int* total_symbols);
+struct elf32_shdr* elf_dynstr_section(struct elf_header* header);
+char* elf_dynstr_table(struct elf_header* header);
+char* elf_dynamic_string(struct elf_header* header, int index);
+
 
 #endif
