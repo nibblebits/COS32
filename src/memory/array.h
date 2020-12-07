@@ -10,7 +10,7 @@ struct array
 };
 
 struct array* array_create(size_t element_size);
-void array_insert(struct array* array, void* ptr);
+void array_insert(struct array* array, void* elem_ptr);
 void* array_get_index(struct array* array, int index);
 size_t array_total(struct array* array);
 void array_destroy(struct array *array);

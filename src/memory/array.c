@@ -6,10 +6,12 @@ struct array *array_create(size_t element_size)
 {
     struct array *array = kzalloc(sizeof(struct array));
     array->e_sz = element_size;
+    array->total = 0;
+    array->ptr = 0x00;
     return array;
 }
 
-void array_insert(struct array *array, void *ptr)
+void array_insert(struct array *array, void *elem_ptr)
 {
     void *old_ptr = array->ptr;
     void *new_ptr = kzalloc(array->e_sz * (array->total + 1));
@@ -21,7 +23,9 @@ void array_insert(struct array *array, void *ptr)
     {
         memcpy(new_ptr, old_ptr, array->e_sz * array->total);
     }
-    memcpy(new_last_element, ptr, array->e_sz);
+    memcpy(new_last_element, elem_ptr, array->e_sz);
+    array->ptr = new_ptr;
+    array->total++;
 }
 
 void *array_get_index(struct array *array, int index)

@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include "memory/memory.h"
 #include "memory/kheap.h"
+#include "loader/library.h"
 #include "string/string.h"
 #include "memory/paging/paging.h"
 #include "kernel.h"
@@ -276,9 +277,41 @@ int elf_resolve_symbols(struct elf_file *elf_file)
     return res;
 }
 
-void* elf_get_loaded_symbol_address(struct elf_file* file, const char* symbol_name)
+void* elf_get_loaded_symbol_address(struct elf_file* elf_file, const char* symbol_name)
 {
-    return (void*) 0x400000;
+    void* symbol_address = 0;
+    // We must go through all the needed libraries and ask them for their symbols
+    struct elf32_dyn* dynamic_tag = elf_dynamic(elf_header(elf_file));
+    for (int i = 0; ; i++)
+    {
+        // Have we reached the end of the dynamic tags?
+        if (dynamic_tag[i].d_tag == DT_NULL)
+        {
+            break;
+        }
+
+        if (dynamic_tag[i].d_tag == DT_NEEDED)
+        {
+            // We have a needed tag, its value points to the library name thats required in the dynamic string
+            // table
+            const char* required_library_name = elf_dynamic_string(elf_header(elf_file), dynamic_tag[i].d_un.d_val);
+            struct library* library = library_get(required_library_name);
+            if (!library)
+            {
+                // We can't resolve a dependency as we are missing a loaded library that
+                // this binary depends on.
+                return 0;
+            }
+
+            struct symbol* symbol = library_get_symbol_by_name(library, symbol_name);
+            if (symbol)
+            {
+                symbol_address = symbol->addr.virt;
+                break;
+            }
+        }
+    }
+    return symbol_address;
 }
 
 int elf_symbol_poke_to_virtual_address(struct elf_file* elf_file, void* virtual_address, const char* symbol_name)

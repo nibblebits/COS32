@@ -10,6 +10,7 @@
 #include "idt/idt.h"
 #include "loader/formats/elf/elfloader.h"
 #include "loader/formats/elf/elf.h"
+#include "loader/library.h"
 
 #include "task.h"
 #include "kernel.h"
@@ -362,7 +363,12 @@ int process_map_memory(struct process *process)
     {
         // Map the stack if we have no problems so far, we map from the end of the stack because stack grows downwards
         ASSERT(paging_map_to(process->task->page_directory->directory_entry, (void *)COS32_PROGRAM_VIRTUAL_STACK_ADDRESS_END, process->stack, paging_align_address(process->stack + COS32_USER_PROGRAM_STACK_SIZE), PAGING_ACCESS_FROM_ALL | PAGING_PAGE_PRESENT | PAGING_PAGE_WRITEABLE) == 0);
+    
+        // Maps all the loaded libraries in memory for this task.
+        // This way the user process will be able to see their memory.
+        library_map_all(process->task);        
     }
+
 
     return res;
 }
