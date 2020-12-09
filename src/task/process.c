@@ -277,13 +277,20 @@ static int process_load_elf(const char *filename, struct process *process)
         goto out;
     }
 
+    // We can't execute what is not an executable!
+    if (!elf_is_executable(elf_header(elf_file)))
+    {
+        res = -EINVARG;
+        goto out;
+    }
+    
     process->filetype = FILE_TYPE_ELF;
     process->elf_file = elf_file;
 
 out:
     if (ISERR(res))
     {
-     //   elf_close(elf_file);
+        elf_close(elf_file);
     }
     return res;
 }

@@ -162,17 +162,7 @@ void kernel_main(void)
 
 	isr80h_register_all();
 
-	struct addr addr;
-	library_build_address(mytestfunction, mytestfunction, &addr);
 
-	// Let's create a fake library to test with
-	struct library* library = library_new("testlib.so");
-	library_new_symbol(library, "mytestfunction", &addr);
-	library_new_symbol(library, "mysecondtestfunction", &addr);
-	
-	library_new_section(library, ".text", &addr, sizeof(mytestfunction));
-
-	
 	print("Kernel initialized\n");
 	
 	struct command_argument* root_argument = process_arguments_create("0:/taskbar.e");

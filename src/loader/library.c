@@ -28,7 +28,7 @@ struct library *library_new(const char *name)
 
     struct library *library = kzalloc(sizeof(struct library));
     library->symbols = array_create(sizeof(struct symbol));
-    library->sections = array_create(sizeof(struct symbol));
+    library->sections = array_create(sizeof(struct section));
     strncpy(library->name, name, sizeof(library->name));
 
     library_insert(library);
@@ -125,6 +125,11 @@ int library_map(struct task* task, struct library* library)
     for (int i = 0; i < total_sections; i++)
     {
         struct section* section = library_get_section(library, i);
+
+        // We don't map sections with no data.
+        if (section->size == 0)
+            continue;
+
         res = paging_map_to(task->page_directory->directory_entry, paging_align_to_lower_page(section->addr.virt), paging_align_to_lower_page(section->addr.phys), paging_align_address(section->addr.phys+section->size), PAGING_PAGE_PRESENT | PAGING_ACCESS_FROM_ALL);
         if (res < 0)
             break;
@@ -133,7 +138,7 @@ int library_map(struct task* task, struct library* library)
 }
 
 int library_map_all(struct task *task)
-{
+{    
     int res = 0;
     struct library *library = library_head;
     while (library)

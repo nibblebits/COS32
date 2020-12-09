@@ -14,5 +14,10 @@ int strcmp(const char *s1, const char *s2);
 int strncmp(const char *s1, const char *s2, int n);
 int istrncmp(const char *s1, const char *s2, int n);
 char tolower(char s1);
+/**
+ * Accepts a full path and returns a relative path.
+ * E.g "0:/abc/test.c" will return test.c
+ */
+char* basename(char* filename);
 
 #endif

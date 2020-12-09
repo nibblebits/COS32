@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdbool.h>
 
 #include "elf.h"
 #include "config.h"
@@ -43,6 +44,12 @@ struct elf_file
      */
     void* physical_end_address;
 
+    /**
+     * This contains a pointer to the library  instance that represents this elf file.
+     * If this elf file is a library. If its an executable then this variable is NULL
+     */
+    struct library* library;
+
 };
 
 /**
@@ -51,9 +58,15 @@ struct elf_file
  */
 int elf_load(const char *filename, struct elf_file **file_out);
 
+/**
+ * Closes this ELF file
+ */
+int elf_close(struct elf_file* file);
+
+
+bool elf_is_executable(struct elf_header *header);
 
 void* elf_memory(struct elf_file* file);
-
 struct elf_header* elf_header(struct elf_file* file);
 void *elf_virtual_base(struct elf_file *file);
 void *elf_virtual_end(struct elf_file *file);

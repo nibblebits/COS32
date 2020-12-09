@@ -177,3 +177,16 @@ char *strtok(char *str, const char *delimiters)
 
     return p_start;
 }
+
+char* basename(char* filename)
+{
+    char* current = strtok(filename, "/");
+    char* last = current;
+    while(current)
+    {
+        last = current;
+        current = strtok(current, "/");
+    }
+
+    return last;
+}
