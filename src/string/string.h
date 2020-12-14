@@ -18,6 +18,6 @@ char tolower(char s1);
  * Accepts a full path and returns a relative path.
  * E.g "0:/abc/test.c" will return test.c
  */
-char* basename(char* filename);
+void basename(const char* filename, char* out_filename, int max_len);
 
 #endif

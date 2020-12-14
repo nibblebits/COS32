@@ -179,6 +179,11 @@ void *elf_phys_base(struct elf_file *file)
     return file->physical_base_address;
 }
 
+void* elf_phdr_data_address(struct elf_file* file, struct elf32_phdr* phdr)
+{
+    return elf_memory(file)+phdr->p_offset;
+}
+
 void *elf_phys_end(struct elf_file *file)
 {
     return file->physical_end_address;
@@ -189,9 +194,39 @@ void *elf_virtual_to_phys(struct elf_file *file, void *virt_addr)
     return (virt_addr - file->virtual_base_address) + file->physical_base_address;
 }
 
+void* elf_symbol_get_virt_address(struct elf_file* elf_file, struct elf32_sym* symbol)
+{
+    // NULL values are unresolved symbols
+    if (symbol->st_value == 0x00)
+    {
+        return 0;
+    }
+
+    if (elf_is_shared_library(elf_header(elf_file)))
+    {
+        // We have program independant code
+        return elf_file->virtual_base_address + symbol->st_value;
+    }
+    else if(elf_is_executable(elf_header(elf_file)))
+    {
+        return (void*) symbol->st_value;
+    }
+
+    return 0;
+}
+
+void* elf_symbol_get_phys_address(struct elf_file* elf_file, struct elf32_sym* symbol)
+{
+    void* ptr = elf_symbol_get_virt_address(elf_file, symbol);
+    if (ptr == 0)
+        return 0;
+
+    return elf_virtual_to_phys(elf_file, ptr);
+}
+
 int elf_validate_loaded(struct elf_header *header)
 {
-    return (elf_valid_signature(header) && elf_valid_class(header) && elf_valid_encoding(header) && elf_has_program_header(header)) ? COS32_ALL_OK : -EINVARG;
+    return (elf_valid_signature(header) && elf_valid_class(header) && elf_valid_encoding(header) && elf_has_program_header(header)) ? COS32_ALL_OK : -EINFORMAT;
 }
 
 int elf_process_phdr_pt_load(struct elf_file *elf_file, struct elf32_phdr *phdr)
@@ -233,14 +268,26 @@ int elf_process_phdr_pt_load(struct elf_file *elf_file, struct elf32_phdr *phdr)
 
 int elf_process_dynamic_tag_needed(struct elf_file *elf_file, struct elf32_dyn *dynamic_tag)
 {
-    const char *required_library_name = elf_dynamic_string(elf_header(elf_file), dynamic_tag->d_un.d_val);
+    char *required_library_name = elf_dynamic_string(elf_header(elf_file), dynamic_tag->d_un.d_val);
     // Obviously later on we will change this to some abstracted library_load function...
     // For now this is the best we got.
 
     struct elf_file *library_file = 0x00;
+
+    // basename damages strings so we need to output the result to a seperate buffer
+    char tmp_required_library_name[COS32_MAX_PATH];
+    basename(required_library_name, tmp_required_library_name, sizeof(tmp_required_library_name));
+
+    if (library_get(tmp_required_library_name))
+    {
+        // We already have the library loaded, this is not an error however
+        // we shouldn't load it again
+        return 0;
+    }
+
     char path_buf[COS32_MAX_PATH];
     strncpy(path_buf, "0:/", sizeof(path_buf));
-    strncpy(&path_buf[3], required_library_name, sizeof(path_buf));
+    strncpy(&path_buf[3], tmp_required_library_name, sizeof(path_buf));
     return elf_load(path_buf, &library_file);
 }
 
@@ -305,15 +352,6 @@ int elf_process_pheaders(struct elf_file *elf_file)
     return res;
 }
 
-int elf_resolve_non_local_symbol(struct elf_file *elf_file, struct elf32_sym *symbol)
-{
-    //const char *symbol_name = elf_dynamic_string(elf_header(elf_file), symbol->st_name);
-    // We don't really care about resolving anything here right now, we just care about
-    // relocations at the moment.
-
-    return 0;
-}
-
 int elf_export_symbol(struct elf_file *elf_file, struct elf32_sym *symbol)
 {
     if (!elf_is_shared_library(elf_header(elf_file)))
@@ -323,12 +361,33 @@ int elf_export_symbol(struct elf_file *elf_file, struct elf32_sym *symbol)
         return 0;
     }
 
-    void *abs_phys_addr = elf_file->physical_base_address + symbol->st_value;
-    void *abs_virt_addr = elf_file->virtual_base_address + symbol->st_value;
+    void *abs_phys_addr = elf_symbol_get_phys_address(elf_file, symbol);
+    void *abs_virt_addr = elf_symbol_get_virt_address(elf_file, symbol);
     struct addr addr;
     addr.phys = abs_phys_addr;
     addr.virt = abs_virt_addr;
     return library_new_symbol(elf_file->library, elf_dynamic_string(elf_header(elf_file), symbol->st_name), &addr);
+}
+
+/**
+ * Handles our global symbol that we want to export
+ */
+int elf_process_symbol_handle_export(struct elf_file* elf_file, struct elf32_sym* symbol)
+{
+    return elf_export_symbol(elf_file, symbol);  
+}
+
+
+int elf_process_symbol(struct elf_file *elf_file, struct elf32_sym *symbol)
+{
+    // We don't give a damn about local symbols.
+    if (ELF32_ST_BIND(symbol->st_info) == STB_LOCAL)
+    {
+        return 0;
+    }
+
+    // This is our symbol and it should be exported, export it.
+    return elf_process_symbol_handle_export(elf_file, symbol);
 }
 
 int elf_process_symbols(struct elf_file *elf_file)
@@ -338,23 +397,15 @@ int elf_process_symbols(struct elf_file *elf_file)
     struct elf32_sym *symbols = elf_dynsym(elf_header(elf_file), &total_symbols);
     for (int i = 0; i < total_symbols; i++)
     {
+        // We don't care about undefined references.
         if (symbols[i].st_shndx == SHN_UNDEF)
         {
-            res = elf_resolve_non_local_symbol(elf_file, &symbols[i]);
-            if (res < 0)
-            {
-                break;
-            }
+            continue;
         }
-        else if (ELF32_R_TYPE(symbols[i].st_info) != STB_LOCAL)
-        {
-            // We are exporting a symbol here.
-            res = elf_export_symbol(elf_file, &symbols[i]);
-            if (res < 0)
-            {
-                break;
-            }
-        }
+
+        res = elf_process_symbol(elf_file, &symbols[i]);
+        if (res < 0)
+            break;
     }
 
     return res;
@@ -377,7 +428,10 @@ void *elf_get_loaded_symbol_address(struct elf_file *elf_file, const char *symbo
         {
             // We have a needed tag, its value points to the library name thats required in the dynamic string
             // table
-            const char *required_library_name = elf_dynamic_string(elf_header(elf_file), dynamic_tag[i].d_un.d_val);
+            const char *required_library_name_path = elf_dynamic_string(elf_header(elf_file), dynamic_tag[i].d_un.d_val);
+            char required_library_name[COS32_MAX_PATH];
+            basename(required_library_name_path, required_library_name, sizeof(required_library_name));
+
             struct library *library = library_get(required_library_name);
             if (!library)
             {
@@ -397,7 +451,7 @@ void *elf_get_loaded_symbol_address(struct elf_file *elf_file, const char *symbo
     return symbol_address;
 }
 
-int elf_symbol_poke_to_virtual_address(struct elf_file *elf_file, void *virtual_address, const char *symbol_name)
+int elf_symbol_poke_value_to_virtual_address(struct elf_file *elf_file, void *virtual_address, uint32_t val)
 {
     uint32_t *phys_addr = elf_virtual_to_phys(elf_file, virtual_address);
     if (!phys_addr)
@@ -405,27 +459,83 @@ int elf_symbol_poke_to_virtual_address(struct elf_file *elf_file, void *virtual_
         return -EIO;
     }
 
-    *phys_addr = (uint32_t)elf_get_loaded_symbol_address(elf_file, symbol_name);
+    *phys_addr = val;
 
     return 0;
 }
+
+int elf_symbol_poke_to_virtual_address(struct elf_file *elf_file, void *virtual_address, const char *symbol_name)
+{
+    uint32_t symbol_address = (uint32_t)elf_get_loaded_symbol_address(elf_file, symbol_name);
+    return elf_symbol_poke_value_to_virtual_address(elf_file, virtual_address, symbol_address);
+}
+
+bool elf_relocation_type_supported(int relocation_type)
+{
+    return relocation_type == R_386_JUMP_SLOT || relocation_type == R_386_RELATIVE;
+}
+void *elf_get_relocation_address(struct elf_file *elf_file, struct elf32_rel *relocation)
+{
+    void *address = 0;
+    int relocation_type = ELF32_R_TYPE(relocation->r_info);
+    if (!elf_relocation_type_supported(relocation_type))
+    {
+        return 0;
+    }
+
+    // Absolute address..
+    if (relocation_type == R_386_JUMP_SLOT)
+    {
+        address = (void *)relocation->r_offset;
+    }
+    else if (relocation_type == R_386_RELATIVE)
+    {
+        address = elf_file->virtual_base_address + relocation->r_offset;
+    }
+
+    return address;
+}
+
+int elf_resolve_relocation_386_relative(struct elf_file *elf_file, struct elf32_rel *relocation)
+{
+    // We must convert the relative address to a physical one and modify the value
+    // This is program independant code that needs relative to absolute address conversion.
+    void *relocation_offset = elf_get_relocation_address(elf_file, relocation);
+    return elf_symbol_poke_value_to_virtual_address(elf_file, relocation_offset, (uint32_t)relocation_offset);
+}
+
+int elf_resolve_relocation_386_jmp_slot(struct elf_file *elf_file, struct elf32_rel *relocation)
+{
+    struct elf_header *header = elf_header(elf_file);
+    void *relocation_offset = elf_get_relocation_address(elf_file, relocation);
+    int symbol_index = ELF32_R_SYM(relocation->r_info);
+    struct elf32_sym *symbol = &elf_dynsym(header, 0)[symbol_index];
+    const char *symbol_name = elf_dynamic_string(header, symbol->st_name);
+    return elf_symbol_poke_to_virtual_address(elf_file, relocation_offset, symbol_name);
+}
+
 int elf_resolve_relocation(struct elf_file *elf_file, struct elf32_rel *relocation)
 {
     int res = 0;
-    struct elf_header *header = elf_header(elf_file);
     int relocation_type = ELF32_R_TYPE(relocation->r_info);
 
-    // We support only R_386_JUMP_SLOT relocation types at this time.
-    if (relocation_type != R_386_JUMP_SLOT)
+    // We support only R_386_JUMP_SLOT  and R_386_RELATIVE relocation types at this time.
+    if (!elf_relocation_type_supported(relocation_type))
     {
         return -EUNIMP;
     }
 
-    int symbol_index = ELF32_R_SYM(relocation->r_info);
-    struct elf32_sym *symbol = &elf_dynsym(header, 0)[symbol_index];
-    const char *symbol_name = elf_dynamic_string(header, symbol->st_name);
+    if (relocation_type == R_386_RELATIVE)
+    {
+        // We have a relative address that needs to be resolved to a absolute one.
+        res = elf_resolve_relocation_386_relative(elf_file, relocation);
+    }
+    else if (relocation_type == R_386_JUMP_SLOT)
+    {
+        // Jump table needs filling with a symbol address from a shared library.
+        res = elf_resolve_relocation_386_jmp_slot(elf_file, relocation);
+    }
 
-    res = elf_symbol_poke_to_virtual_address(elf_file, (void *)relocation->r_offset, symbol_name);
     return res;
 }
 int elf_resolve_relocation_table(struct elf_file *elf_file, struct elf32_shdr *section)
@@ -470,8 +580,11 @@ int elf_process_header(struct elf_file *elf_file)
     struct elf_header *header = elf_header(elf_file);
     if (elf_is_shared_library(header))
     {
+        char library_name[COS32_MAX_PATH];
+        basename(elf_file->filename, library_name, sizeof(library_name));
+
         // This is a shared library, we must register a library in our name
-        elf_file->library = library_new(basename(elf_file->filename));
+        elf_file->library = library_new(library_name);
         if (!elf_file->library)
         {
             return -EIO;
@@ -492,7 +605,12 @@ int elf_library_process_section(struct elf_file *elf_file, struct elf32_shdr *sh
     struct addr addr;
     addr.phys = abs_phys_addr;
     addr.virt = abs_virt_addr;
-    return library_new_section(elf_file->library, elf_string(header, shdr->sh_name), &addr, shdr->sh_size);
+    SECTION_FLAGS flags = LIBRARY_SECTION_READABLE | LIBRARY_SECTION_EXECUTABLE;
+    if (shdr->sh_flags & SHF_WRITE)
+    {
+        flags |= LIBRARY_SECTION_WRITEABLE;
+    }
+    return library_new_section(elf_file->library, elf_string(header, shdr->sh_name), &addr, shdr->sh_size, flags);
 }
 
 int elf_process_section(struct elf_file *elf_file, struct elf32_shdr *shdr)

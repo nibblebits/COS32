@@ -65,6 +65,18 @@
 #define DT_REL 17
 #define DT_HASH 4
 
+#define SHF_WRITE 0x01
+#define SHF_ALLOC 0x02
+#define SHF_EXECINSTR 0x04
+#define SHF_MASKPROC 0xf0000000
+
+#define STT_NOTYPE 0
+#define STT_OBJECT 1
+#define STT_FUNC 2
+#define STT_SECTION 3
+#define STT_FILE 4
+#define STT_LOPROC 5
+#define STT_HIPROC 6
 
 #define R_386_32 1
 #define R_386_GOT32 3

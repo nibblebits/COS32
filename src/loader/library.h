@@ -9,6 +9,11 @@
 #define SECTION_NAME_MAX 256
 #define SYMBOL_NAME_MAX 256
 
+#define LIBRARY_SECTION_WRITEABLE 0b00000001
+#define LIBRARY_SECTION_READABLE 0b00000010
+#define LIBRARY_SECTION_EXECUTABLE 0b00000100
+
+typedef unsigned char SECTION_FLAGS;
 struct task;
 struct library;
 struct addr
@@ -29,6 +34,7 @@ struct section
     char name[SECTION_NAME_MAX];
     struct addr addr;
     size_t size;
+    SECTION_FLAGS flags;
     struct library *library;
 };
 
@@ -49,7 +55,7 @@ void library_build_address(void* virt, void* phys, struct addr* addr_out);
 int library_new_symbol(struct library* library, const char* name, struct addr* addr);
 struct symbol* library_get_symbol_by_name(struct library* library, const char* name);
 
-int library_new_section(struct library *library, const char *name, struct addr *addr, size_t size);
+int library_new_section(struct library *library, const char *name, struct addr *addr, size_t size, SECTION_FLAGS flags);
 struct section* library_get_section(struct library* library, int index);
 int library_sections_count(struct library* library);
 

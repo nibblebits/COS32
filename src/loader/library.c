@@ -66,11 +66,12 @@ void library_build_address(void *virt, void *phys, struct addr *addr_out)
     addr_out->phys = phys;
 }
 
-int library_new_section(struct library *library, const char *name, struct addr *addr, size_t size)
+int library_new_section(struct library *library, const char *name, struct addr *addr, size_t size, SECTION_FLAGS flags)
 {
     struct section section;
     section.size = size;
     section.library = library;
+    section.flags = flags;
     strncpy(section.name, name, sizeof(section.name));
     memcpy(&section.addr, addr, sizeof(struct addr));
     library_insert_section(library, &section);
@@ -130,7 +131,13 @@ int library_map(struct task* task, struct library* library)
         if (section->size == 0)
             continue;
 
-        res = paging_map_to(task->page_directory->directory_entry, paging_align_to_lower_page(section->addr.virt), paging_align_to_lower_page(section->addr.phys), paging_align_address(section->addr.phys+section->size), PAGING_PAGE_PRESENT | PAGING_ACCESS_FROM_ALL);
+        int flags = PAGING_PAGE_PRESENT | PAGING_ACCESS_FROM_ALL | PAGING_PAGE_WRITEABLE;
+        if (section->flags & LIBRARY_SECTION_WRITEABLE)
+        {
+            flags |= PAGING_PAGE_WRITEABLE;
+        }
+
+        res = paging_map_to(task->page_directory->directory_entry, paging_align_to_lower_page(section->addr.virt), paging_align_to_lower_page(section->addr.phys), paging_align_address(section->addr.phys+section->size), flags);
         if (res < 0)
             break;
     }

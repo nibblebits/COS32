@@ -7,6 +7,8 @@
 
 int main(int argc, char **argv)
 {
+  itoa(50);
+  while(1) {}
   struct kernel_info info;
   kernel_information(&info);
 

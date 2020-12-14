@@ -65,9 +65,12 @@ int elf_close(struct elf_file* file);
 
 
 bool elf_is_executable(struct elf_header *header);
+void* elf_phdr_data_address(struct elf_file* file, struct elf32_phdr* phdr);
 
 void* elf_memory(struct elf_file* file);
 struct elf_header* elf_header(struct elf_file* file);
+struct elf32_shdr *elf_sheader(struct elf_header *header);
+struct elf32_phdr *elf_pheader(struct elf_header *header);
 void *elf_virtual_base(struct elf_file *file);
 void *elf_virtual_end(struct elf_file *file);
 void* elf_phys_base(struct elf_file* file);

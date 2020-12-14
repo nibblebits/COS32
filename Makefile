@@ -19,6 +19,7 @@ all: ./bin/kernel.bin ./bin/boot.bin ${FILES} programs
 	sudo cp ./src/programs/shell/shell.elf /mnt/d/bin/shell.e
 	sudo cp ./src/programs/testlibprogram/testlibprogram.elf /mnt/d/test.e
 	sudo cp ./src/programs/testlib/testlib.so /mnt/d/testlib.so
+	sudo cp ./src/programs/stdlib/stdlib.so /mnt/d/stdlib.so
 
 	sudo mkdir /mnt/d/fonts
 	sudo cp ./fonts/plfont.psf /mnt/d/fonts/plfont.psf
@@ -180,6 +181,7 @@ all: ./bin/kernel.bin ./bin/boot.bin ${FILES} programs
 
 
 programs:
+	cd ./src/programs/initlib && $(MAKE) all
 	cd ./src/programs/stdlib && $(MAKE) all
 	cd ./src/programs/helloworld && $(MAKE) all
 	cd ./src/programs/killed && $(MAKE) all
@@ -191,6 +193,7 @@ programs:
 
 
 programs_clean:
+	cd ./src/programs/initlib && $(MAKE) clean
 	cd ./src/programs/stdlib && $(MAKE) clean
 	cd ./src/programs/helloworld && $(MAKE) clean
 	cd ./src/programs/crash && $(MAKE) clean

@@ -6,7 +6,7 @@ FLAGS =  --verbose --freestanding -falign-jumps -falign-functions -falign-labels
 	i686-elf-gcc $(INCLUDES)  ${FLAGS} -c ./src/shell.c -o ./build/shell.o -fno-common -std=gnu99 -ffreestanding -O0 -Wall -Wextra -c -g
 
 all: ${OBJECTS}
-	i686-elf-ld -g -T ./linker.ld -o ./shell.elf -O0 -nostdlib -g ${OBJECTS} ../stdlib/cos32.stdlib.o
+	i686-elf-ld -g -T ./linker.ld -o ./shell.elf -O0 -nostdlib -g ${OBJECTS} ../initlib/initlib.o ../stdlib/stdlib.so
 	
 clean:
 	rm -rf ${OBJECTS}

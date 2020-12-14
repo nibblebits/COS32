@@ -5,7 +5,8 @@ char *strncpy(char *dest, const char *src, int n)
     int i = 0;
     for (i = 0; i < n && src[i] != '\0'; i++)
         dest[i] = src[i];
-    for (; i < n; i++)
+
+    if (i < n)
         dest[i] = '\0';
 
     return dest;
@@ -178,15 +179,23 @@ char *strtok(char *str, const char *delimiters)
     return p_start;
 }
 
-char* basename(char* filename)
+void basename(const char* filename, char* out_filename, int max_len)
 {
-    char* current = strtok(filename, "/");
+    // Copy the filename into the buffer so we have something we dont mind messing with.
+    // strtok damages whats passed to it.
+    char buf[max_len];
+    strncpy(buf, filename, max_len);
+
+    char* current = strtok(buf, "/");
     char* last = current;
     while(current)
     {
         last = current;
-        current = strtok(current, "/");
+        current = strtok(buf, "/");
     }
 
-    return last;
+    // Now lets copy the result into the out_filename
+    strncpy(out_filename, last, max_len);
+
+    // Great "buf" got damaged but the input filename did not
 }

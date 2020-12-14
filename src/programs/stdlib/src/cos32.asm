@@ -1,27 +1,31 @@
+[BITS 32]
+
+section .text
+
 ; Contains routines for talking directly with major COS32 kernel routines
 
-global print
-global cos32_getkey
-global kernel_information
-global cos32_putchar
-global cos32_getkeyblock
-global cos32_malloc
-global cos32_invoke_command
-global cos32_sleep
-global cos32_video_rectangle_new
-global cos32_video_rectangle_set_pixel
-global cos32_video_rectangle_fill
-global cos32_video_rectangle_draw_block
-global cos32_video_rectangle_draw_blocks
-global cos32_video_font_get
-global cos32_video_font_draw
-global cos32_video_font_make_empty_string
-global cos32_video_rectangle_draw_font_data
-global cos32_video_rectangle_publish
-global cos32_video_rectangle_get
-global cos32_get_arguments
-global cos32_flush_video_buffer
-global cos32_video_clear_flag
+global print:function
+global cos32_getkey:function
+global kernel_information:function
+global cos32_putchar:function
+global cos32_getkeyblock:function
+global cos32_malloc:function
+global cos32_invoke_command:function
+global cos32_sleep:function
+global cos32_video_rectangle_new:function
+global cos32_video_rectangle_set_pixel:function
+global cos32_video_rectangle_fill:function
+global cos32_video_rectangle_draw_block:function
+global cos32_video_rectangle_draw_blocks:function
+global cos32_video_font_get:function
+global cos32_video_font_draw:function
+global cos32_video_font_make_empty_string:function
+global cos32_video_rectangle_draw_font_data:function
+global cos32_video_rectangle_publish:function
+global cos32_video_rectangle_get:function
+global cos32_get_arguments:function
+global cos32_flush_video_buffer:function
+global cos32_video_clear_flag:function
 
 ; WARNING AVOID USING ALL GENERAL PURPOSE REGISTERS EXCEPT EAX TO RETURN A RESULT
 ; I AM NOT SURE WHICH REGISTERS GCC RELIES ON THE VALUE BEING THE SAME

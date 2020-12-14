@@ -1,4 +1,6 @@
 #include "cos32.h"
+int start_get_arguments(struct process_arguments* arguments);
+
 int main(int argc, char** argv);
 
 /**
@@ -10,6 +12,6 @@ int main(int argc, char** argv);
 int start_c_func()
 {
     struct process_arguments arguments;
-    cos32_get_arguments(&arguments);
+    start_get_arguments(&arguments);
     return main(arguments.argc, arguments.argv);
 }
